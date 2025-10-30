@@ -1,0 +1,56 @@
+name: Deploy WPGen Theme
+
+on:
+  workflow_dispatch:
+    inputs:
+      theme_dir:
+        description: 'Theme directory to deploy'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup deployment info
+        run: |
+          echo "Deploying theme from: ${{ github.event.inputs.theme_dir }}"
+          echo "This is a template workflow for deploying WPGen-generated themes."
+
+      - name: Deploy via FTP (if configured)
+        if: ${{ secrets.FTP_HOST != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ${{ github.event.inputs.theme_dir }}/
+          server-dir: /wp-content/themes/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/README.md
+
+      - name: Deploy via SSH (if configured)
+        if: ${{ secrets.SSH_HOST != '' }}
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USERNAME }}
+          SOURCE: ${{ github.event.inputs.theme_dir }}/
+          TARGET: ${{ secrets.SSH_REMOTE_PATH }}
+
+      - name: Deployment complete
+        run: |
+          echo "✅ Theme deployment completed successfully!"
+          echo ""
+          echo "Next steps:"
+          echo "1. Log in to your WordPress admin panel"
+          echo "2. Go to Appearance > Themes"
+          echo "3. Activate the newly deployed theme"

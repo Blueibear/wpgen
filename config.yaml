@@ -1,0 +1,129 @@
+# wpgen Configuration File
+
+# LLM Provider Settings
+llm:
+  # Options: "openai" or "anthropic"
+  provider: "openai"
+
+  # Model configurations
+  openai:
+    model: "gpt-4-turbo-preview"
+    max_tokens: 4096
+    temperature: 0.7
+
+  anthropic:
+    model: "claude-3-5-sonnet-20241022"
+    max_tokens: 4096
+    temperature: 0.7
+
+# GitHub Settings
+github:
+  # Base URL for GitHub API (change for GitHub Enterprise)
+  api_url: "https://api.github.com"
+
+  # Default organization or username (leave empty to use authenticated user)
+  default_owner: ""
+
+  # Repository naming pattern (variables: {theme_name}, {timestamp})
+  repo_name_pattern: "wp-{theme_name}-{timestamp}"
+
+  # Auto-create repository if it doesn't exist
+  auto_create: true
+
+  # Make repository private by default
+  private: false
+
+  # Default branch name
+  default_branch: "main"
+
+# WordPress Generation Settings
+wordpress:
+  # Default theme prefix for generated themes
+  theme_prefix: "wpgen"
+
+  # WordPress version to target
+  wp_version: "6.4"
+
+  # Include starter content
+  include_sample_content: true
+
+  # Generate child theme or standalone theme
+  # Options: "child" or "standalone"
+  theme_type: "standalone"
+
+  # Parent theme (if child theme)
+  parent_theme: "twentytwentyfour"
+
+  # Default theme author
+  author: "WPGen"
+
+  # Default theme license
+  license: "GPL-2.0-or-later"
+
+# Output Settings
+output:
+  # Base directory for generated themes (relative to project root)
+  output_dir: "output"
+
+  # Clean output directory before generation
+  clean_before_generate: false
+
+  # Keep local copy after pushing to GitHub
+  keep_local_copy: true
+
+# Logging Settings
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log file location
+  log_file: "logs/wpgen.log"
+
+  # Log format
+  format: "json"  # Options: "json" or "text"
+
+  # Console output
+  console_output: true
+
+  # Colored console output
+  colored_console: true
+
+# Web UI Settings (Flask)
+web:
+  # Enable web UI
+  enabled: true
+
+  # Host to bind to
+  host: "0.0.0.0"
+
+  # Port to bind to
+  port: 5000
+
+  # Debug mode
+  debug: false
+
+  # Secret key for sessions (change in production!)
+  secret_key: "change-me-in-production"
+
+# Deployment Settings
+deployment:
+  # Enable automatic deployment
+  enabled: false
+
+  # Deployment method: "ftp", "ssh", or "github_actions"
+  method: "github_actions"
+
+  # FTP settings
+  ftp:
+    host: ""
+    port: 21
+    username: ""
+    remote_path: "/public_html/wp-content/themes"
+
+  # SSH settings
+  ssh:
+    host: ""
+    port: 22
+    username: ""
+    remote_path: "/var/www/html/wp-content/themes"
+    key_file: "~/.ssh/id_rsa"
