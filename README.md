@@ -24,7 +24,7 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/wpgen.git
+git clone https://github.com/blueibear/wpgen.git
 cd wpgen
 ```
 
