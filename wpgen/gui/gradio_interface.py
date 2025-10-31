@@ -1,3 +1,9 @@
+"""Gradio-based GUI interface for WPGen.
+
+Provides a user-friendly graphical interface for generating WordPress themes
+with support for text prompts, image uploads, and document uploads.
+"""
+
 import gradio as gr
 import os
 from pathlib import Path
@@ -72,8 +78,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 )
                 yield status, "", ""
 
+                # Use LLM vision for detailed analysis of uploaded images
                 image_analyses = image_analyzer.batch_analyze_images(
-                    processed_files["images"], use_llm=True  # Use LLM vision for detailed analysis
+                    processed_files["images"], use_llm=True
                 )
 
                 image_summaries = image_analyzer.generate_image_summary(image_analyses)
