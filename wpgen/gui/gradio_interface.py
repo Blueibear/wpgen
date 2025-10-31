@@ -39,13 +39,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
     image_analyzer = None
     text_processor = TextProcessor()
 
-    # --- PLACEHOLDER ---
-    # Assuming generate_theme and generate_file_tree functions are defined above or imported
+    # [Assume generate_theme and generate_file_tree are defined above this block]
 
     with gr.Blocks(
         title="WPGen - AI WordPress Theme Generator", theme=gr.themes.Soft()
     ) as interface:
-
         gr.Markdown(
             "\n".join([
                 "# 🎨 WPGen - AI-Powered WordPress Theme Generator",
@@ -58,11 +56,13 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         with gr.Row():
             with gr.Column(scale=2):
                 gr.Markdown("### 📝 Describe Your Website")
-                gr.Markdown("Provide details about the style, features, and content you want.")
 
                 prompt_input = gr.Textbox(
                     label="Website Description",
-                    placeholder="Example: Create a dark-themed photography portfolio site with a blog and contact form...",
+                    placeholder=(
+                        "Example: Create a dark-themed photography portfolio site with a blog "
+                        "and contact form..."
+                    ),
                     lines=5,
                     info="Describe your desired website in detail",
                 )
@@ -90,7 +90,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 )
 
                 gr.Markdown("### ⚙️ Generation Options")
-                gr.Markdown("Automatically create a repository and deploy to WordPress if desired.")
 
                 with gr.Row():
                     push_checkbox = gr.Checkbox(
