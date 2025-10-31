@@ -1,6 +1,6 @@
 # Core dependencies
 Flask==3.0.0
-Werkzeug==3.0.1
+Werkzeug==3.0.6
 
 # LLM APIs
 openai==1.12.0
@@ -14,7 +14,7 @@ PyYAML==6.0.1
 python-dotenv==1.0.1
 
 # HTTP requests
-requests==2.31.0
+requests==2.32.4
 
 # CLI tools
 click==8.1.7
