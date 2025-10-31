@@ -30,9 +30,7 @@ def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
     if provider_name == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError(
-                "OPENAI_API_KEY environment variable is required for OpenAI provider"
-            )
+            raise ValueError("OPENAI_API_KEY environment variable is required for OpenAI provider")
         provider_config = config.get("llm", {}).get("openai", {})
         return OpenAIProvider(api_key, provider_config)
 
