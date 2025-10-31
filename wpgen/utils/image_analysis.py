@@ -9,8 +9,7 @@ This module provides comprehensive image analysis capabilities including:
 """
 
 import base64
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from PIL import Image
 import io
 
@@ -33,9 +32,7 @@ class ImageAnalyzer:
         logger.info("Initialized ImageAnalyzer")
 
     def analyze_design_mockup(
-        self,
-        image_data: Dict[str, Any],
-        use_llm: bool = True
+        self, image_data: Dict[str, Any], use_llm: bool = True
     ) -> Dict[str, Any]:
         """Analyze a design mockup image for layout and styling insights.
 
@@ -61,7 +58,7 @@ class ImageAnalyzer:
             "typography_notes": "",
             "components": [],
             "overall_style": "",
-            "technical_details": {}
+            "technical_details": {},
         }
 
         # Basic image analysis (dimensions, format)
@@ -138,17 +135,16 @@ Return ONLY the JSON, no other text."""
 
         try:
             # Use the LLM's vision capability
-            if hasattr(self.llm_provider, 'analyze_image'):
+            if hasattr(self.llm_provider, "analyze_image"):
                 result = self.llm_provider.analyze_image(
-                    image_data=image_data,
-                    prompt=vision_prompt
+                    image_data=image_data, prompt=vision_prompt
                 )
             else:
                 # Fallback: use the multi-modal analyze
                 result = self.llm_provider.analyze_prompt_multimodal(
                     prompt="Analyze this design mockup image for WordPress theme creation.",
                     images=[image_data],
-                    additional_context=vision_prompt
+                    additional_context=vision_prompt,
                 )
 
             # Parse the result
@@ -156,6 +152,7 @@ Return ONLY the JSON, no other text."""
                 return result
             elif isinstance(result, str):
                 import json
+
                 # Try to extract JSON from the response
                 result = result.strip()
                 if result.startswith("```"):
@@ -178,7 +175,7 @@ Return ONLY the JSON, no other text."""
             Dictionary with width, height, format, size
         """
         # Decode base64 image
-        image_bytes = base64.b64decode(image_data['data'])
+        image_bytes = base64.b64decode(image_data["data"])
         img = Image.open(io.BytesIO(image_bytes))
 
         return {
@@ -186,7 +183,7 @@ Return ONLY the JSON, no other text."""
             "height": img.height,
             "format": img.format,
             "mode": img.mode,
-            "size_bytes": len(image_bytes)
+            "size_bytes": len(image_bytes),
         }
 
     def _extract_color_palette(self, image_data: Dict[str, Any], max_colors: int = 5) -> str:
@@ -201,12 +198,12 @@ Return ONLY the JSON, no other text."""
         """
         try:
             # Decode base64 image
-            image_bytes = base64.b64decode(image_data['data'])
+            image_bytes = base64.b64decode(image_data["data"])
             img = Image.open(io.BytesIO(image_bytes))
 
             # Convert to RGB if necessary
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            if img.mode != "RGB":
+                img = img.convert("RGB")
 
             # Resize for faster processing
             img.thumbnail((100, 100))
@@ -221,7 +218,7 @@ Return ONLY the JSON, no other text."""
                 hex_colors = []
                 for count, color in colors[:max_colors]:
                     if isinstance(color, tuple) and len(color) >= 3:
-                        hex_color = '#{:02x}{:02x}{:02x}'.format(color[0], color[1], color[2])
+                        hex_color = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2])
                         hex_colors.append(hex_color)
 
                 if hex_colors:
@@ -246,7 +243,7 @@ Return ONLY the JSON, no other text."""
             from PIL import Image
 
             # Decode base64 image
-            image_bytes = base64.b64decode(image_data['data'])
+            image_bytes = base64.b64decode(image_data["data"])
             img = Image.open(io.BytesIO(image_bytes))
 
             # Perform OCR
@@ -302,8 +299,8 @@ Return ONLY the JSON, no other text."""
 
             if analysis.get("ocr_text"):
                 # Include first 200 chars of OCR text
-                ocr_preview = analysis['ocr_text'][:200]
-                if len(analysis['ocr_text']) > 200:
+                ocr_preview = analysis["ocr_text"][:200]
+                if len(analysis["ocr_text"]) > 200:
                     ocr_preview += "..."
                 summary_parts.append(f"Text found: {ocr_preview}")
 
@@ -312,9 +309,7 @@ Return ONLY the JSON, no other text."""
         return "\n".join(summary_parts)
 
     def batch_analyze_images(
-        self,
-        images: List[Dict[str, Any]],
-        use_llm: bool = True
+        self, images: List[Dict[str, Any]], use_llm: bool = True
     ) -> List[Dict[str, Any]]:
         """Analyze multiple images in batch.
 
@@ -338,11 +333,13 @@ Return ONLY the JSON, no other text."""
             except Exception as e:
                 logger.error(f"Failed to analyze image {idx}: {str(e)}")
                 # Add placeholder
-                analyses.append({
-                    "image_index": idx,
-                    "image_name": image_data.get("name", f"image_{idx}"),
-                    "caption": "Analysis failed",
-                    "error": str(e)
-                })
+                analyses.append(
+                    {
+                        "image_index": idx,
+                        "image_name": image_data.get("name", f"image_{idx}"),
+                        "caption": "Analysis failed",
+                        "error": str(e),
+                    }
+                )
 
         return analyses

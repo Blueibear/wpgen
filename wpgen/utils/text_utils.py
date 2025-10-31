@@ -49,15 +49,15 @@ class TextProcessor:
             "metadata": {
                 "filename": path.name,
                 "extension": path.suffix,
-                "size": path.stat().st_size
-            }
+                "size": path.stat().st_size,
+            },
         }
 
         try:
             # Extract content based on file type
-            if path.suffix.lower() == '.pdf':
+            if path.suffix.lower() == ".pdf":
                 result["content"] = self._extract_from_pdf(path)
-            elif path.suffix.lower() in ['.md', '.markdown']:
+            elif path.suffix.lower() in [".md", ".markdown"]:
                 result["content"] = self._extract_from_markdown(path)
                 result["sections"] = self._parse_markdown_sections(result["content"])
             else:
@@ -86,7 +86,7 @@ class TextProcessor:
         try:
             import PyPDF2
 
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 reader = PyPDF2.PdfReader(f)
                 text_parts = []
 
@@ -115,7 +115,7 @@ class TextProcessor:
             Markdown content
         """
         try:
-            content = path.read_text(encoding='utf-8')
+            content = path.read_text(encoding="utf-8")
             return content
         except Exception as e:
             logger.error(f"Markdown extraction error: {str(e)}")
@@ -131,7 +131,7 @@ class TextProcessor:
             Text content
         """
         try:
-            content = path.read_text(encoding='utf-8')
+            content = path.read_text(encoding="utf-8")
             return content
         except Exception as e:
             logger.error(f"Text extraction error: {str(e)}")
@@ -149,12 +149,12 @@ class TextProcessor:
         sections = []
 
         # Split by headers (# Header)
-        lines = markdown_content.split('\n')
+        lines = markdown_content.split("\n")
         current_section = None
 
         for line in lines:
             # Check if line is a header
-            header_match = re.match(r'^(#{1,6})\s+(.+)$', line)
+            header_match = re.match(r"^(#{1,6})\s+(.+)$", line)
 
             if header_match:
                 # Save previous section
@@ -165,17 +165,13 @@ class TextProcessor:
                 level = len(header_match.group(1))
                 title = header_match.group(2).strip()
 
-                current_section = {
-                    "level": level,
-                    "title": title,
-                    "content": []
-                }
+                current_section = {"level": level, "title": title, "content": []}
             elif current_section:
                 current_section["content"].append(line)
 
         # Add last section
         if current_section:
-            current_section["content"] = '\n'.join(current_section["content"]).strip()
+            current_section["content"] = "\n".join(current_section["content"]).strip()
             sections.append(current_section)
 
         return sections
@@ -194,10 +190,10 @@ class TextProcessor:
             return ""
 
         # Clean and normalize
-        content = re.sub(r'\s+', ' ', content).strip()
+        content = re.sub(r"\s+", " ", content).strip()
 
         # Take first paragraph or first max_length characters
-        paragraphs = content.split('\n\n')
+        paragraphs = content.split("\n\n")
         if paragraphs and len(paragraphs[0]) < max_length:
             return paragraphs[0]
 
@@ -206,9 +202,9 @@ class TextProcessor:
             return content
 
         truncated = content[:max_length]
-        last_period = truncated.rfind('.')
+        last_period = truncated.rfind(".")
         if last_period > max_length // 2:
-            return truncated[:last_period + 1]
+            return truncated[: last_period + 1]
 
         return truncated + "..."
 
@@ -226,11 +222,7 @@ class TextProcessor:
         """
         logger.info(f"Batch processing {len(file_paths)} text files")
 
-        results = {
-            "files": [],
-            "combined_content": "",
-            "total_size": 0
-        }
+        results = {"files": [], "combined_content": "", "total_size": 0}
 
         content_parts = []
 
@@ -246,7 +238,9 @@ class TextProcessor:
 
         results["combined_content"] = "\n".join(content_parts)
 
-        logger.info(f"Batch processed {len(file_paths)} files, total {results['total_size']} characters")
+        logger.info(
+            f"Batch processed {len(file_paths)} files, total {results['total_size']} characters"
+        )
 
         return results
 
@@ -256,19 +250,14 @@ class TextProcessor:
         Returns:
             Empty result dictionary
         """
-        return {
-            "content": "",
-            "summary": "",
-            "sections": [],
-            "metadata": {}
-        }
+        return {"content": "", "summary": "", "sections": [], "metadata": {}}
 
     def create_structured_context(
         self,
         user_prompt: str,
         image_summaries: Optional[str] = None,
         text_content: Optional[str] = None,
-        file_descriptions: Optional[List[str]] = None
+        file_descriptions: Optional[List[str]] = None,
     ) -> str:
         """Create a well-structured context for LLM from all inputs.
 
@@ -328,31 +317,26 @@ class TextProcessor:
         Returns:
             Dictionary of extracted requirements
         """
-        requirements = {
-            "features": [],
-            "pages": [],
-            "colors": [],
-            "fonts": []
-        }
+        requirements = {"features": [], "pages": [], "colors": [], "fonts": []}
 
         # Feature keywords
         feature_patterns = [
-            r'\b(blog|portfolio|gallery|contact\s*form|testimonials|pricing)\b',
-            r'\b(e-?commerce|shop|cart|checkout)\b',
-            r'\b(newsletter|subscription|email)\b'
+            r"\b(blog|portfolio|gallery|contact\s*form|testimonials|pricing)\b",
+            r"\b(e-?commerce|shop|cart|checkout)\b",
+            r"\b(newsletter|subscription|email)\b",
         ]
 
         # Page keywords
         page_patterns = [
-            r'\b(home|about|contact|services|products)\s*(page)?\b',
-            r'\b(landing\s*page|splash\s*page)\b'
+            r"\b(home|about|contact|services|products)\s*(page)?\b",
+            r"\b(landing\s*page|splash\s*page)\b",
         ]
 
         # Color keywords
         color_patterns = [
-            r'\b(dark|light|bright|muted)\s*(theme|color|scheme)?\b',
-            r'#[0-9a-fA-F]{3,6}\b',  # Hex colors
-            r'\b(blue|red|green|orange|purple|pink|black|white|gray|grey)\b'
+            r"\b(dark|light|bright|muted)\s*(theme|color|scheme)?\b",
+            r"#[0-9a-fA-F]{3,6}\b",  # Hex colors
+            r"\b(blue|red|green|orange|purple|pink|black|white|gray|grey)\b",
         ]
 
         text_lower = text.lower()

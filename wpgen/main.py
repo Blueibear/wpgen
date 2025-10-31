@@ -18,7 +18,6 @@ from wpgen import (
     WordPressGenerator,
     GitHubIntegration,
     setup_logger,
-    get_logger,
     get_llm_provider,
 )
 
@@ -58,42 +57,24 @@ def cli():
 @cli.command()
 @click.argument("prompt", required=False)
 @click.option(
-    "--config",
-    "-c",
-    "config_path",
-    default="config.yaml",
-    help="Path to configuration file"
+    "--config", "-c", "config_path", default="config.yaml", help="Path to configuration file"
 )
-@click.option(
-    "--output",
-    "-o",
-    default=None,
-    help="Output directory for generated theme"
-)
-@click.option(
-    "--push/--no-push",
-    default=True,
-    help="Push to GitHub after generation"
-)
+@click.option("--output", "-o", default=None, help="Output directory for generated theme")
+@click.option("--push/--no-push", default=True, help="Push to GitHub after generation")
 @click.option(
     "--repo-name",
     "-r",
     default=None,
-    help="GitHub repository name (auto-generated if not specified)"
+    help="GitHub repository name (auto-generated if not specified)",
 )
-@click.option(
-    "--interactive",
-    "-i",
-    is_flag=True,
-    help="Interactive mode - prompt for input"
-)
+@click.option("--interactive", "-i", is_flag=True, help="Interactive mode - prompt for input")
 def generate(
     prompt: Optional[str],
     config_path: str,
     output: Optional[str],
     push: bool,
     repo_name: Optional[str],
-    interactive: bool
+    interactive: bool,
 ):
     """Generate a WordPress theme from a description.
 
@@ -114,7 +95,7 @@ def generate(
             level=log_config.get("level", "INFO"),
             format_type=log_config.get("format", "text"),
             colored_console=log_config.get("colored_console", True),
-            console_output=log_config.get("console_output", True)
+            console_output=log_config.get("console_output", True),
         )
 
         logger.info("Starting WPGen theme generation")
@@ -122,10 +103,7 @@ def generate(
         # Get prompt
         if interactive or not prompt:
             click.echo("\n🎨 WPGen - WordPress Theme Generator\n")
-            prompt = click.prompt(
-                "Describe your WordPress website",
-                type=str
-            )
+            prompt = click.prompt("Describe your WordPress website", type=str)
 
         if not prompt:
             click.echo("Error: Prompt is required", err=True)
@@ -150,11 +128,7 @@ def generate(
         # Generate theme
         click.echo("🏗️  Generating WordPress theme...")
         output_dir = output or cfg.get("output", {}).get("output_dir", "output")
-        generator = WordPressGenerator(
-            llm_provider,
-            output_dir,
-            cfg.get("wordpress", {})
-        )
+        generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
         theme_dir = generator.generate(requirements)
 
         click.echo(f"✅ Theme generated successfully: {theme_dir}\n")
@@ -172,21 +146,14 @@ def generate(
                 if not repo_name:
                     repo_name = github.generate_repo_name(requirements["theme_name"])
 
-                repo_url = github.push_to_github(
-                    theme_dir,
-                    repo_name,
-                    requirements
-                )
+                repo_url = github.push_to_github(theme_dir, repo_name, requirements)
 
                 click.echo(f"✅ Pushed to GitHub: {repo_url}\n")
 
                 # Create deployment workflow if enabled
                 if cfg.get("deployment", {}).get("enabled", False):
                     click.echo("📦 Creating deployment workflow...")
-                    github.create_deployment_workflow(
-                        theme_dir,
-                        cfg.get("deployment", {})
-                    )
+                    github.create_deployment_workflow(theme_dir, cfg.get("deployment", {}))
                     click.echo("✅ Deployment workflow created\n")
 
         click.echo("🎉 Done! Your WordPress theme is ready.\n")
@@ -196,7 +163,7 @@ def generate(
         click.echo(f"  1. Review the generated theme in: {theme_dir}")
         click.echo("  2. Test the theme locally with WordPress")
         if push and github_token:
-            click.echo(f"  3. Configure deployment secrets in GitHub (if using deployment)")
+            click.echo("  3. Configure deployment secrets in GitHub (if using deployment)")
         click.echo("  4. Customize the theme as needed\n")
 
     except Exception as e:
@@ -208,11 +175,7 @@ def generate(
 
 @cli.command()
 @click.option(
-    "--config",
-    "-c",
-    "config_path",
-    default="config.yaml",
-    help="Path to configuration file"
+    "--config", "-c", "config_path", default="config.yaml", help="Path to configuration file"
 )
 def serve(config_path: str):
     """Start the web UI server.
@@ -250,23 +213,10 @@ def serve(config_path: str):
 
 @cli.command()
 @click.option(
-    "--config",
-    "-c",
-    "config_path",
-    default="config.yaml",
-    help="Path to configuration file"
+    "--config", "-c", "config_path", default="config.yaml", help="Path to configuration file"
 )
-@click.option(
-    "--share",
-    is_flag=True,
-    help="Create a public share link"
-)
-@click.option(
-    "--port",
-    "-p",
-    default=7860,
-    help="Port to run the GUI server on"
-)
+@click.option("--share", is_flag=True, help="Create a public share link")
+@click.option("--port", "-p", default=7860, help="Port to run the GUI server on")
 def gui(config_path: str, share: bool, port: int):
     """Launch the graphical user interface.
 
@@ -353,7 +303,6 @@ def test(config_path, site_url_arg, username_arg, password_arg):
     """Test WordPress REST API connection."""
     try:
         from wpgen.wordpress import WordPressAPI
-        import yaml
 
         # Load config
         config = load_config(config_path)
@@ -362,11 +311,15 @@ def test(config_path, site_url_arg, username_arg, password_arg):
         # Get credentials (CLI args override config override env)
         site_url = site_url_arg or os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
         username_val = username_arg or os.getenv("WP_USERNAME", wp_config.get("username", ""))
-        password_val = password_arg or os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+        password_val = password_arg or os.getenv(
+            "WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", ""))
+        )
 
         if not all([site_url, username_val, password_val]):
             click.echo("❌ Error: WordPress credentials not configured.")
-            click.echo("Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env or use CLI options.")
+            click.echo(
+                "Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env or use CLI options."
+            )
             sys.exit(1)
 
         click.echo(f"🔄 Testing connection to {site_url}...")
@@ -377,14 +330,14 @@ def test(config_path, site_url_arg, username_arg, password_arg):
             username=username_val,
             password=password_val,
             verify_ssl=wp_config.get("verify_ssl", True),
-            timeout=wp_config.get("timeout", 30)
+            timeout=wp_config.get("timeout", 30),
         )
 
         # Test connection
         info = wp_api.test_connection()
 
-        click.echo(f"\n✅ Connection successful!")
-        click.echo(f"\n📊 Site Information:")
+        click.echo("\n✅ Connection successful!")
+        click.echo("\n📊 Site Information:")
         click.echo(f"  Site Name: {info.get('site_name', 'N/A')}")
         click.echo(f"  Description: {info.get('site_description', 'N/A')}")
         click.echo(f"  URL: {info.get('url', 'N/A')}")
@@ -421,7 +374,9 @@ def manage(command_text, config_path):
         # Get credentials
         site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
         username = os.getenv("WP_USERNAME", wp_config.get("username", ""))
-        password = os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+        password = os.getenv(
+            "WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", ""))
+        )
 
         if not all([site_url, username, password]):
             click.echo("❌ Error: WordPress credentials not configured.")
@@ -435,7 +390,7 @@ def manage(command_text, config_path):
             username=username,
             password=password,
             verify_ssl=wp_config.get("verify_ssl", True),
-            timeout=wp_config.get("timeout", 30)
+            timeout=wp_config.get("timeout", 30),
         )
 
         # Initialize LLM provider
@@ -482,4 +437,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

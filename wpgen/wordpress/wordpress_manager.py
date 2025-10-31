@@ -5,7 +5,7 @@ commands, using an LLM to parse instructions and execute appropriate API calls.
 """
 
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from .wordpress_api import WordPressAPI
 from ..llm.base import BaseLLMProvider
@@ -18,11 +18,7 @@ logger = get_logger(__name__)
 class WordPressManager:
     """Manage WordPress site through natural language commands using LLM."""
 
-    def __init__(
-        self,
-        wordpress_api: WordPressAPI,
-        llm_provider: BaseLLMProvider
-    ):
+    def __init__(self, wordpress_api: WordPressAPI, llm_provider: BaseLLMProvider):
         """Initialize WordPress Manager.
 
         Args:
@@ -54,43 +50,39 @@ class WordPressManager:
             logger.info(f"Parsed command: {parsed_command.get('action')}")
 
             # Route to appropriate handler
-            action = parsed_command.get('action')
-            params = parsed_command.get('parameters', {})
+            action = parsed_command.get("action")
+            params = parsed_command.get("parameters", {})
 
-            if action == 'create_page':
+            if action == "create_page":
                 result = self._handle_create_page(params)
-            elif action == 'update_page':
+            elif action == "update_page":
                 result = self._handle_update_page(params)
-            elif action == 'delete_page':
+            elif action == "delete_page":
                 result = self._handle_delete_page(params)
-            elif action == 'create_post':
+            elif action == "create_post":
                 result = self._handle_create_post(params)
-            elif action == 'list_pages':
+            elif action == "list_pages":
                 result = self._handle_list_pages(params)
-            elif action == 'list_posts':
+            elif action == "list_posts":
                 result = self._handle_list_posts(params)
-            elif action == 'upload_media':
+            elif action == "upload_media":
                 result = self._handle_upload_media(params)
-            elif action == 'install_plugin':
+            elif action == "install_plugin":
                 result = self._handle_install_plugin(params)
-            elif action == 'get_site_info':
+            elif action == "get_site_info":
                 result = self._handle_get_site_info()
             else:
                 result = {
                     "success": False,
                     "error": f"Unknown action: {action}",
-                    "suggestion": "Try commands like: 'Add a contact page' or 'List all pages'"
+                    "suggestion": "Try commands like: 'Add a contact page' or 'List all pages'",
                 }
 
             return result
 
         except Exception as e:
             logger.error(f"Command execution failed: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "command": command
-            }
+            return {"success": False, "error": str(e), "command": command}
 
     def _parse_command(self, command: str) -> Dict[str, Any]:
         """Parse natural language command using LLM.
@@ -169,9 +161,18 @@ Return JSON only."""
         command_lower = command.lower()
 
         # Detect action from keywords
-        if any(word in command_lower for word in ['add', 'create', 'new']) and 'page' in command_lower:
+        if (
+            any(word in command_lower for word in ["add", "create", "new"])
+            and "page" in command_lower
+        ):
             # Extract title from command
-            title = command.replace('add', '').replace('create', '').replace('new', '').replace('page', '').strip()
+            title = (
+                command.replace("add", "")
+                .replace("create", "")
+                .replace("new", "")
+                .replace("page", "")
+                .strip()
+            )
             if not title:
                 title = "New Page"
 
@@ -180,37 +181,30 @@ Return JSON only."""
                 "parameters": {
                     "title": title.title(),
                     "content": f"<p>This is the {title} page.</p>",
-                    "status": "publish"
+                    "status": "publish",
                 },
-                "confidence": 0.7
+                "confidence": 0.7,
             }
 
-        elif any(word in command_lower for word in ['list', 'show', 'get']) and 'page' in command_lower:
-            return {
-                "action": "list_pages",
-                "parameters": {},
-                "confidence": 0.8
-            }
+        elif (
+            any(word in command_lower for word in ["list", "show", "get"])
+            and "page" in command_lower
+        ):
+            return {"action": "list_pages", "parameters": {}, "confidence": 0.8}
 
-        elif 'install' in command_lower and 'plugin' in command_lower:
+        elif "install" in command_lower and "plugin" in command_lower:
             # Try to extract plugin name
             words = command.split()
             plugin_slug = words[-1] if words else "unknown"
 
             return {
                 "action": "install_plugin",
-                "parameters": {
-                    "plugin_slug": plugin_slug.lower()
-                },
-                "confidence": 0.6
+                "parameters": {"plugin_slug": plugin_slug.lower()},
+                "confidence": 0.6,
             }
 
         else:
-            return {
-                "action": "get_site_info",
-                "parameters": {},
-                "confidence": 0.3
-            }
+            return {"action": "get_site_info", "parameters": {}, "confidence": 0.3}
 
     def _handle_create_page(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle create page action.
@@ -222,26 +216,26 @@ Return JSON only."""
             Dictionary with creation result
         """
         try:
-            title = params.get('title', 'New Page')
-            content = params.get('content', '<p>Page content goes here.</p>')
-            status = params.get('status', 'publish')
+            title = params.get("title", "New Page")
+            content = params.get("content", "<p>Page content goes here.</p>")
+            status = params.get("status", "publish")
 
             # Generate content using LLM if content is placeholder or missing
-            if not content or content == '<p>Page content goes here.</p>':
+            if not content or content == "<p>Page content goes here.</p>":
                 content = self._generate_page_content(title)
 
             result = self.api.create_page(
                 title=title,
                 content=content,
                 status=status,
-                **{k: v for k, v in params.items() if k not in ['title', 'content', 'status']}
+                **{k: v for k, v in params.items() if k not in ["title", "content", "status"]},
             )
 
             return {
                 "success": True,
                 "action": "create_page",
                 "result": result,
-                "message": f"Created page: {result.get('title')}"
+                "message": f"Created page: {result.get('title')}",
             }
 
         except Exception as e:
@@ -258,28 +252,28 @@ Return JSON only."""
             Dictionary with update result
         """
         try:
-            page_id = params.get('page_id')
+            page_id = params.get("page_id")
 
             # If page_id not provided, try to find by title
-            if not page_id and 'title' in params:
-                pages = self.api.get_pages(search=params['title'])
+            if not page_id and "title" in params:
+                pages = self.api.get_pages(search=params["title"])
                 if pages:
-                    page_id = pages[0]['id']
+                    page_id = pages[0]["id"]
 
             if not page_id:
                 return {
                     "success": False,
-                    "error": "Page not found. Provide page_id or existing title."
+                    "error": "Page not found. Provide page_id or existing title.",
                 }
 
-            update_data = {k: v for k, v in params.items() if k not in ['page_id']}
+            update_data = {k: v for k, v in params.items() if k not in ["page_id"]}
             result = self.api.update_page(page_id, **update_data)
 
             return {
                 "success": True,
                 "action": "update_page",
                 "result": result,
-                "message": f"Updated page: {result.get('title')}"
+                "message": f"Updated page: {result.get('title')}",
             }
 
         except Exception as e:
@@ -296,28 +290,25 @@ Return JSON only."""
             Dictionary with deletion result
         """
         try:
-            page_id = params.get('page_id')
+            page_id = params.get("page_id")
 
             # If page_id not provided, try to find by title
-            if not page_id and 'title' in params:
-                pages = self.api.get_pages(search=params['title'])
+            if not page_id and "title" in params:
+                pages = self.api.get_pages(search=params["title"])
                 if pages:
-                    page_id = pages[0]['id']
+                    page_id = pages[0]["id"]
 
             if not page_id:
-                return {
-                    "success": False,
-                    "error": "Page not found."
-                }
+                return {"success": False, "error": "Page not found."}
 
-            force = params.get('force', False)
+            force = params.get("force", False)
             result = self.api.delete_page(page_id, force=force)
 
             return {
                 "success": True,
                 "action": "delete_page",
                 "result": result,
-                "message": f"Deleted page ID: {page_id}"
+                "message": f"Deleted page ID: {page_id}",
             }
 
         except Exception as e:
@@ -334,26 +325,26 @@ Return JSON only."""
             Dictionary with creation result
         """
         try:
-            title = params.get('title', 'New Post')
-            content = params.get('content', '<p>Post content goes here.</p>')
-            status = params.get('status', 'publish')
+            title = params.get("title", "New Post")
+            content = params.get("content", "<p>Post content goes here.</p>")
+            status = params.get("status", "publish")
 
             # Generate content using LLM if needed
-            if not content or content == '<p>Post content goes here.</p>':
+            if not content or content == "<p>Post content goes here.</p>":
                 content = self._generate_post_content(title)
 
             result = self.api.create_post(
                 title=title,
                 content=content,
                 status=status,
-                **{k: v for k, v in params.items() if k not in ['title', 'content', 'status']}
+                **{k: v for k, v in params.items() if k not in ["title", "content", "status"]},
             )
 
             return {
                 "success": True,
                 "action": "create_post",
                 "result": result,
-                "message": f"Created post: {result.get('title')}"
+                "message": f"Created post: {result.get('title')}",
             }
 
         except Exception as e:
@@ -377,7 +368,7 @@ Return JSON only."""
                 "action": "list_pages",
                 "count": len(pages),
                 "pages": pages,
-                "message": f"Found {len(pages)} page(s)"
+                "message": f"Found {len(pages)} page(s)",
             }
 
         except Exception as e:
@@ -401,7 +392,7 @@ Return JSON only."""
                 "action": "list_posts",
                 "count": len(posts),
                 "posts": posts,
-                "message": f"Found {len(posts)} post(s)"
+                "message": f"Found {len(posts)} post(s)",
             }
 
         except Exception as e:
@@ -418,21 +409,19 @@ Return JSON only."""
             Dictionary with upload result
         """
         try:
-            file_path = params.get('file_path')
+            file_path = params.get("file_path")
             if not file_path:
                 return {"success": False, "error": "file_path required"}
 
             result = self.api.upload_media(
-                file_path=file_path,
-                title=params.get('title'),
-                alt_text=params.get('alt_text')
+                file_path=file_path, title=params.get("title"), alt_text=params.get("alt_text")
             )
 
             return {
                 "success": True,
                 "action": "upload_media",
                 "result": result,
-                "message": f"Uploaded media: {result.get('url')}"
+                "message": f"Uploaded media: {result.get('url')}",
             }
 
         except Exception as e:
@@ -449,17 +438,17 @@ Return JSON only."""
             Dictionary with installation result
         """
         try:
-            plugin_slug = params.get('plugin_slug')
+            plugin_slug = params.get("plugin_slug")
             if not plugin_slug:
                 return {"success": False, "error": "plugin_slug required"}
 
             result = self.api.install_plugin(plugin_slug)
 
             return {
-                "success": result.get('success', False),
+                "success": result.get("success", False),
                 "action": "install_plugin",
                 "result": result,
-                "message": result.get('message', f"Plugin: {plugin_slug}")
+                "message": result.get("message", f"Plugin: {plugin_slug}"),
             }
 
         except Exception as e:
@@ -481,7 +470,7 @@ Return JSON only."""
                 "action": "get_site_info",
                 "site_info": connection_info,
                 "health": health_info,
-                "message": f"Connected to: {connection_info.get('site_name')}"
+                "message": f"Connected to: {connection_info.get('site_name')}",
             }
 
         except Exception as e:

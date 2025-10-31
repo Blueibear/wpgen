@@ -4,7 +4,6 @@ This module generates complete WordPress themes based on parsed requirements.
 It creates all necessary files including style.css, functions.php, templates, etc.
 """
 
-import os
 import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -24,7 +23,7 @@ class WordPressGenerator:
         self,
         llm_provider: BaseLLMProvider,
         output_dir: str = "output",
-        config: Dict[str, Any] = None
+        config: Dict[str, Any] = None,
     ):
         """Initialize the WordPress generator.
 
@@ -39,9 +38,7 @@ class WordPressGenerator:
         logger.info(f"Initialized WordPressGenerator with output dir: {output_dir}")
 
     def generate(
-        self,
-        requirements: Dict[str, Any],
-        images: Optional[List[Dict[str, Any]]] = None
+        self, requirements: Dict[str, Any], images: Optional[List[Dict[str, Any]]] = None
     ) -> str:
         """Generate a complete WordPress theme from requirements with optional visual references.
 
@@ -61,7 +58,9 @@ class WordPressGenerator:
         # Store images for use in code generation methods
         self.design_images = images if images else None
         if self.design_images:
-            logger.info(f"Using {len(self.design_images)} design reference image(s) for visual guidance")
+            logger.info(
+                f"Using {len(self.design_images)} design reference image(s) for visual guidance"
+            )
 
         # Create theme directory
         theme_dir = self.output_dir / theme_name
@@ -138,7 +137,7 @@ Tags: {', '.join(requirements.get('features', [])[:5])}
             "theme_name": requirements["theme_name"],
             "color_scheme": requirements.get("color_scheme", "default"),
             "layout": requirements.get("layout", "full-width"),
-            "features": requirements.get("features", [])
+            "features": requirements.get("features", []),
         }
 
         description = f"""Create a complete CSS stylesheet for a WordPress theme.
@@ -156,10 +155,7 @@ Include:
         try:
             # Pass design images for visual reference (especially important for CSS styling)
             css_code = self.llm_provider.generate_code(
-                description,
-                "css",
-                context,
-                images=self.design_images
+                description, "css", context, images=self.design_images
             )
             full_css = header + css_code
 
@@ -187,7 +183,7 @@ Include:
             "features": requirements.get("features", []),
             "navigation": requirements.get("navigation", []),
             "post_types": requirements.get("post_types", []),
-            "integrations": requirements.get("integrations", [])
+            "integrations": requirements.get("integrations", []),
         }
 
         description = f"""Create a complete functions.php file for a WordPress theme.
@@ -204,10 +200,7 @@ Include:
         try:
             # Pass design images for visual reference
             php_code = self.llm_provider.generate_code(
-                description,
-                "php",
-                context,
-                images=self.design_images
+                description, "php", context, images=self.design_images
             )
 
             # Ensure PHP opening tag
@@ -233,7 +226,7 @@ Include:
 
         context = {
             "theme_name": requirements["theme_name"],
-            "layout": requirements.get("layout", "full-width")
+            "layout": requirements.get("layout", "full-width"),
         }
 
         description = """Create the main index.php template file for WordPress.
@@ -249,10 +242,7 @@ Use modern WordPress template tags and best practices."""
         try:
             # Pass design images for layout/structure reference
             php_code = self.llm_provider.generate_code(
-                description,
-                "php",
-                context,
-                images=self.design_images
+                description, "php", context, images=self.design_images
             )
 
             if not php_code.strip().startswith("<?php"):
@@ -277,7 +267,7 @@ Use modern WordPress template tags and best practices."""
 
         context = {
             "theme_name": requirements["theme_name"],
-            "navigation": requirements.get("navigation", [])
+            "navigation": requirements.get("navigation", []),
         }
 
         description = """Create header.php template for WordPress theme.
@@ -292,13 +282,12 @@ Follow WordPress coding standards."""
         try:
             # Pass design images for header layout/navigation reference
             php_code = self.llm_provider.generate_code(
-                description,
-                "php",
-                context,
-                images=self.design_images
+                description, "php", context, images=self.design_images
             )
 
-            if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith("<?php"):
+            if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith(
+                "<?php"
+            ):
                 php_code = "<?php\n" + php_code
 
             header_file = theme_dir / "header.php"
@@ -318,9 +307,7 @@ Follow WordPress coding standards."""
         """
         logger.info("Generating footer.php")
 
-        context = {
-            "theme_name": requirements["theme_name"]
-        }
+        context = {"theme_name": requirements["theme_name"]}
 
         description = """Create footer.php template for WordPress theme.
 Include:
@@ -333,10 +320,7 @@ Follow WordPress coding standards."""
         try:
             # Pass design images for footer layout reference
             php_code = self.llm_provider.generate_code(
-                description,
-                "php",
-                context,
-                images=self.design_images
+                description, "php", context, images=self.design_images
             )
 
             if not php_code.strip().startswith("<?php"):
@@ -359,9 +343,7 @@ Follow WordPress coding standards."""
         """
         logger.info("Generating sidebar.php")
 
-        context = {
-            "theme_name": requirements["theme_name"]
-        }
+        context = {"theme_name": requirements["theme_name"]}
 
         description = """Create sidebar.php template for WordPress theme.
 Include:
@@ -372,10 +354,7 @@ Include:
         try:
             # Pass design images for sidebar layout reference
             php_code = self.llm_provider.generate_code(
-                description,
-                "php",
-                context,
-                images=self.design_images
+                description, "php", context, images=self.design_images
             )
 
             if not php_code.strip().startswith("<?php"):
@@ -416,10 +395,7 @@ Include:
             try:
                 logger.info(f"Generating {template_file}")
 
-                context = {
-                    "theme_name": requirements["theme_name"],
-                    "template_type": template_file
-                }
+                context = {"theme_name": requirements["theme_name"], "template_type": template_file}
 
                 full_description = f"""Create {template_file} for WordPress theme.
 {description}. Include appropriate WordPress loop and template tags.
@@ -427,10 +403,7 @@ Follow WordPress template hierarchy and coding standards."""
 
                 # Pass design images for all template files
                 php_code = self.llm_provider.generate_code(
-                    full_description,
-                    "php",
-                    context,
-                    images=self.design_images
+                    full_description, "php", context, images=self.design_images
                 )
 
                 if not php_code.strip().startswith("<?php"):

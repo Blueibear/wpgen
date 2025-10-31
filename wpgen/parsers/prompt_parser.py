@@ -70,7 +70,7 @@ class PromptParser:
         self,
         prompt: str,
         images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Parse a prompt with multi-modal inputs (images, additional text).
 
@@ -98,15 +98,15 @@ class PromptParser:
         try:
             # Use the LLM provider's multi-modal analyze method
             requirements = self.llm_provider.analyze_prompt_multimodal(
-                prompt,
-                images=images,
-                additional_context=additional_context
+                prompt, images=images, additional_context=additional_context
             )
 
             # Validate and normalize the requirements
             requirements = self._validate_requirements(requirements)
 
-            logger.info(f"Successfully parsed multi-modal prompt into theme: {requirements['theme_name']}")
+            logger.info(
+                f"Successfully parsed multi-modal prompt into theme: {requirements['theme_name']}"
+            )
             return requirements
 
         except Exception as e:
@@ -126,13 +126,7 @@ class PromptParser:
             ValueError: If requirements are invalid
         """
         # Ensure required fields exist
-        required_fields = [
-            "theme_name",
-            "theme_display_name",
-            "description",
-            "features",
-            "pages"
-        ]
+        required_fields = ["theme_name", "theme_display_name", "description", "features", "pages"]
 
         for field in required_fields:
             if field not in requirements:
@@ -199,7 +193,11 @@ class PromptParser:
                 features["contact_form"] = True
             if "gallery" in feature_lower or "photo" in feature_lower:
                 features["gallery"] = True
-            if "shop" in feature_lower or "ecommerce" in feature_lower or "woocommerce" in feature_lower:
+            if (
+                "shop" in feature_lower
+                or "ecommerce" in feature_lower
+                or "woocommerce" in feature_lower
+            ):
                 features["ecommerce"] = True
 
         # Check custom post types
