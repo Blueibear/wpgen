@@ -84,6 +84,12 @@ The easiest way to use WPGen is through the graphical interface:
 python main.py gui
 ```
 
+Or use the module launcher:
+
+```bash
+python -m wpgen gui
+```
+
 Then open your browser to `http://localhost:7860`
 
 **Features:**
@@ -93,6 +99,21 @@ Then open your browser to `http://localhost:7860`
 - ✅ Visual file tree preview
 - ✅ One-click GitHub push
 
+#### Windows tip: bind to IPv4 explicitly
+
+Windows sometimes resolves `localhost` to IPv6. Use IPv4:
+
+```powershell
+set GRADIO_SERVER_NAME=127.0.0.1
+wpgen gui --server-name 127.0.0.1 --server-port 7860
+```
+
+**CLI flags:**
+
+- `--server-name` - Host to bind (default 0.0.0.0)
+- `--server-port` - Port to bind (default 7860)
+- `--share` - Create a Gradio public share link
+
 **Create a public share link:**
 ```bash
 python main.py gui --share
@@ -100,7 +121,14 @@ python main.py gui --share
 
 **Custom port:**
 ```bash
-python main.py gui --port 8080
+python main.py gui --server-port 8080
+```
+
+**Using environment variables:**
+```bash
+export GRADIO_SERVER_NAME=127.0.0.1
+export GRADIO_SERVER_PORT=7860
+python main.py gui
 ```
 
 📖 **See [GUI_FEATURES.md](GUI_FEATURES.md) for complete GUI documentation**

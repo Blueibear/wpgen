@@ -13,13 +13,11 @@ import click
 import yaml
 from dotenv import load_dotenv
 
-from wpgen import (
-    PromptParser,
-    WordPressGenerator,
-    GitHubIntegration,
-    setup_logger,
-    get_llm_provider,
-)
+# Import directly from submodules to avoid import-time SDK crashes
+from wpgen.parsers import PromptParser
+from wpgen.generators import WordPressGenerator
+from wpgen.github import GitHubIntegration
+from wpgen.utils import setup_logger, get_llm_provider
 
 
 # Load environment variables
@@ -216,8 +214,21 @@ def serve(config_path: str):
     "--config", "-c", "config_path", default="config.yaml", help="Path to configuration file"
 )
 @click.option("--share", is_flag=True, help="Create a public share link")
-@click.option("--port", "-p", default=7860, help="Port to run the GUI server on")
-def gui(config_path: str, share: bool, port: int):
+@click.option(
+    "--server-name",
+    default="0.0.0.0",
+    show_default=True,
+    help="Gradio host to bind (use 127.0.0.1 on Windows)",
+)
+@click.option(
+    "--server-port",
+    "-p",
+    default=7860,
+    show_default=True,
+    type=int,
+    help="Port to run the GUI server on",
+)
+def gui(config_path: str, share: bool, server_name: str, server_port: int):
     """Launch the graphical user interface.
 
     Start a Gradio-based GUI for generating WordPress themes with
@@ -226,15 +237,20 @@ def gui(config_path: str, share: bool, port: int):
     try:
         cfg = load_config(config_path)
 
+        # Env var overrides
+        server_name = os.getenv("GRADIO_SERVER_NAME", server_name)
+        server_port = int(os.getenv("GRADIO_SERVER_PORT", server_port))
+
         # Import GUI module
         from wpgen.gui import launch_gui
 
-        click.echo(f"\n🎨 Launching WPGen GUI on http://localhost:{port}\n")
+        shown_host = "localhost" if server_name in ("0.0.0.0", "::") else server_name
+        click.echo(f"\n🎨 Launching WPGen GUI on http://{shown_host}:{server_port}\n")
         if share:
             click.echo("📡 Creating public share link...\n")
         click.echo("Press CTRL+C to stop\n")
 
-        launch_gui(cfg, share=share, server_port=port)
+        launch_gui(cfg, share=share, server_name=server_name, server_port=server_port)
 
     except Exception as e:
         click.echo(f"\n❌ Error: {str(e)}\n", err=True)
