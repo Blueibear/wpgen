@@ -180,8 +180,11 @@ class GitHubIntegration:
                 logger.info("Added remote origin")
 
             # Add all files
-            repo.index.add("*")
-            logger.info("Added files to git index")
+            # Get all files in the directory recursively
+            all_files = [str(f.relative_to(theme_path)) for f in theme_path.rglob("*") if f.is_file()]
+            if all_files:
+                repo.index.add(all_files)
+            logger.info(f"Added {len(all_files)} files to git index")
 
             # Create commit
             commit_message = f"""Initial commit: {requirements['theme_display_name']}

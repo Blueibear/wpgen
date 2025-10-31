@@ -10,13 +10,12 @@ from flask import Flask, render_template, request, jsonify, send_file
 from dotenv import load_dotenv
 
 from wpgen import (
-    OpenAIProvider,
-    AnthropicProvider,
     PromptParser,
     WordPressGenerator,
     GitHubIntegration,
     setup_logger,
     get_logger,
+    get_llm_provider as get_provider,
 )
 
 
@@ -59,26 +58,9 @@ def create_app(config: dict = None):
     )
 
     def get_llm_provider():
-        """Get configured LLM provider."""
+        """Get configured LLM provider from app config."""
         cfg = app.config["WPGEN_CONFIG"]
-        provider_name = cfg.get("llm", {}).get("provider", "openai")
-
-        if provider_name == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY environment variable is required")
-            provider_config = cfg.get("llm", {}).get("openai", {})
-            return OpenAIProvider(api_key, provider_config)
-
-        elif provider_name == "anthropic":
-            api_key = os.getenv("ANTHROPIC_API_KEY")
-            if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-            provider_config = cfg.get("llm", {}).get("anthropic", {})
-            return AnthropicProvider(api_key, provider_config)
-
-        else:
-            raise ValueError(f"Unknown LLM provider: {provider_name}")
+        return get_provider(cfg)
 
     @app.route("/")
     def index():
