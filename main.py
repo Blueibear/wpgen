@@ -338,5 +338,142 @@ SSH_REMOTE_PATH=
     click.echo("  2. Run 'wpgen generate \"your description\"' to create a theme\n")
 
 
+@cli.group()
+def wordpress():
+    """WordPress site management commands."""
+    pass
+
+
+@wordpress.command()
+@click.option("--config", "-c", "config_path", default="config.yaml", help="Path to config file")
+@click.option("--site-url", "site_url_arg", help="WordPress site URL (overrides config)")
+@click.option("--username", "username_arg", help="WordPress username (overrides config)")
+@click.option("--password", "password_arg", help="WordPress password (overrides config)")
+def test(config_path, site_url_arg, username_arg, password_arg):
+    """Test WordPress REST API connection."""
+    try:
+        from wpgen.wordpress import WordPressAPI
+        import yaml
+
+        # Load config
+        config = load_config(config_path)
+        wp_config = config.get("wordpress_api", {})
+
+        # Get credentials (CLI args override config override env)
+        site_url = site_url_arg or os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
+        username_val = username_arg or os.getenv("WP_USERNAME", wp_config.get("username", ""))
+        password_val = password_arg or os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+
+        if not all([site_url, username_val, password_val]):
+            click.echo("❌ Error: WordPress credentials not configured.")
+            click.echo("Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env or use CLI options.")
+            sys.exit(1)
+
+        click.echo(f"🔄 Testing connection to {site_url}...")
+
+        # Initialize API
+        wp_api = WordPressAPI(
+            site_url=site_url,
+            username=username_val,
+            password=password_val,
+            verify_ssl=wp_config.get("verify_ssl", True),
+            timeout=wp_config.get("timeout", 30)
+        )
+
+        # Test connection
+        info = wp_api.test_connection()
+
+        click.echo(f"\n✅ Connection successful!")
+        click.echo(f"\n📊 Site Information:")
+        click.echo(f"  Site Name: {info.get('site_name', 'N/A')}")
+        click.echo(f"  Description: {info.get('site_description', 'N/A')}")
+        click.echo(f"  URL: {info.get('url', 'N/A')}")
+        click.echo(f"  User: {info.get('user', 'N/A')} (ID: {info.get('user_id', 'N/A')})")
+
+    except Exception as e:
+        click.echo(f"\n❌ Error: {str(e)}\n", err=True)
+        sys.exit(1)
+
+
+@wordpress.command()
+@click.argument("command_text")
+@click.option("--config", "-c", "config_path", default="config.yaml", help="Path to config file")
+def manage(command_text, config_path):
+    """Execute WordPress management commands using natural language.
+
+    Examples:
+      wpgen wordpress manage "Add a contact page"
+      wpgen wordpress manage "List all pages"
+      wpgen wordpress manage "Create a blog post about AI"
+    """
+    try:
+        from wpgen.wordpress import WordPressAPI, WordPressManager
+        from wpgen.utils import get_llm_provider
+
+        # Load config
+        config = load_config(config_path)
+        wp_config = config.get("wordpress_api", {})
+
+        if not wp_config.get("enable_llm_control", True):
+            click.echo("❌ LLM control is disabled in config.yaml")
+            sys.exit(1)
+
+        # Get credentials
+        site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
+        username = os.getenv("WP_USERNAME", wp_config.get("username", ""))
+        password = os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+
+        if not all([site_url, username, password]):
+            click.echo("❌ Error: WordPress credentials not configured.")
+            sys.exit(1)
+
+        click.echo(f"🤖 Processing command: {command_text}")
+
+        # Initialize WordPress API
+        wp_api = WordPressAPI(
+            site_url=site_url,
+            username=username,
+            password=password,
+            verify_ssl=wp_config.get("verify_ssl", True),
+            timeout=wp_config.get("timeout", 30)
+        )
+
+        # Initialize LLM provider
+        llm_provider = get_llm_provider(config)
+
+        # Initialize WordPress Manager
+        wp_manager = WordPressManager(wp_api, llm_provider)
+
+        # Execute command
+        result = wp_manager.execute_command(command_text)
+
+        # Display result
+        if result.get("success"):
+            click.echo(f"\n✅ {result.get('message', 'Command executed successfully')}")
+
+            # Show additional details based on action
+            if "pages" in result:
+                click.echo(f"\n📄 Pages ({result.get('count', 0)}):")
+                for page in result["pages"]:
+                    click.echo(f"  - {page.get('title')} ({page.get('link')})")
+            elif "posts" in result:
+                click.echo(f"\n📝 Posts ({result.get('count', 0)}):")
+                for post in result["posts"]:
+                    click.echo(f"  - {post.get('title')} ({post.get('link')})")
+            elif "result" in result and isinstance(result["result"], dict):
+                if "link" in result["result"]:
+                    click.echo(f"  URL: {result['result']['link']}")
+
+        else:
+            click.echo(f"\n❌ {result.get('error', 'Command failed')}")
+            if "suggestion" in result:
+                click.echo(f"💡 {result['suggestion']}")
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"\n❌ Error: {str(e)}\n", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()

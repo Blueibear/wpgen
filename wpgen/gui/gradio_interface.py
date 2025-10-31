@@ -12,6 +12,7 @@ import gradio as gr
 from ..parsers import PromptParser
 from ..generators import WordPressGenerator
 from ..github import GitHubIntegration
+from ..wordpress import WordPressAPI, WordPressManager
 from ..utils import setup_logger, get_logger, get_llm_provider, FileHandler
 from ..utils.image_analysis import ImageAnalyzer
 from ..utils.text_utils import TextProcessor
@@ -52,7 +53,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         image_files: Optional[List] = None,
         text_files: Optional[List] = None,
         push_to_github: bool = False,
-        repo_name: str = ""
+        repo_name: str = "",
+        deploy_to_wordpress: bool = False
     ) -> Tuple[str, str, str]:
         """Generate WordPress theme from inputs with enhanced multi-modal analysis.
 
@@ -62,6 +64,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             text_files: List of uploaded text files
             push_to_github: Whether to push to GitHub
             repo_name: Optional repository name
+            deploy_to_wordpress: Whether to deploy to WordPress site
 
         Returns:
             Tuple of (status_message, theme_info, file_tree)
@@ -256,6 +259,73 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     theme_info += f"\n**GitHub Repository:** [{repo_name}]({repo_url})\n"
                     yield status, theme_info, file_tree
 
+            # Deploy to WordPress if requested
+            if deploy_to_wordpress:
+                wp_config = config.get("wordpress_api", {})
+
+                if not wp_config.get("enabled", False):
+                    status += "⚠️  WordPress API not enabled in config.yaml\n"
+                    yield status, theme_info, file_tree
+                else:
+                    # Get WordPress credentials from environment
+                    wp_site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
+                    wp_username = os.getenv("WP_USERNAME", wp_config.get("username", ""))
+                    wp_password = os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+
+                    if not all([wp_site_url, wp_username, wp_password]):
+                        status += "⚠️  WordPress credentials not configured. Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env\n"
+                        yield status, theme_info, file_tree
+                    else:
+                        try:
+                            status += "🚀 Deploying to WordPress site...\n"
+                            yield status, theme_info, file_tree
+
+                            # Initialize WordPress API
+                            wp_api = WordPressAPI(
+                                site_url=wp_site_url,
+                                username=wp_username,
+                                password=wp_password,
+                                verify_ssl=wp_config.get("verify_ssl", True),
+                                timeout=wp_config.get("timeout", 30)
+                            )
+
+                            # Test connection
+                            connection_info = wp_api.test_connection()
+                            status += f"  ✓ Connected to: {connection_info.get('site_name', 'WordPress Site')}\n"
+                            yield status, theme_info, file_tree
+
+                            # Deploy theme
+                            deploy_result = wp_api.deploy_theme(theme_dir)
+
+                            if deploy_result.get("success"):
+                                status += f"  ✓ Theme prepared: {deploy_result.get('zip_path')}\n"
+
+                                # Add deployment instructions to theme info
+                                theme_info += f"\n## 📦 WordPress Deployment\n\n"
+                                theme_info += f"**Status:** Theme packaged successfully\n\n"
+                                theme_info += f"**Deployment Instructions:**\n"
+                                for instruction in deploy_result.get("instructions", []):
+                                    theme_info += f"- {instruction}\n"
+
+                                if deploy_result.get("activated"):
+                                    status += f"  ✓ Theme activated on WordPress site!\n"
+                                    theme_info += f"\n**Theme Status:** Activated ✅\n"
+                                else:
+                                    status += f"  ℹ️  Manual activation required (see instructions)\n"
+
+                                # Add site URL to theme info
+                                theme_info += f"\n**WordPress Site:** [{wp_site_url}]({wp_site_url})\n"
+
+                                yield status, theme_info, file_tree
+                            else:
+                                status += f"  ⚠️  Deployment prepared (manual upload required)\n"
+                                yield status, theme_info, file_tree
+
+                        except Exception as e:
+                            logger.error(f"WordPress deployment failed: {str(e)}")
+                            status += f"  ❌ WordPress deployment failed: {str(e)}\n"
+                            yield status, theme_info, file_tree
+
             status += "\n✅ **Theme generation complete!**\n"
             yield status, theme_info, file_tree
 
@@ -346,6 +416,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         info="Automatically create and push to a GitHub repository"
                     )
 
+                    deploy_wp_checkbox = gr.Checkbox(
+                        label="Deploy to WordPress",
+                        value=False,
+                        info="Deploy theme to your WordPress site via REST API"
+                    )
+
                 repo_input = gr.Textbox(
                     label="Repository Name (Optional)",
                     placeholder="Leave empty for auto-generated name",
@@ -405,7 +481,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 image_upload,
                 text_upload,
                 push_checkbox,
-                repo_input
+                repo_input,
+                deploy_wp_checkbox
             ],
             outputs=[
                 status_output,
