@@ -25,7 +25,7 @@ python-json-logger==2.0.7
 
 # GUI interface
 gradio>=4.44,<5
-huggingface_hub<0.26
+huggingface_hub>=0.19
 
 # File handling
 PyPDF2==3.0.1
