@@ -36,7 +36,7 @@ gradio==5.31.0
 PyPDF2==3.0.1
 
 # Image processing and analysis
-Pillow==10.2.0
+Pillow==10.3.0
 
 # OCR capabilities (requires tesseract-ocr system package)
 # Install tesseract:
