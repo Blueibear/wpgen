@@ -46,13 +46,15 @@ source venv/bin/activate
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
+
+This installs wpgen in editable mode with all dependencies.
 
 ### 4. Initialize configuration
 
 ```bash
-python main.py init
+wpgen init
 ```
 
 This creates a `.env` file. Edit it and add your API keys:
@@ -81,7 +83,7 @@ Edit `config.yaml` to customize settings:
 The easiest way to use WPGen is through the graphical interface:
 
 ```bash
-python main.py gui
+wpgen gui
 ```
 
 Or use the module launcher:
@@ -116,19 +118,19 @@ wpgen gui --server-name 127.0.0.1 --server-port 7860
 
 **Create a public share link:**
 ```bash
-python main.py gui --share
+wpgen gui --share
 ```
 
 **Custom port:**
 ```bash
-python main.py gui --server-port 8080
+wpgen gui --server-port 8080
 ```
 
 **Using environment variables:**
 ```bash
 export GRADIO_SERVER_NAME=127.0.0.1
 export GRADIO_SERVER_PORT=7860
-python main.py gui
+wpgen gui
 ```
 
 📖 **See [GUI_FEATURES.md](GUI_FEATURES.md) for complete GUI documentation**
@@ -140,31 +142,31 @@ python main.py gui
 #### Generate a theme
 
 ```bash
-python main.py generate "Create a dark-themed photography portfolio site with a blog and contact form"
+wpgen generate "Create a dark-themed photography portfolio site with a blog and contact form"
 ```
 
 #### Interactive mode
 
 ```bash
-python main.py generate --interactive
+wpgen generate --interactive
 ```
 
 #### Generate without pushing to GitHub
 
 ```bash
-python main.py generate "Your description" --no-push
+wpgen generate "Your description" --no-push
 ```
 
 #### Specify custom repository name
 
 ```bash
-python main.py generate "Your description" --repo-name my-custom-theme
+wpgen generate "Your description" --repo-name my-custom-theme
 ```
 
 #### Use custom config file
 
 ```bash
-python main.py generate "Your description" --config my-config.yaml
+wpgen generate "Your description" --config my-config.yaml
 ```
 
 ### Web Interface
@@ -172,7 +174,7 @@ python main.py generate "Your description" --config my-config.yaml
 #### Start the web server
 
 ```bash
-python main.py serve
+wpgen serve
 ```
 
 Then open your browser to `http://localhost:5000`
@@ -438,7 +440,7 @@ Contributions are welcome! Please:
 ### API Key Issues
 
 **Error: "API key is required"**
-- Make sure you've created a `.env` file (run `python main.py init`)
+- Make sure you've created a `.env` file (run `wpgen init`)
 - Verify your API key is correctly set in `.env`
 - Check that you're using the correct provider (OpenAI or Anthropic)
 
@@ -462,7 +464,6 @@ Contributions are welcome! Please:
 **Error: "Address already in use"**
 - Another process is using port 5000
 - Change the port in `config.yaml` under `web.port`
-- Or use: `python main.py serve --port 8000`
 
 ## Logging
 
