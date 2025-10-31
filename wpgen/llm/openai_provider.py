@@ -290,3 +290,61 @@ Return ONLY valid JSON, no other text."""
             logger.error(f"Failed to analyze multi-modal prompt: {str(e)}")
             # Fallback to text-only analysis
             return super().analyze_prompt_multimodal(prompt, images, additional_context)
+
+    def analyze_image(
+        self,
+        image_data: Dict[str, Any],
+        prompt: str
+    ) -> Dict[str, Any]:
+        """Analyze a single image with GPT-4 Vision capabilities.
+
+        Args:
+            image_data: Dictionary with 'data' (base64), 'mime_type', 'name'
+            prompt: Question or instruction for analyzing the image
+
+        Returns:
+            Analysis results containing the LLM's response
+
+        Raises:
+            Exception: If vision analysis fails
+        """
+        try:
+            logger.debug(f"Analyzing image '{image_data.get('name', 'unknown')}' with GPT-4 Vision")
+
+            # Build multi-modal content with image and prompt
+            content = [
+                {
+                    "type": "text",
+                    "text": prompt
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{image_data.get('mime_type', 'image/jpeg')};base64,{image_data['data']}"
+                    }
+                }
+            ]
+
+            # Use vision-capable model
+            vision_model = "gpt-4-vision-preview"
+
+            # Call OpenAI vision API
+            response = self.client.chat.completions.create(
+                model=vision_model,
+                messages=[{"role": "user", "content": content}],
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+            )
+
+            result = response.choices[0].message.content
+            logger.info(f"Successfully analyzed image with GPT-4 Vision")
+
+            return {
+                "analysis": result,
+                "image_name": image_data.get("name", "unknown"),
+                "provider": "openai"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to analyze image with GPT-4 Vision: {str(e)}")
+            raise
