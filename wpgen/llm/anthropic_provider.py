@@ -5,7 +5,6 @@ Implements the LLM provider interface using Anthropic's Claude API.
 
 import json
 from typing import Dict, Any, Optional, List
-from anthropic import Anthropic
 
 from .base import BaseLLMProvider
 from ..utils.logger import get_logger
@@ -25,6 +24,9 @@ class AnthropicProvider(BaseLLMProvider):
             config: Anthropic-specific configuration
         """
         super().__init__(api_key, config)
+        # Lazy import to avoid import-time hard dependency
+        from anthropic import Anthropic
+
         self.client = Anthropic(api_key=api_key)
         logger.info(f"Initialized Anthropic provider with model: {self.model}")
 

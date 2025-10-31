@@ -3,8 +3,8 @@ Flask==3.0.0
 Werkzeug==3.0.6
 
 # LLM APIs
-anthropic==0.18.1
-openai==1.12.0
+anthropic>=0.34,<1
+openai>=1.30,<2
 
 # Git operations
 GitPython==3.1.41
@@ -24,8 +24,8 @@ colorama==0.4.6
 python-json-logger==2.0.7
 
 # GUI interface
-gradio==4.16.0
-huggingface_hub==0.19.4
+gradio>=4.44,<5
+huggingface_hub<0.26
 
 # File handling
 PyPDF2==3.0.1

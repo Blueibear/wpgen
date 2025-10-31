@@ -5,7 +5,6 @@ Implements the LLM provider interface using OpenAI's API.
 
 import json
 from typing import Dict, Any, Optional, List
-from openai import OpenAI
 
 from .base import BaseLLMProvider
 from ..utils.logger import get_logger
@@ -25,6 +24,9 @@ class OpenAIProvider(BaseLLMProvider):
             config: OpenAI-specific configuration
         """
         super().__init__(api_key, config)
+        # Lazy import to avoid import-time hard dependency
+        from openai import OpenAI
+
         self.client = OpenAI(api_key=api_key)
         logger.info(f"Initialized OpenAI provider with model: {self.model}")
 
