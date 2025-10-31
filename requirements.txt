@@ -30,7 +30,7 @@ python-dateutil==2.8.2
 typing-extensions==4.9.0
 
 # GUI interface
-gradio==4.16.0
+gradio==5.31.0
 
 # File handling
 PyPDF2==3.0.1
