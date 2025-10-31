@@ -1,9 +1,3 @@
-"""Gradio-based GUI interface for WPGen.
-
-Provides a user-friendly graphical interface for generating WordPress themes
-with support for text prompts, image uploads, and document uploads.
-"""
-
 import gradio as gr
 import os
 from pathlib import Path
@@ -17,20 +11,9 @@ from ..utils import setup_logger, get_logger, get_llm_provider, FileHandler
 from ..utils.image_analysis import ImageAnalyzer
 from ..utils.text_utils import TextProcessor
 
-
 logger = get_logger(__name__)
 
-
 def create_gradio_interface(config: dict) -> gr.Blocks:
-    """Create and configure the Gradio interface.
-
-    Args:
-        config: Configuration dictionary from config.yaml
-
-    Returns:
-        Configured Gradio Blocks interface
-    """
-    # Setup logging
     log_config = config.get("logging", {})
     setup_logger(
         "wpgen.gui",
@@ -43,9 +26,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     logger.info("Creating Gradio interface")
 
-    # Initialize file handler, image analyzer, and text processor
     file_handler = FileHandler()
-    image_analyzer = None  # Initialized later with LLM provider
+    image_analyzer = None
     text_processor = TextProcessor()
 
     def generate_theme(
@@ -56,50 +38,32 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
     ) -> Tuple[str, str, str]:
-        """Generate WordPress theme from inputs with enhanced multi-modal analysis.
-
-        Args:
-            prompt: Natural language description
-            image_files: List of uploaded image files
-            text_files: List of uploaded text files
-            push_to_github: Whether to push to GitHub
-            repo_name: Optional repository name
-            deploy_to_wordpress: Whether to deploy to WordPress site
-
-        Returns:
-            Tuple of (status_message, theme_info, file_tree)
-        """
         try:
-            # Validate inputs
             if not prompt or not prompt.strip():
                 return "❌ Error: Please provide a description of your website.", "", ""
 
-            status = "🔄 Starting theme generation...\n"
+            status = "🔀 Starting theme generation...\n"
             yield status, "", ""
 
-            # Initialize LLM provider early (needed for image analysis)
             status += "🤖 Initializing AI provider...\n"
             yield status, "", ""
 
             llm_provider = get_llm_provider(config)
-
-            # Initialize image analyzer with LLM provider for vision analysis
             nonlocal image_analyzer
             image_analyzer = ImageAnalyzer(llm_provider)
 
-            # Process uploaded files
             status += "📁 Processing uploaded files...\n"
             yield status, "", ""
 
-            image_paths = [f.name for f in image_files] if image_files else []
-            text_paths = [f.name for f in text_files] if text_files else []
+            # Gradio with type="filepath" returns a list of string paths
+            image_paths = image_files or []
+            text_paths = text_files or []
 
             processed_files = file_handler.process_uploads(
                 image_files=image_paths if image_paths else None,
                 text_files=text_paths if text_paths else None,
             )
 
-            # Enhanced image analysis with vision capabilities
             image_summaries = None
             if processed_files["images"]:
                 status += (
@@ -108,25 +72,21 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 )
                 yield status, "", ""
 
-                # Perform detailed image analysis for each image
                 image_analyses = image_analyzer.batch_analyze_images(
                     processed_files["images"], use_llm=True  # Use LLM vision for detailed analysis
                 )
 
-                # Generate comprehensive summary from all analyses
                 image_summaries = image_analyzer.generate_image_summary(image_analyses)
 
                 status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
                 yield status, "", ""
 
-            # Enhanced text processing with structured extraction
             text_content = None
             file_descriptions = []
             if text_paths:
                 status += f"📄 Processing {len(text_paths)} content file(s)...\n"
                 yield status, "", ""
 
-                # Batch process text files with structured extraction
                 batch_result = text_processor.batch_process_files(text_paths)
                 text_content = batch_result["combined_content"]
 
@@ -143,12 +103,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 status += f"  ✓ Extracted {batch_result['total_size']} characters from documents\n"
                 yield status, "", ""
 
-            # Create structured context for LLM with formatted sections
             if image_summaries or text_content:
                 status += "📋 Creating structured context from all inputs...\n"
                 yield status, "", ""
 
-                # Use TextProcessor to create well-structured context
                 structured_context = text_processor.create_structured_context(
                     user_prompt=prompt,
                     image_summaries=image_summaries,
@@ -161,16 +119,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             else:
                 structured_context = None
 
-            # Parse prompt with enhanced multi-modal inputs
-            status += "🔍 Analyzing requirements with AI"
-            if image_summaries:
-                status += " (including visual design insights)"
-            status += "...\n"
+            status += "🔍 Analyzing requirements with AI...\n"
             yield status, "", ""
 
             parser = PromptParser(llm_provider)
 
-            # Pass structured context to parser
             if structured_context:
                 # Use the structured context as additional_context
                 requirements = parser.parse_multimodal(
@@ -208,7 +161,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status += f"  ✓ Theme generated: {theme_dir}\n"
             yield status, "", ""
 
-            # Build theme info
             theme_info = f"""## Theme Information
 
 **Name:** {requirements['theme_display_name']}
@@ -226,7 +178,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             if "design_notes" in requirements and requirements["design_notes"]:
                 theme_info += f"\n**Design Notes:** {requirements['design_notes']}\n"
 
-            # Generate file tree
             file_tree = generate_file_tree(Path(theme_dir))
 
             # Push to GitHub if requested
@@ -313,7 +264,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                                     theme_info += "\n**Theme Status:** Activated ✅\n"
                                 else:
                                     status += (
-                                        "  ℹ️  Manual activation required " "(see instructions)\n"
+                                        "  ℹ️  Manual activation required (see instructions)\n"
                                     )
 
                                 # Add site URL to theme info
@@ -355,7 +306,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         """
         if current_depth >= max_depth:
             return ""
-
         tree = ""
         try:
             items = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name))
@@ -363,7 +313,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 is_last = i == len(items) - 1
                 current_prefix = "└── " if is_last else "├── "
                 tree += f"{prefix}{current_prefix}{item.name}\n"
-
                 if item.is_dir() and current_depth < max_depth - 1:
                     extension = "    " if is_last else "│   "
                     tree += generate_file_tree(
@@ -371,7 +320,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     )
         except PermissionError:
             pass
-
         return tree
 
     # Create Gradio interface
@@ -409,9 +357,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 gr.Markdown(
                     "Upload images (.png, .jpg) to guide the theme's visual design."
                 )
-
                 image_upload = gr.File(
-                    label="Design Mockups / Screenshots",
+                    label="Images",
                     file_types=["image"],
                     file_count="multiple",
                     type="filepath",
@@ -421,9 +368,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 gr.Markdown(
                     "Upload text files (.txt, .md, .pdf) with site content or requirements."
                 )
-
                 text_upload = gr.File(
-                    label="Content Documents",
+                    label="Documents",
                     file_types=[".txt", ".md", ".pdf"],
                     file_count="multiple",
                     type="filepath",
@@ -461,17 +407,14 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
             with gr.Column(scale=2):
                 gr.Markdown("### 📊 Generation Status")
-
                 status_output = gr.Textbox(
                     label="Status", lines=15, max_lines=20, interactive=False
                 )
 
                 gr.Markdown("### ℹ️ Theme Information")
-
                 theme_info_output = gr.Markdown()
 
                 gr.Markdown("### 📁 Generated Files")
-
                 file_tree_output = gr.Code(
                     label="File Structure", lines=15
                 )
@@ -509,7 +452,6 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             outputs=[status_output, theme_info_output, file_tree_output],
         )
 
-    logger.info("Gradio interface created successfully")
     return interface
 
 
@@ -528,9 +470,8 @@ def launch_gui(
         Gradio app instance
     """
     interface = create_gradio_interface(config)
-
     logger.info(f"Launching Gradio interface on {server_name}:{server_port}")
-
     interface.launch(share=share, server_name=server_name, server_port=server_port, show_error=True)
-
     return interface
+
+
