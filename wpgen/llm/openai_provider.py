@@ -69,7 +69,7 @@ class OpenAIProvider(BaseLLMProvider):
         description: str,
         file_type: str,
         context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None
+        images: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """Generate code using OpenAI with optional visual references.
 
@@ -87,10 +87,12 @@ class OpenAIProvider(BaseLLMProvider):
         """
         context = context or {}
 
-        system_prompt = f"""You are an expert WordPress developer. Generate clean,
-        well-documented, and production-ready {file_type.upper()} code. Follow WordPress
-        coding standards and best practices. Only output the code without any explanations
-        or markdown formatting."""
+        system_prompt = (
+            "You are an expert WordPress developer. Generate clean,\n"
+            f"well-documented, and production-ready {file_type.upper()} code. Follow WordPress\n"
+            "coding standards and best practices. Only output the code without any explanations\n"
+            "or markdown formatting."
+        )
 
         # Build prompt text
         prompt_text = f"""Generate {file_type.upper()} code for: {description}
@@ -107,10 +109,13 @@ Requirements:
 
         # Add image guidance if images provided
         if images and len(images) > 0:
-            prompt_text += f"""
-- Match the visual design from the {len(images)} reference image(s) provided
-- Extract colors, typography, spacing, and layout patterns from the design mockups
-- Ensure the generated code accurately reflects the visual style shown in the images"""
+            prompt_text += (
+                f"\n- Match the visual design from the {len(images)} reference image(s) provided"
+                "\n- Extract colors, typography, spacing,"
+                " and layout patterns from the design mockups"
+                "\n- Ensure the generated code accurately reflects the visual style"
+                " shown in the images"
+            )
 
         prompt_text += "\n\nOutput only the code, no explanations."
 
@@ -120,21 +125,21 @@ Requirements:
                 logger.debug(f"Generating {file_type} code with {len(images)} visual reference(s)")
 
                 # Build multi-modal content with images
-                content = [
-                    {
-                        "type": "text",
-                        "text": prompt_text
-                    }
-                ]
+                content = [{"type": "text", "text": prompt_text}]
 
                 # Add all images for GPT-4 Vision to analyze
                 for idx, image in enumerate(images):
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": (
+                                    f"data:{image.get('mime_type', 'image/jpeg')};base64,"
+                                    f"{image['data']}"
+                                )
+                            },
                         }
-                    })
+                    )
 
                 # Use vision-capable model
                 vision_model = "gpt-4-vision-preview"
@@ -144,7 +149,7 @@ Requirements:
                     model=vision_model,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": content}
+                        {"role": "user", "content": content},
                     ],
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
@@ -183,23 +188,30 @@ Requirements:
         Extract key information from user descriptions and return a structured JSON object.
         Be specific and infer reasonable defaults when information is not explicit."""
 
-        analysis_prompt = f"""Analyze this WordPress website description and extract the following information:
-
-Description: "{prompt}"
-
-Return a JSON object with these fields:
-- theme_name: A short, kebab-case name for the theme (e.g., "dark-portfolio")
-- theme_display_name: A human-readable name (e.g., "Dark Portfolio")
-- description: A one-sentence theme description
-- color_scheme: Primary color scheme (e.g., "dark", "light", "blue", "corporate")
-- features: Array of features to implement (e.g., ["blog", "contact-form", "portfolio"])
-- pages: Array of page templates needed (e.g., ["home", "about", "contact", "portfolio"])
-- layout: Layout type (e.g., "full-width", "boxed", "sidebar")
-- post_types: Custom post types needed (e.g., ["portfolio", "testimonials"])
-- navigation: Navigation requirements (e.g., "header-menu", "footer-menu", "mobile-menu")
-- integrations: External integrations (e.g., ["contact-form-7", "woocommerce"])
-
-Return ONLY valid JSON, no other text."""
+        analysis_prompt = (
+            "Analyze this WordPress website description and extract the following information:\n\n"
+            f'Description: "{prompt}"\n\n'
+            "Return a JSON object with these fields:\n"
+            "- theme_name: A short, kebab-case name for the theme "
+            '(e.g., "dark-portfolio")\n'
+            "- theme_display_name: A human-readable name "
+            '(e.g., "Dark Portfolio")\n'
+            "- description: A one-sentence theme description\n"
+            "- color_scheme: Primary color scheme "
+            '(e.g., "dark", "light", "blue", "corporate")\n'
+            "- features: Array of features to implement "
+            '(e.g., ["blog", "contact-form", "portfolio"])\n'
+            "- pages: Array of page templates needed "
+            '(e.g., ["home", "about", "contact", "portfolio"])\n'
+            '- layout: Layout type (e.g., "full-width", "boxed", "sidebar")\n'
+            "- post_types: Custom post types needed "
+            '(e.g., ["portfolio", "testimonials"])\n'
+            "- navigation: Navigation requirements "
+            '(e.g., "header-menu", "footer-menu", "mobile-menu")\n'
+            "- integrations: External integrations "
+            '(e.g., ["contact-form-7", "woocommerce"])\n\n'
+            "Return ONLY valid JSON, no other text."
+        )
 
         try:
             response = self.generate(analysis_prompt, system_prompt)
@@ -227,7 +239,7 @@ Return ONLY valid JSON, no other text."""
                 "layout": "full-width",
                 "post_types": [],
                 "navigation": ["header-menu"],
-                "integrations": []
+                "integrations": [],
             }
         except Exception as e:
             logger.error(f"Failed to analyze prompt: {str(e)}")
@@ -237,7 +249,7 @@ Return ONLY valid JSON, no other text."""
         self,
         prompt: str,
         images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Analyze user prompt with multi-modal inputs (images, additional text).
 
@@ -260,30 +272,35 @@ Return ONLY valid JSON, no other text."""
         content = []
 
         # Add text prompt
-        text_content = f"""Analyze this WordPress website description and extract the following information:
-
-Description: "{prompt}"
-"""
+        text_content = (
+            "Analyze this WordPress website description and extract the following information:\n\n"
+            f'Description: "{prompt}"\n\n'
+        )
 
         if additional_context:
             text_content += f"\n\nAdditional Context from uploaded files:\n{additional_context}\n"
 
         # Add images if provided (GPT-4 Vision supports images)
         if images and len(images) > 0:
-            text_content += f"\n\nDesign reference images ({len(images)} provided): Analyze these images for style, layout, color scheme, and design patterns.\n"
+            text_content += (
+                f"\n\nDesign reference images ({len(images)} provided): "
+                "Analyze these images for style, layout, color scheme, and design patterns.\n"
+            )
 
-            content.append({
-                "type": "text",
-                "text": text_content
-            })
+            content.append({"type": "text", "text": text_content})
 
             for idx, image in enumerate(images):
-                content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": (
+                                f"data:{image.get('mime_type', 'image/jpeg')};base64,"
+                                f"{image['data']}"
+                            )
+                        },
                     }
-                })
+                )
 
         text_content += """
 Return a JSON object with these fields:
@@ -305,7 +322,9 @@ Return ONLY valid JSON, no other text."""
             content.append({"type": "text", "text": text_content})
 
         try:
-            logger.debug(f"Sending multi-modal request to OpenAI (images: {len(images) if images else 0})")
+            logger.debug(
+                f"Sending multi-modal request to OpenAI (images: {len(images) if images else 0})"
+            )
 
             # Use vision model if images are provided
             model = "gpt-4-vision-preview" if images else self.model
@@ -314,7 +333,7 @@ Return ONLY valid JSON, no other text."""
                 model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": content}
+                    {"role": "user", "content": content},
                 ],
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
@@ -329,7 +348,9 @@ Return ONLY valid JSON, no other text."""
                 result_text = "\n".join(lines[1:-1]) if len(lines) > 2 else result_text
 
             result = json.loads(result_text)
-            logger.info(f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}")
+            logger.info(
+                f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}"
+            )
             return result
 
         except json.JSONDecodeError as e:
@@ -342,11 +363,7 @@ Return ONLY valid JSON, no other text."""
             # Fallback to text-only analysis
             return super().analyze_prompt_multimodal(prompt, images, additional_context)
 
-    def analyze_image(
-        self,
-        image_data: Dict[str, Any],
-        prompt: str
-    ) -> Dict[str, Any]:
+    def analyze_image(self, image_data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
         """Analyze a single image with GPT-4 Vision capabilities.
 
         Args:
@@ -364,16 +381,16 @@ Return ONLY valid JSON, no other text."""
 
             # Build multi-modal content with image and prompt
             content = [
-                {
-                    "type": "text",
-                    "text": prompt
-                },
+                {"type": "text", "text": prompt},
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:{image_data.get('mime_type', 'image/jpeg')};base64,{image_data['data']}"
-                    }
-                }
+                        "url": (
+                            f"data:{image_data.get('mime_type', 'image/jpeg')};base64,"
+                            f"{image_data['data']}"
+                        )
+                    },
+                },
             ]
 
             # Use vision-capable model
@@ -388,12 +405,12 @@ Return ONLY valid JSON, no other text."""
             )
 
             result = response.choices[0].message.content
-            logger.info(f"Successfully analyzed image with GPT-4 Vision")
+            logger.info("Successfully analyzed image with GPT-4 Vision")
 
             return {
                 "analysis": result,
                 "image_name": image_data.get("name", "unknown"),
-                "provider": "openai"
+                "provider": "openai",
             }
 
         except Exception as e:

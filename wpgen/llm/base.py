@@ -45,7 +45,7 @@ class BaseLLMProvider(ABC):
         description: str,
         file_type: str,
         context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None
+        images: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """Generate code based on description and type with optional visual references.
 
@@ -85,11 +85,7 @@ class BaseLLMProvider(ABC):
         """
         pass
 
-    def analyze_image(
-        self,
-        image_data: Dict[str, Any],
-        prompt: str
-    ) -> Dict[str, Any]:
+    def analyze_image(self, image_data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
         """Analyze a single image with vision capabilities.
 
         Args:
@@ -108,7 +104,7 @@ class BaseLLMProvider(ABC):
         self,
         prompt: str,
         images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Analyze user prompt with multi-modal inputs (images, additional text).
 

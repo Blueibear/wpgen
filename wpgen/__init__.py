@@ -18,7 +18,7 @@ from .utils import (
     get_llm_provider,
     FileHandler,
     ImageAnalyzer,
-    TextProcessor
+    TextProcessor,
 )
 
 __all__ = [
