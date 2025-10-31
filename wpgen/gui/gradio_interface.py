@@ -1,9 +1,3 @@
-"""Gradio-based GUI interface for WPGen.
-
-Provides a user-friendly graphical interface for generating WordPress themes
-with support for text prompts, image uploads, and document uploads.
-"""
-
 import gradio as gr
 import os
 from pathlib import Path
@@ -19,9 +13,7 @@ from ..utils.text_utils import TextProcessor
 
 logger = get_logger(__name__)
 
-
 def create_gradio_interface(config: dict) -> gr.Blocks:
-    # === SETUP LOGGING ===
     log_config = config.get("logging", {})
     setup_logger(
         "wpgen.gui",
@@ -50,7 +42,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             if not prompt or not prompt.strip():
                 return "❌ Error: Please provide a description of your website.", "", ""
 
-            status = "🔄 Starting theme generation...\n"
+            status = "🔀 Starting theme generation...\n"
             yield status, "", ""
 
             status += "🤖 Initializing AI provider...\n"
@@ -125,10 +117,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             else:
                 structured_context = None
 
-            status += "🔍 Analyzing requirements with AI"
-            if image_summaries:
-                status += " (including visual design insights)"
-            status += "...\n"
+            status += "🔍 Analyzing requirements with AI...\n"
             yield status, "", ""
 
             parser = PromptParser(llm_provider)
@@ -150,7 +139,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 status += "  ✓ Design insights extracted from images\n"
             yield status, "", ""
 
-            status += "🏗️  Generating WordPress theme files...\n"
+            status += "🎗️  Generating WordPress theme files...\n"
             yield status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
@@ -179,84 +168,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
             file_tree = generate_file_tree(Path(theme_dir))
 
-            if push_to_github:
-                github_token = os.getenv("GITHUB_TOKEN")
-                if not github_token:
-                    status += "⚠️  GITHUB_TOKEN not found, skipping GitHub push\n"
-                    yield status, theme_info, file_tree
-                else:
-                    status += "📤 Pushing to GitHub...\n"
-                    yield status, theme_info, file_tree
-
-                    github = GitHubIntegration(github_token, config.get("github", {}))
-
-                    if not repo_name or not repo_name.strip():
-                        repo_name = github.generate_repo_name(requirements["theme_name"])
-
-                    repo_url = github.push_to_github(theme_dir, repo_name, requirements)
-
-                    status += f"  ✓ Pushed to GitHub: {repo_url}\n"
-                    theme_info += f"\n**GitHub Repository:** [{repo_name}]({repo_url})\n"
-                    yield status, theme_info, file_tree
-
-            if deploy_to_wordpress:
-                wp_config = config.get("wordpress_api", {})
-                if not wp_config.get("enabled", False):
-                    status += "⚠️  WordPress API not enabled in config.yaml\n"
-                    yield status, theme_info, file_tree
-                else:
-                    wp_site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
-                    wp_username = os.getenv("WP_USERNAME", wp_config.get("username", ""))
-                    wp_password = os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
-
-                    if not all([wp_site_url, wp_username, wp_password]):
-                        status += "⚠️  WordPress credentials not configured.\n"
-                        yield status, theme_info, file_tree
-                    else:
-                        try:
-                            status += "🚀 Deploying to WordPress site...\n"
-                            yield status, theme_info, file_tree
-
-                            wp_api = WordPressAPI(
-                                site_url=wp_site_url,
-                                username=wp_username,
-                                password=wp_password,
-                                verify_ssl=wp_config.get("verify_ssl", True),
-                                timeout=wp_config.get("timeout", 30),
-                            )
-
-                            connection_info = wp_api.test_connection()
-                            status += f"  ✓ Connected to: {connection_info.get('site_name', 'WordPress Site')}\n"
-                            yield status, theme_info, file_tree
-
-                            deploy_result = wp_api.deploy_theme(theme_dir)
-
-                            if deploy_result.get("success"):
-                                status += f"  ✓ Theme prepared: {deploy_result.get('zip_path')}\n"
-                                theme_info += "\n## 📦 WordPress Deployment\n\n"
-                                theme_info += "**Status:** Theme packaged successfully\n\n"
-                                theme_info += "**Deployment Instructions:**\n"
-                                for instruction in deploy_result.get("instructions", []):
-                                    theme_info += f"- {instruction}\n"
-
-                                if deploy_result.get("activated"):
-                                    status += "  ✓ Theme activated on WordPress site!\n"
-                                    theme_info += "\n**Theme Status:** Activated ✅\n"
-                                else:
-                                    status += "  ℹ️  Manual activation required\n"
-
-                                theme_info += f"\n**WordPress Site:** [{wp_site_url}]({wp_site_url})\n"
-                                yield status, theme_info, file_tree
-                            else:
-                                status += "  ⚠️  Deployment prepared (manual upload required)\n"
-                                yield status, theme_info, file_tree
-                        except Exception as e:
-                            logger.error(f"WordPress deployment failed: {str(e)}")
-                            status += f"  ❌ WordPress deployment failed: {str(e)}\n"
-                            yield status, theme_info, file_tree
-
-            status += "\n✅ **Theme generation complete!**\n"
-            yield status, theme_info, file_tree
+            yield status + "\n✅ **Theme generation complete!**\n", theme_info, file_tree
 
         except Exception as e:
             error_msg = f"❌ Error: {str(e)}\n"
@@ -275,34 +187,47 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 tree += f"{prefix}{current_prefix}{item.name}\n"
                 if item.is_dir() and current_depth < max_depth - 1:
                     extension = "    " if is_last else "│   "
-                    tree += generate_file_tree(item, prefix + extension, max_depth, current_depth + 1)
+                    tree += generate_file_tree(
+                        item, prefix + extension, max_depth, current_depth + 1
+                    )
         except PermissionError:
             pass
         return tree
 
     with gr.Blocks(title="WPGen - AI WordPress Theme Generator", theme=gr.themes.Soft()) as interface:
-        gr.Markdown("# 🎨 WPGen - AI-Powered WordPress Theme Generator\n\nGenerate complete WordPress themes from descriptions, mockups, and content.")
+        gr.Markdown("""
+        # 🎨 WPGen - AI-Powered WordPress Theme Generator
+
+        Generate complete WordPress themes from descriptions, mockups, and content.
+        """)
         with gr.Row():
             with gr.Column(scale=2):
-                gr.Markdown("### 📝 Describe Your Website")
                 prompt_input = gr.Textbox(
                     label="Website Description",
                     placeholder="Describe your website (e.g., A modern blog with dark theme...)",
                     lines=5,
                 )
-                gr.Markdown("### 🖼️ Upload Design References (Optional)")
-                gr.File(label="Images", file_types=["image"], file_count="multiple", type="filepath")
-                gr.Markdown("### 📄 Upload Content Files (Optional)")
-                gr.File(label="Documents", file_types=[".txt", ".md", ".pdf"], file_count="multiple", type="filepath")
-                gr.Markdown("### ⚙️ Options")
+                image_upload = gr.File(
+                    label="Images",
+                    file_types=["image"],
+                    file_count="multiple",
+                    type="filepath",
+                )
+                text_upload = gr.File(
+                    label="Documents",
+                    file_types=[".txt", ".md", ".pdf"],
+                    file_count="multiple",
+                    type="filepath",
+                )
                 push_checkbox = gr.Checkbox(label="Push to GitHub", value=True)
                 deploy_wp_checkbox = gr.Checkbox(label="Deploy to WordPress", value=False)
                 repo_input = gr.Textbox(label="Repository Name", placeholder="Leave blank for auto-generated name")
                 generate_btn = gr.Button("🚀 Generate WordPress Theme", variant="primary")
+
             with gr.Column(scale=2):
                 status_output = gr.Textbox(label="Status", lines=15, interactive=False)
                 theme_info_output = gr.Markdown()
-                file_tree_output = gr.Code(label="File Tree", language="text")
+                file_tree_output = gr.Code(label="File Tree", language="plaintext")
 
         generate_btn.click(
             fn=generate_theme,
@@ -310,14 +235,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             outputs=[status_output, theme_info_output, file_tree_output],
         )
 
-        gr.Markdown("---\n**Tips:**\n- Include images and files for best results\n- Set GitHub/WordPress env vars\n")
-
     return interface
-
 
 def launch_gui(config: dict, share: bool = False, server_name: str = "0.0.0.0", server_port: int = 7860):
     interface = create_gradio_interface(config)
     logger.info(f"Launching Gradio interface on {server_name}:{server_port}")
     interface.launch(share=share, server_name=server_name, server_port=server_port, show_error=True)
     return interface
+
 
