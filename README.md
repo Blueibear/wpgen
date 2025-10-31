@@ -4,13 +4,16 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 
 ## Features
 
-- **Natural Language Input**: Describe your website in plain English
-- **AI-Powered Generation**: Uses OpenAI or Anthropic APIs to generate theme code
-- **Complete WordPress Themes**: Generates all necessary files (style.css, functions.php, templates, etc.)
-- **GitHub Integration**: Automatically pushes generated themes to GitHub repositories
-- **Web & CLI Interface**: Use via command line or web browser
-- **Modular Architecture**: Clean, extensible codebase
-- **Deployment Ready**: Optional GitHub Actions workflows for automated deployment
+- **🎨 Graphical User Interface**: Modern Gradio-based GUI with drag-and-drop file uploads
+- **🖼️  Multi-Modal AI**: Upload design mockups and screenshots - AI analyzes visual layouts and styles
+- **📄 Document Processing**: Upload content files (PDF, Markdown, Text) to guide theme generation
+- **💬 Natural Language Input**: Describe your website in plain English
+- **🤖 AI-Powered Generation**: Uses OpenAI GPT-4 Vision or Anthropic Claude 3+ for intelligent theme creation
+- **📦 Complete WordPress Themes**: Generates all necessary files (style.css, functions.php, templates, etc.)
+- **🐙 GitHub Integration**: Automatically pushes generated themes to GitHub repositories
+- **🖥️  Three Interfaces**: Graphical UI, Web UI, or CLI - choose your preference
+- **🏗️  Modular Architecture**: Clean, extensible codebase
+- **🚀 Deployment Ready**: Optional GitHub Actions workflows for automated deployment
 
 ## Requirements
 
@@ -72,6 +75,37 @@ Edit `config.yaml` to customize settings:
 - Adjust logging preferences
 
 ## Usage
+
+### 🎨 Graphical User Interface (Recommended)
+
+The easiest way to use WPGen is through the graphical interface:
+
+```bash
+python main.py gui
+```
+
+Then open your browser to `http://localhost:7860`
+
+**Features:**
+- ✅ Upload design mockups and screenshots
+- ✅ Upload content documents (PDF, Markdown, Text)
+- ✅ Real-time generation status
+- ✅ Visual file tree preview
+- ✅ One-click GitHub push
+
+**Create a public share link:**
+```bash
+python main.py gui --share
+```
+
+**Custom port:**
+```bash
+python main.py gui --port 8080
+```
+
+📖 **See [GUI_FEATURES.md](GUI_FEATURES.md) for complete GUI documentation**
+
+---
 
 ### Command Line Interface (CLI)
 

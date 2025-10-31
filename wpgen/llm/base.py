@@ -4,7 +4,7 @@ Defines the abstract interface that all LLM providers must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 
 class BaseLLMProvider(ABC):
@@ -81,6 +81,36 @@ class BaseLLMProvider(ABC):
             Exception: If analysis fails
         """
         pass
+
+    def analyze_prompt_multimodal(
+        self,
+        prompt: str,
+        images: Optional[List[Dict[str, Any]]] = None,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze user prompt with multi-modal inputs (images, additional text).
+
+        Args:
+            prompt: Natural language description of the website
+            images: List of image data dicts with 'data' (base64) and 'mime_type'
+            additional_context: Additional text context from uploaded files
+
+        Returns:
+            Dictionary containing extracted requirements
+
+        Raises:
+            Exception: If analysis fails
+        """
+        # Default implementation: combine contexts and call analyze_prompt
+        full_prompt = prompt
+
+        if additional_context:
+            full_prompt += f"\n\nAdditional Context:\n{additional_context}"
+
+        if images:
+            full_prompt += f"\n\nNote: {len(images)} design reference image(s) provided."
+
+        return self.analyze_prompt(full_prompt)
 
     def validate_api_key(self) -> bool:
         """Validate that the API key is set and not empty.
