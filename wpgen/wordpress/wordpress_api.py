@@ -7,13 +7,10 @@ This module provides complete WordPress site control via REST API, enabling:
 - Site settings configuration
 """
 
-import os
-import json
-import shutil
 import zipfile
 import requests
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from base64 import b64encode
 
 from ..utils.logger import get_logger
@@ -31,7 +28,7 @@ class WordPressAPI:
         username: str,
         password: str,
         verify_ssl: bool = True,
-        timeout: int = 30
+        timeout: int = 30,
     ):
         """Initialize WordPress API client.
 
@@ -42,7 +39,7 @@ class WordPressAPI:
             verify_ssl: Whether to verify SSL certificates
             timeout: Request timeout in seconds
         """
-        self.site_url = site_url.rstrip('/')
+        self.site_url = site_url.rstrip("/")
         self.api_url = f"{self.site_url}/wp-json/wp/v2"
         self.username = username
         self.password = password
@@ -51,11 +48,11 @@ class WordPressAPI:
 
         # Create auth header for Basic Auth
         credentials = f"{username}:{password}"
-        token = b64encode(credentials.encode()).decode('ascii')
+        token = b64encode(credentials.encode()).decode("ascii")
         self.headers = {
-            'Authorization': f'Basic {token}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            "Authorization": f"Basic {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
         }
 
         logger.info(f"Initialized WordPress API client for {self.site_url}")
@@ -77,7 +74,7 @@ class WordPressAPI:
                 f"{self.site_url}/wp-json",
                 headers=self.headers,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -88,7 +85,7 @@ class WordPressAPI:
                 f"{self.api_url}/users/me",
                 headers=self.headers,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             auth_response.raise_for_status()
 
@@ -99,11 +96,11 @@ class WordPressAPI:
 
             return {
                 "connected": True,
-                "site_name": site_info.get('name'),
-                "site_description": site_info.get('description'),
-                "url": site_info.get('url'),
-                "user": user_info.get('name'),
-                "user_id": user_info.get('id')
+                "site_name": site_info.get("name"),
+                "site_description": site_info.get("description"),
+                "url": site_info.get("url"),
+                "user": user_info.get("name"),
+                "user_id": user_info.get("id"),
             }
 
         except requests.exceptions.RequestException as e:
@@ -135,8 +132,8 @@ class WordPressAPI:
             # Create ZIP file
             zip_path = theme_dir.parent / f"{theme_name}.zip"
 
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for file_path in theme_dir.rglob('*'):
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in theme_dir.rglob("*"):
                     if file_path.is_file():
                         arcname = file_path.relative_to(theme_dir.parent)
                         zipf.write(file_path, arcname)
@@ -155,14 +152,14 @@ class WordPressAPI:
                     f"1. Download the theme ZIP: {zip_path}",
                     f"2. Go to {self.site_url}/wp-admin/theme-install.php",
                     "3. Click 'Upload Theme' and select the ZIP file",
-                    "4. Click 'Install Now' and then 'Activate'"
-                ]
+                    "4. Click 'Install Now' and then 'Activate'",
+                ],
             }
 
             # Try to activate if theme already exists (via WP-CLI integration if available)
             try:
                 themes = self.get_themes()
-                if theme_name in [t.get('stylesheet') for t in themes]:
+                if theme_name in [t.get("stylesheet") for t in themes]:
                     activation_result = self.activate_theme(theme_name)
                     result["activated"] = activation_result.get("success", False)
             except Exception as e:
@@ -205,18 +202,14 @@ class WordPressAPI:
             return {
                 "success": False,
                 "message": "Theme activation requires WP-CLI or custom endpoint",
-                "manual_activation": f"{self.site_url}/wp-admin/themes.php"
+                "manual_activation": f"{self.site_url}/wp-admin/themes.php",
             }
         except Exception as e:
             logger.error(f"Theme activation failed: {str(e)}")
             raise
 
     def create_page(
-        self,
-        title: str,
-        content: str,
-        status: str = "publish",
-        **kwargs
+        self, title: str, content: str, status: str = "publish", **kwargs
     ) -> Dict[str, Any]:
         """Create a new page.
 
@@ -235,19 +228,14 @@ class WordPressAPI:
         try:
             logger.info(f"Creating page: {title}")
 
-            data = {
-                "title": title,
-                "content": content,
-                "status": status,
-                **kwargs
-            }
+            data = {"title": title, "content": content, "status": status, **kwargs}
 
             response = requests.post(
                 f"{self.api_url}/pages",
                 headers=self.headers,
                 json=data,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -256,10 +244,10 @@ class WordPressAPI:
 
             return {
                 "success": True,
-                "id": page.get('id'),
-                "title": page.get('title', {}).get('rendered'),
-                "link": page.get('link'),
-                "status": page.get('status')
+                "id": page.get("id"),
+                "title": page.get("title", {}).get("rendered"),
+                "link": page.get("link"),
+                "status": page.get("status"),
             }
 
         except requests.exceptions.RequestException as e:
@@ -267,11 +255,7 @@ class WordPressAPI:
             raise Exception(f"Failed to create page: {str(e)}")
 
     def update_page(
-        self,
-        page_id: int,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-        **kwargs
+        self, page_id: int, title: Optional[str] = None, content: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         """Update an existing page.
 
@@ -292,16 +276,16 @@ class WordPressAPI:
 
             data = {**kwargs}
             if title is not None:
-                data['title'] = title
+                data["title"] = title
             if content is not None:
-                data['content'] = content
+                data["content"] = content
 
             response = requests.post(
                 f"{self.api_url}/pages/{page_id}",
                 headers=self.headers,
                 json=data,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -310,9 +294,9 @@ class WordPressAPI:
 
             return {
                 "success": True,
-                "id": page.get('id'),
-                "title": page.get('title', {}).get('rendered'),
-                "link": page.get('link')
+                "id": page.get("id"),
+                "title": page.get("title", {}).get("rendered"),
+                "link": page.get("link"),
             }
 
         except requests.exceptions.RequestException as e:
@@ -336,20 +320,23 @@ class WordPressAPI:
                 headers=self.headers,
                 params=params,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
             pages = response.json()
             logger.info(f"✓ Retrieved {len(pages)} pages")
 
-            return [{
-                "id": page.get('id'),
-                "title": page.get('title', {}).get('rendered'),
-                "link": page.get('link'),
-                "status": page.get('status'),
-                "modified": page.get('modified')
-            } for page in pages]
+            return [
+                {
+                    "id": page.get("id"),
+                    "title": page.get("title", {}).get("rendered"),
+                    "link": page.get("link"),
+                    "status": page.get("status"),
+                    "modified": page.get("modified"),
+                }
+                for page in pages
+            ]
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get pages: {str(e)}")
@@ -374,7 +361,7 @@ class WordPressAPI:
                 headers=self.headers,
                 params=params,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -386,11 +373,7 @@ class WordPressAPI:
             raise Exception(f"Failed to delete page: {str(e)}")
 
     def create_post(
-        self,
-        title: str,
-        content: str,
-        status: str = "publish",
-        **kwargs
+        self, title: str, content: str, status: str = "publish", **kwargs
     ) -> Dict[str, Any]:
         """Create a new blog post.
 
@@ -406,19 +389,14 @@ class WordPressAPI:
         try:
             logger.info(f"Creating post: {title}")
 
-            data = {
-                "title": title,
-                "content": content,
-                "status": status,
-                **kwargs
-            }
+            data = {"title": title, "content": content, "status": status, **kwargs}
 
             response = requests.post(
                 f"{self.api_url}/posts",
                 headers=self.headers,
                 json=data,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -427,10 +405,10 @@ class WordPressAPI:
 
             return {
                 "success": True,
-                "id": post.get('id'),
-                "title": post.get('title', {}).get('rendered'),
-                "link": post.get('link'),
-                "status": post.get('status')
+                "id": post.get("id"),
+                "title": post.get("title", {}).get("rendered"),
+                "link": post.get("link"),
+                "status": post.get("status"),
             }
 
         except requests.exceptions.RequestException as e:
@@ -454,30 +432,30 @@ class WordPressAPI:
                 headers=self.headers,
                 params=params,
                 verify=self.verify_ssl,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
             posts = response.json()
             logger.info(f"✓ Retrieved {len(posts)} posts")
 
-            return [{
-                "id": post.get('id'),
-                "title": post.get('title', {}).get('rendered'),
-                "link": post.get('link'),
-                "status": post.get('status'),
-                "date": post.get('date')
-            } for post in posts]
+            return [
+                {
+                    "id": post.get("id"),
+                    "title": post.get("title", {}).get("rendered"),
+                    "link": post.get("link"),
+                    "status": post.get("status"),
+                    "date": post.get("date"),
+                }
+                for post in posts
+            ]
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get posts: {str(e)}")
             return []
 
     def upload_media(
-        self,
-        file_path: str,
-        title: Optional[str] = None,
-        alt_text: Optional[str] = None
+        self, file_path: str, title: Optional[str] = None, alt_text: Optional[str] = None
     ) -> Dict[str, Any]:
         """Upload media file to WordPress.
 
@@ -495,30 +473,28 @@ class WordPressAPI:
 
             # Determine MIME type
             mime_types = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.pdf': 'application/pdf',
-                '.zip': 'application/zip'
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".gif": "image/gif",
+                ".pdf": "application/pdf",
+                ".zip": "application/zip",
             }
-            mime_type = mime_types.get(file_path.suffix.lower(), 'application/octet-stream')
+            mime_type = mime_types.get(file_path.suffix.lower(), "application/octet-stream")
 
             # Upload file
-            with open(file_path, 'rb') as f:
-                files = {
-                    'file': (file_path.name, f, mime_type)
-                }
+            with open(file_path, "rb") as f:
+                files = {"file": (file_path.name, f, mime_type)}
 
                 headers = self.headers.copy()
-                headers.pop('Content-Type')  # Let requests set it for multipart
+                headers.pop("Content-Type")  # Let requests set it for multipart
 
                 response = requests.post(
                     f"{self.api_url}/media",
                     headers=headers,
                     files=files,
                     verify=self.verify_ssl,
-                    timeout=self.timeout
+                    timeout=self.timeout,
                 )
                 response.raise_for_status()
 
@@ -528,25 +504,25 @@ class WordPressAPI:
             if title or alt_text:
                 update_data = {}
                 if title:
-                    update_data['title'] = title
+                    update_data["title"] = title
                 if alt_text:
-                    update_data['alt_text'] = alt_text
+                    update_data["alt_text"] = alt_text
 
                 requests.post(
                     f"{self.api_url}/media/{media['id']}",
                     headers=self.headers,
                     json=update_data,
                     verify=self.verify_ssl,
-                    timeout=self.timeout
+                    timeout=self.timeout,
                 )
 
             logger.info(f"✓ Media uploaded: {media.get('source_url')}")
 
             return {
                 "success": True,
-                "id": media.get('id'),
-                "url": media.get('source_url'),
-                "title": media.get('title', {}).get('rendered')
+                "id": media.get("id"),
+                "url": media.get("source_url"),
+                "title": media.get("title", {}).get("rendered"),
             }
 
         except Exception as e:
@@ -585,7 +561,7 @@ class WordPressAPI:
             return {
                 "success": False,
                 "message": "Plugin installation requires WP-CLI or custom endpoint",
-                "manual_install": f"{self.site_url}/wp-admin/plugin-install.php?s={plugin_slug}"
+                "manual_install": f"{self.site_url}/wp-admin/plugin-install.php?s={plugin_slug}",
             }
 
         except Exception as e:
@@ -607,7 +583,7 @@ class WordPressAPI:
                 "connected": True,
                 "pages_count": len(pages),
                 "posts_count": len(posts),
-                "api_url": self.api_url
+                "api_url": self.api_url,
             }
 
         except Exception as e:
