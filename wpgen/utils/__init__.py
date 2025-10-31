@@ -12,5 +12,5 @@ __all__ = [
     "get_llm_provider",
     "FileHandler",
     "ImageAnalyzer",
-    "TextProcessor"
+    "TextProcessor",
 ]
