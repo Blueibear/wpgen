@@ -1,0 +1,40 @@
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Include configuration files
+include config.yaml
+include .env.example
+include requirements.txt
+
+# Include wpgen package data
+recursive-include wpgen *.yaml
+recursive-include wpgen *.yml
+recursive-include wpgen *.json
+
+# Include web templates and static files
+recursive-include web/templates *.html
+recursive-include web/static *
+
+# Exclude compiled Python files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+
+# Exclude development files
+exclude .gitignore
+exclude .env
+exclude .env.local
+
+# Exclude build artifacts
+global-exclude *.egg-info
+global-exclude dist
+global-exclude build
+
+# Exclude test files
+prune tests
+
+# Exclude output directories
+prune output
+prune logs
