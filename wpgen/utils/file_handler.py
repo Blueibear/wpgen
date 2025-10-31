@@ -5,7 +5,6 @@ and preparing files for LLM multi-modal context.
 """
 
 import base64
-import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import mimetypes
@@ -24,16 +23,14 @@ class FileHandler:
     SUPPORTED_DOC_FORMATS = [".pdf"]
 
     MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
-    MAX_TEXT_SIZE = 1 * 1024 * 1024   # 1MB
+    MAX_TEXT_SIZE = 1 * 1024 * 1024  # 1MB
 
     def __init__(self):
         """Initialize file handler."""
         logger.info("Initialized FileHandler")
 
     def process_uploads(
-        self,
-        image_files: Optional[List[str]] = None,
-        text_files: Optional[List[str]] = None
+        self, image_files: Optional[List[str]] = None, text_files: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Process all uploaded files and prepare them for LLM context.
 
@@ -49,11 +46,7 @@ class FileHandler:
                 "file_descriptions": [str, ...]
             }
         """
-        result = {
-            "images": [],
-            "text_content": "",
-            "file_descriptions": []
-        }
+        result = {"images": [], "text_content": "", "file_descriptions": []}
 
         # Process images
         if image_files:
@@ -62,9 +55,7 @@ class FileHandler:
                     image_data = self.process_image(image_path)
                     if image_data:
                         result["images"].append(image_data)
-                        result["file_descriptions"].append(
-                            f"Image: {Path(image_path).name}"
-                        )
+                        result["file_descriptions"].append(f"Image: {Path(image_path).name}")
                 except Exception as e:
                     logger.error(f"Failed to process image {image_path}: {str(e)}")
 
@@ -74,10 +65,10 @@ class FileHandler:
                 try:
                     content = self.process_text_file(text_path)
                     if content:
-                        result["text_content"] += f"\n\n--- Content from {Path(text_path).name} ---\n{content}"
-                        result["file_descriptions"].append(
-                            f"Document: {Path(text_path).name}"
-                        )
+                        result[
+                            "text_content"
+                        ] += f"\n\n--- Content from {Path(text_path).name} ---\n{content}"
+                        result["file_descriptions"].append(f"Document: {Path(text_path).name}")
                 except Exception as e:
                     logger.error(f"Failed to process text file {text_path}: {str(e)}")
 
@@ -133,7 +124,7 @@ class FileHandler:
                 "data": image_data,
                 "mime_type": mime_type,
                 "size": file_size,
-                "name": path.name
+                "name": path.name,
             }
 
         except Exception as e:
@@ -232,9 +223,7 @@ class FileHandler:
 
         # Check if it's a supported format
         all_supported = (
-            self.SUPPORTED_IMAGE_FORMATS +
-            self.SUPPORTED_TEXT_FORMATS +
-            self.SUPPORTED_DOC_FORMATS
+            self.SUPPORTED_IMAGE_FORMATS + self.SUPPORTED_TEXT_FORMATS + self.SUPPORTED_DOC_FORMATS
         )
 
         if suffix not in all_supported:

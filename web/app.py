@@ -4,9 +4,8 @@ Provides a web-based interface for generating WordPress themes.
 """
 
 import os
-import json
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
 from wpgen import (
@@ -14,7 +13,6 @@ from wpgen import (
     WordPressGenerator,
     GitHubIntegration,
     setup_logger,
-    get_logger,
     get_llm_provider as get_provider,
 )
 
@@ -36,6 +34,7 @@ def create_app(config: dict = None):
     # Load config
     if config is None:
         import yaml
+
         config_file = Path("config.yaml")
         if config_file.exists():
             with open(config_file, "r") as f:
@@ -54,7 +53,7 @@ def create_app(config: dict = None):
         level=log_config.get("level", "INFO"),
         format_type=log_config.get("format", "text"),
         colored_console=log_config.get("colored_console", True),
-        console_output=log_config.get("console_output", True)
+        console_output=log_config.get("console_output", True),
     )
 
     def get_llm_provider():
@@ -86,10 +85,7 @@ def create_app(config: dict = None):
             prompt = data.get("prompt", "").strip()
 
             if not prompt:
-                return jsonify({
-                    "success": False,
-                    "error": "Prompt is required"
-                }), 400
+                return jsonify({"success": False, "error": "Prompt is required"}), 400
 
             push_to_github = data.get("push_to_github", False)
             repo_name = data.get("repo_name", "").strip()
@@ -106,11 +102,7 @@ def create_app(config: dict = None):
             # Generate theme
             cfg = app.config["WPGEN_CONFIG"]
             output_dir = cfg.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(
-                llm_provider,
-                output_dir,
-                cfg.get("wordpress", {})
-            )
+            generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
             theme_dir = generator.generate(requirements)
 
             result = {
@@ -134,21 +126,14 @@ def create_app(config: dict = None):
                     if not repo_name:
                         repo_name = github.generate_repo_name(requirements["theme_name"])
 
-                    repo_url = github.push_to_github(
-                        theme_dir,
-                        repo_name,
-                        requirements
-                    )
+                    repo_url = github.push_to_github(theme_dir, repo_name, requirements)
 
                     result["github_url"] = repo_url
                     result["repo_name"] = repo_name
 
                     # Create deployment workflow if enabled
                     if cfg.get("deployment", {}).get("enabled", False):
-                        github.create_deployment_workflow(
-                            theme_dir,
-                            cfg.get("deployment", {})
-                        )
+                        github.create_deployment_workflow(theme_dir, cfg.get("deployment", {}))
                         result["deployment_workflow"] = True
 
             logger.info(f"Web API: Successfully generated theme: {requirements['theme_name']}")
@@ -156,10 +141,7 @@ def create_app(config: dict = None):
 
         except Exception as e:
             logger.error(f"Web API: Generation failed: {str(e)}")
-            return jsonify({
-                "success": False,
-                "error": str(e)
-            }), 500
+            return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/analyze", methods=["POST"])
     def api_analyze():
@@ -178,10 +160,7 @@ def create_app(config: dict = None):
             prompt = data.get("prompt", "").strip()
 
             if not prompt:
-                return jsonify({
-                    "success": False,
-                    "error": "Prompt is required"
-                }), 400
+                return jsonify({"success": False, "error": "Prompt is required"}), 400
 
             logger.info(f"Web API: Analyzing prompt: {prompt[:100]}")
 
@@ -192,18 +171,12 @@ def create_app(config: dict = None):
             parser = PromptParser(llm_provider)
             requirements = parser.parse(prompt)
 
-            logger.info(f"Web API: Successfully analyzed prompt")
-            return jsonify({
-                "success": True,
-                "requirements": requirements
-            })
+            logger.info("Web API: Successfully analyzed prompt")
+            return jsonify({"success": True, "requirements": requirements})
 
         except Exception as e:
             logger.error(f"Web API: Analysis failed: {str(e)}")
-            return jsonify({
-                "success": False,
-                "error": str(e)
-            }), 500
+            return jsonify({"success": False, "error": str(e)}), 500
 
     @app.route("/api/config", methods=["GET"])
     def api_config():
@@ -223,7 +196,7 @@ def create_app(config: dict = None):
             "deployment": {
                 "enabled": cfg.get("deployment", {}).get("enabled", False),
                 "method": cfg.get("deployment", {}).get("method", "github_actions"),
-            }
+            },
         }
 
         return jsonify(safe_config)
