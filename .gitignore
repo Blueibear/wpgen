@@ -76,3 +76,12 @@ instance/
 *.temp
 tmp/
 temp/
+
+# WordPress credentials and site data
+wp-config.php
+wp-config-local.php
+*.zip
+!screenshot.zip
+
+# WordPress deployment files
+deploy_config.json

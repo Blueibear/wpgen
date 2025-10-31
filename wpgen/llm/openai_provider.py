@@ -68,14 +68,16 @@ class OpenAIProvider(BaseLLMProvider):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        images: Optional[List[Dict[str, Any]]] = None
     ) -> str:
-        """Generate code using OpenAI.
+        """Generate code using OpenAI with optional visual references.
 
         Args:
             description: What the code should do
             file_type: Type of file (php, css, js, etc.)
             context: Additional context
+            images: Optional design mockups/screenshots for vision-based generation
 
         Returns:
             Generated code
@@ -90,7 +92,8 @@ class OpenAIProvider(BaseLLMProvider):
         coding standards and best practices. Only output the code without any explanations
         or markdown formatting."""
 
-        prompt = f"""Generate {file_type.upper()} code for: {description}
+        # Build prompt text
+        prompt_text = f"""Generate {file_type.upper()} code for: {description}
 
 Context:
 {json.dumps(context, indent=2)}
@@ -100,16 +103,64 @@ Requirements:
 - Include inline documentation
 - Make it production-ready
 - Ensure compatibility with WordPress 6.4+
-- Use modern best practices
+- Use modern best practices"""
 
-Output only the code, no explanations."""
+        # Add image guidance if images provided
+        if images and len(images) > 0:
+            prompt_text += f"""
+- Match the visual design from the {len(images)} reference image(s) provided
+- Extract colors, typography, spacing, and layout patterns from the design mockups
+- Ensure the generated code accurately reflects the visual style shown in the images"""
+
+        prompt_text += "\n\nOutput only the code, no explanations."
 
         try:
-            code = self.generate(prompt, system_prompt)
+            # Use vision-enabled generation if images provided
+            if images and len(images) > 0:
+                logger.debug(f"Generating {file_type} code with {len(images)} visual reference(s)")
+
+                # Build multi-modal content with images
+                content = [
+                    {
+                        "type": "text",
+                        "text": prompt_text
+                    }
+                ]
+
+                # Add all images for GPT-4 Vision to analyze
+                for idx, image in enumerate(images):
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                        }
+                    })
+
+                # Use vision-capable model
+                vision_model = "gpt-4-vision-preview"
+
+                # Call OpenAI vision API
+                response = self.client.chat.completions.create(
+                    model=vision_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": content}
+                    ],
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                )
+
+                code = response.choices[0].message.content
+                logger.info(f"Generated {file_type} code with vision successfully")
+            else:
+                # Text-only generation
+                code = self.generate(prompt_text, system_prompt)
+                logger.info(f"Generated {file_type} code successfully")
+
             # Clean up any markdown code blocks if present
             code = code.replace("```php", "").replace("```css", "").replace("```javascript", "")
             code = code.replace("```", "").strip()
-            logger.info(f"Generated {file_type} code successfully")
+
             return code
 
         except Exception as e:

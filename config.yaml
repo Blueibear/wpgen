@@ -127,3 +127,39 @@ deployment:
     username: ""
     remote_path: "/var/www/html/wp-content/themes"
     key_file: "~/.ssh/id_rsa"
+
+# WordPress Site Management (REST API)
+wordpress_api:
+  # Enable WordPress REST API integration
+  enabled: false
+
+  # WordPress site URL (without /wp-json)
+  # Override with WP_SITE_URL environment variable
+  site_url: ""
+
+  # WordPress username
+  # Override with WP_USERNAME environment variable
+  username: ""
+
+  # WordPress application password (recommended) or user password
+  # Override with WP_APP_PASSWORD environment variable
+  # Generate at: https://yoursite.com/wp-admin/profile.php
+  password: ""
+
+  # Verify SSL certificates
+  verify_ssl: true
+
+  # Request timeout (seconds)
+  timeout: 30
+
+  # Auto-deploy theme after generation
+  auto_deploy: false
+
+  # Auto-activate theme after deployment
+  auto_activate: true
+
+  # Enable LLM-powered site management commands
+  enable_llm_control: true
+
+  # Mock mode for testing (doesn't make real API calls)
+  mock_mode: false

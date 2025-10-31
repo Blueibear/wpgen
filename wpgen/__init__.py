@@ -11,6 +11,7 @@ from .llm import BaseLLMProvider, OpenAIProvider, AnthropicProvider
 from .parsers import PromptParser
 from .generators import WordPressGenerator
 from .github import GitHubIntegration
+from .wordpress import WordPressAPI, WordPressManager
 from .utils import (
     setup_logger,
     get_logger,
@@ -27,6 +28,8 @@ __all__ = [
     "PromptParser",
     "WordPressGenerator",
     "GitHubIntegration",
+    "WordPressAPI",
+    "WordPressManager",
     "setup_logger",
     "get_logger",
     "get_llm_provider",
