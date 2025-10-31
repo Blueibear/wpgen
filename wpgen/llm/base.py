@@ -82,6 +82,25 @@ class BaseLLMProvider(ABC):
         """
         pass
 
+    def analyze_image(
+        self,
+        image_data: Dict[str, Any],
+        prompt: str
+    ) -> Dict[str, Any]:
+        """Analyze a single image with vision capabilities.
+
+        Args:
+            image_data: Dictionary with 'data' (base64), 'mime_type', 'name'
+            prompt: Question or instruction for analyzing the image
+
+        Returns:
+            Analysis results (implementation-specific format)
+
+        Raises:
+            NotImplementedError: If vision not supported by provider
+        """
+        raise NotImplementedError("Vision analysis not implemented for this provider")
+
     def analyze_prompt_multimodal(
         self,
         prompt: str,

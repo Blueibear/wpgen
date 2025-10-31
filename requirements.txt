@@ -34,3 +34,13 @@ gradio==5.31.0
 
 # File handling
 PyPDF2==3.0.1
+
+# Image processing and analysis
+Pillow==10.2.0
+
+# OCR capabilities (requires tesseract-ocr system package)
+# Install tesseract:
+#   Ubuntu/Debian: sudo apt-get install tesseract-ocr
+#   macOS: brew install tesseract
+#   Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+pytesseract==0.3.10

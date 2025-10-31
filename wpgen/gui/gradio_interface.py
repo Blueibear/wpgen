@@ -13,6 +13,8 @@ from ..parsers import PromptParser
 from ..generators import WordPressGenerator
 from ..github import GitHubIntegration
 from ..utils import setup_logger, get_logger, get_llm_provider, FileHandler
+from ..utils.image_analysis import ImageAnalyzer
+from ..utils.text_utils import TextProcessor
 
 
 logger = get_logger(__name__)
@@ -40,8 +42,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     logger.info("Creating Gradio interface")
 
-    # Initialize file handler
+    # Initialize file handler, image analyzer, and text processor
     file_handler = FileHandler()
+    image_analyzer = None  # Initialized later with LLM provider
+    text_processor = TextProcessor()
 
     def generate_theme(
         prompt: str,
@@ -50,7 +54,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         push_to_github: bool = False,
         repo_name: str = ""
     ) -> Tuple[str, str, str]:
-        """Generate WordPress theme from inputs.
+        """Generate WordPress theme from inputs with enhanced multi-modal analysis.
 
         Args:
             prompt: Natural language description
@@ -70,6 +74,16 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status = "🔄 Starting theme generation...\n"
             yield status, "", ""
 
+            # Initialize LLM provider early (needed for image analysis)
+            status += "🤖 Initializing AI provider...\n"
+            yield status, "", ""
+
+            llm_provider = get_llm_provider(config)
+
+            # Initialize image analyzer with LLM provider for vision analysis
+            nonlocal image_analyzer
+            image_analyzer = ImageAnalyzer(llm_provider)
+
             # Process uploaded files
             status += "📁 Processing uploaded files...\n"
             yield status, "", ""
@@ -82,32 +96,87 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 text_files=text_paths if text_paths else None
             )
 
-            if image_paths:
-                status += f"  ✓ Processed {len(processed_files['images'])} image(s)\n"
-            if text_paths:
-                status += f"  ✓ Extracted content from {len(text_paths)} file(s)\n"
-            yield status, "", ""
-
-            # Initialize LLM provider
-            status += "🤖 Initializing AI provider...\n"
-            yield status, "", ""
-
-            llm_provider = get_llm_provider(config)
-
-            # Parse prompt with multi-modal inputs
-            status += "🔍 Analyzing your requirements"
+            # Enhanced image analysis with vision capabilities
+            image_summaries = None
             if processed_files['images']:
-                status += " and design references"
+                status += f"🖼️  Analyzing {len(processed_files['images'])} design reference(s) with AI vision...\n"
+                yield status, "", ""
+
+                # Perform detailed image analysis for each image
+                image_analyses = image_analyzer.batch_analyze_images(
+                    processed_files['images'],
+                    use_llm=True  # Use LLM vision for detailed analysis
+                )
+
+                # Generate comprehensive summary from all analyses
+                image_summaries = image_analyzer.generate_image_summary(image_analyses)
+
+                status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
+                yield status, "", ""
+
+            # Enhanced text processing with structured extraction
+            text_content = None
+            file_descriptions = []
+            if text_paths:
+                status += f"📄 Processing {len(text_paths)} content file(s)...\n"
+                yield status, "", ""
+
+                # Batch process text files with structured extraction
+                batch_result = text_processor.batch_process_files(text_paths)
+                text_content = batch_result['combined_content']
+
+                # Create file descriptions for context
+                for file_info in batch_result['files']:
+                    metadata = file_info.get('metadata', {})
+                    filename = metadata.get('filename', 'unknown')
+                    summary = file_info.get('summary', '')
+                    if summary:
+                        file_descriptions.append(f"{filename}: {summary}")
+                    else:
+                        file_descriptions.append(filename)
+
+                status += f"  ✓ Extracted {batch_result['total_size']} characters from documents\n"
+                yield status, "", ""
+
+            # Create structured context for LLM with formatted sections
+            if image_summaries or text_content:
+                status += "📋 Creating structured context from all inputs...\n"
+                yield status, "", ""
+
+                # Use TextProcessor to create well-structured context
+                structured_context = text_processor.create_structured_context(
+                    user_prompt=prompt,
+                    image_summaries=image_summaries,
+                    text_content=text_content,
+                    file_descriptions=file_descriptions if file_descriptions else None
+                )
+
+                status += "  ✓ Combined user prompt, image analysis, and file content\n"
+                yield status, "", ""
+            else:
+                structured_context = None
+
+            # Parse prompt with enhanced multi-modal inputs
+            status += "🔍 Analyzing requirements with AI"
+            if image_summaries:
+                status += " (including visual design insights)"
             status += "...\n"
             yield status, "", ""
 
             parser = PromptParser(llm_provider)
 
-            if processed_files['images'] or processed_files['text_content']:
+            # Pass structured context to parser
+            if structured_context:
+                # Use the structured context as additional_context
                 requirements = parser.parse_multimodal(
                     prompt,
                     images=processed_files['images'] if processed_files['images'] else None,
-                    additional_context=processed_files['text_content'] if processed_files['text_content'] else None
+                    additional_context=structured_context
+                )
+            elif processed_files['images']:
+                requirements = parser.parse_multimodal(
+                    prompt,
+                    images=processed_files['images']
                 )
             else:
                 requirements = parser.parse(prompt)
