@@ -4,15 +4,15 @@ Provides a user-friendly graphical interface for generating WordPress themes
 with support for text prompts, image uploads, and document uploads.
 """
 
+import gradio as gr
 import os
 from pathlib import Path
 from typing import List, Optional, Tuple
-import gradio as gr
 
 from ..parsers import PromptParser
 from ..generators import WordPressGenerator
 from ..github import GitHubIntegration
-from ..wordpress import WordPressAPI, WordPressManager
+from ..wordpress import WordPressAPI
 from ..utils import setup_logger, get_logger, get_llm_provider, FileHandler
 from ..utils.image_analysis import ImageAnalyzer
 from ..utils.text_utils import TextProcessor
@@ -38,7 +38,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         level=log_config.get("level", "INFO"),
         format_type=log_config.get("format", "text"),
         colored_console=log_config.get("colored_console", True),
-        console_output=log_config.get("console_output", True)
+        console_output=log_config.get("console_output", True),
     )
 
     logger.info("Creating Gradio interface")
@@ -54,7 +54,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         text_files: Optional[List] = None,
         push_to_github: bool = False,
         repo_name: str = "",
-        deploy_to_wordpress: bool = False
+        deploy_to_wordpress: bool = False,
     ) -> Tuple[str, str, str]:
         """Generate WordPress theme from inputs with enhanced multi-modal analysis.
 
@@ -96,19 +96,21 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
             processed_files = file_handler.process_uploads(
                 image_files=image_paths if image_paths else None,
-                text_files=text_paths if text_paths else None
+                text_files=text_paths if text_paths else None,
             )
 
             # Enhanced image analysis with vision capabilities
             image_summaries = None
-            if processed_files['images']:
-                status += f"🖼️  Analyzing {len(processed_files['images'])} design reference(s) with AI vision...\n"
+            if processed_files["images"]:
+                status += (
+                    "🖼️  Analyzing "
+                    f"{len(processed_files['images'])} design reference(s) with AI vision...\n"
+                )
                 yield status, "", ""
 
                 # Perform detailed image analysis for each image
                 image_analyses = image_analyzer.batch_analyze_images(
-                    processed_files['images'],
-                    use_llm=True  # Use LLM vision for detailed analysis
+                    processed_files["images"], use_llm=True  # Use LLM vision for detailed analysis
                 )
 
                 # Generate comprehensive summary from all analyses
@@ -126,13 +128,13 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 # Batch process text files with structured extraction
                 batch_result = text_processor.batch_process_files(text_paths)
-                text_content = batch_result['combined_content']
+                text_content = batch_result["combined_content"]
 
                 # Create file descriptions for context
-                for file_info in batch_result['files']:
-                    metadata = file_info.get('metadata', {})
-                    filename = metadata.get('filename', 'unknown')
-                    summary = file_info.get('summary', '')
+                for file_info in batch_result["files"]:
+                    metadata = file_info.get("metadata", {})
+                    filename = metadata.get("filename", "unknown")
+                    summary = file_info.get("summary", "")
                     if summary:
                         file_descriptions.append(f"{filename}: {summary}")
                     else:
@@ -151,7 +153,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     user_prompt=prompt,
                     image_summaries=image_summaries,
                     text_content=text_content,
-                    file_descriptions=file_descriptions if file_descriptions else None
+                    file_descriptions=file_descriptions if file_descriptions else None,
                 )
 
                 status += "  ✓ Combined user prompt, image analysis, and file content\n"
@@ -173,41 +175,34 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 # Use the structured context as additional_context
                 requirements = parser.parse_multimodal(
                     prompt,
-                    images=processed_files['images'] if processed_files['images'] else None,
-                    additional_context=structured_context
+                    images=processed_files["images"] if processed_files["images"] else None,
+                    additional_context=structured_context,
                 )
-            elif processed_files['images']:
-                requirements = parser.parse_multimodal(
-                    prompt,
-                    images=processed_files['images']
-                )
+            elif processed_files["images"]:
+                requirements = parser.parse_multimodal(prompt, images=processed_files["images"])
             else:
                 requirements = parser.parse(prompt)
 
             status += f"  ✓ Theme: {requirements['theme_display_name']}\n"
             status += f"  ✓ Features: {', '.join(requirements['features'][:5])}\n"
-            if 'design_notes' in requirements and requirements['design_notes']:
-                status += f"  ✓ Design insights extracted from images\n"
+            if "design_notes" in requirements and requirements["design_notes"]:
+                status += "  ✓ Design insights extracted from images\n"
             yield status, "", ""
 
             # Generate theme
             status += "🏗️  Generating WordPress theme files"
-            if processed_files['images']:
+            if processed_files["images"]:
                 status += f" (using {len(processed_files['images'])} design reference(s))"
             status += "...\n"
             yield status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(
-                llm_provider,
-                output_dir,
-                config.get("wordpress", {})
-            )
+            generator = WordPressGenerator(llm_provider, output_dir, config.get("wordpress", {}))
 
             # Pass design images to generator for vision-based code generation
             theme_dir = generator.generate(
                 requirements,
-                images=processed_files['images'] if processed_files['images'] else None
+                images=processed_files["images"] if processed_files["images"] else None,
             )
 
             status += f"  ✓ Theme generated: {theme_dir}\n"
@@ -228,7 +223,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 {chr(10).join(f'- {page}' for page in requirements.get('pages', []))}
 """
 
-            if 'design_notes' in requirements and requirements['design_notes']:
+            if "design_notes" in requirements and requirements["design_notes"]:
                 theme_info += f"\n**Design Notes:** {requirements['design_notes']}\n"
 
             # Generate file tree
@@ -249,11 +244,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     if not repo_name or not repo_name.strip():
                         repo_name = github.generate_repo_name(requirements["theme_name"])
 
-                    repo_url = github.push_to_github(
-                        theme_dir,
-                        repo_name,
-                        requirements
-                    )
+                    repo_url = github.push_to_github(theme_dir, repo_name, requirements)
 
                     status += f"  ✓ Pushed to GitHub: {repo_url}\n"
                     theme_info += f"\n**GitHub Repository:** [{repo_name}]({repo_url})\n"
@@ -270,10 +261,15 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     # Get WordPress credentials from environment
                     wp_site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
                     wp_username = os.getenv("WP_USERNAME", wp_config.get("username", ""))
-                    wp_password = os.getenv("WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", "")))
+                    wp_password = os.getenv(
+                        "WP_APP_PASSWORD", os.getenv("WP_PASSWORD", wp_config.get("password", ""))
+                    )
 
                     if not all([wp_site_url, wp_username, wp_password]):
-                        status += "⚠️  WordPress credentials not configured. Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env\n"
+                        status += (
+                            "⚠️  WordPress credentials not configured. "
+                            "Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env\n"
+                        )
                         yield status, theme_info, file_tree
                     else:
                         try:
@@ -286,39 +282,48 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                                 username=wp_username,
                                 password=wp_password,
                                 verify_ssl=wp_config.get("verify_ssl", True),
-                                timeout=wp_config.get("timeout", 30)
+                                timeout=wp_config.get("timeout", 30),
                             )
 
                             # Test connection
                             connection_info = wp_api.test_connection()
-                            status += f"  ✓ Connected to: {connection_info.get('site_name', 'WordPress Site')}\n"
+                            status += (
+                                "  ✓ Connected to: "
+                                f"{connection_info.get('site_name', 'WordPress Site')}\n"
+                            )
                             yield status, theme_info, file_tree
 
                             # Deploy theme
                             deploy_result = wp_api.deploy_theme(theme_dir)
 
                             if deploy_result.get("success"):
-                                status += f"  ✓ Theme prepared: {deploy_result.get('zip_path')}\n"
+                                status += (
+                                    "  ✓ Theme prepared: " f"{deploy_result.get('zip_path')}\n"
+                                )
 
                                 # Add deployment instructions to theme info
-                                theme_info += f"\n## 📦 WordPress Deployment\n\n"
-                                theme_info += f"**Status:** Theme packaged successfully\n\n"
-                                theme_info += f"**Deployment Instructions:**\n"
+                                theme_info += "\n## 📦 WordPress Deployment\n\n"
+                                theme_info += "**Status:** Theme packaged successfully\n\n"
+                                theme_info += "**Deployment Instructions:**\n"
                                 for instruction in deploy_result.get("instructions", []):
                                     theme_info += f"- {instruction}\n"
 
                                 if deploy_result.get("activated"):
-                                    status += f"  ✓ Theme activated on WordPress site!\n"
-                                    theme_info += f"\n**Theme Status:** Activated ✅\n"
+                                    status += "  ✓ Theme activated on WordPress site!\n"
+                                    theme_info += "\n**Theme Status:** Activated ✅\n"
                                 else:
-                                    status += f"  ℹ️  Manual activation required (see instructions)\n"
+                                    status += (
+                                        "  ℹ️  Manual activation required " "(see instructions)\n"
+                                    )
 
                                 # Add site URL to theme info
-                                theme_info += f"\n**WordPress Site:** [{wp_site_url}]({wp_site_url})\n"
+                                theme_info += (
+                                    f"\n**WordPress Site:** [{wp_site_url}]({wp_site_url})\n"
+                                )
 
                                 yield status, theme_info, file_tree
                             else:
-                                status += f"  ⚠️  Deployment prepared (manual upload required)\n"
+                                status += "  ⚠️  Deployment prepared (manual upload required)\n"
                                 yield status, theme_info, file_tree
 
                         except Exception as e:
@@ -334,7 +339,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             logger.error(f"Theme generation failed: {str(e)}")
             yield error_msg, "", ""
 
-    def generate_file_tree(path: Path, prefix: str = "", max_depth: int = 3, current_depth: int = 0) -> str:
+    def generate_file_tree(
+        path: Path, prefix: str = "", max_depth: int = 3, current_depth: int = 0
+    ) -> str:
         """Generate a text representation of the file tree.
 
         Args:
@@ -359,7 +366,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 if item.is_dir() and current_depth < max_depth - 1:
                     extension = "    " if is_last else "│   "
-                    tree += generate_file_tree(item, prefix + extension, max_depth, current_depth + 1)
+                    tree += generate_file_tree(
+                        item, prefix + extension, max_depth, current_depth + 1
+                    )
         except PermissionError:
             pass
 
@@ -367,14 +376,20 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     # Create Gradio interface
     with gr.Blocks(
-        title="WPGen - AI WordPress Theme Generator",
-        theme=gr.themes.Soft()
+        title="WPGen - AI WordPress Theme Generator", theme=gr.themes.Soft()
     ) as interface:
-        gr.Markdown("""
-        # 🎨 WPGen - AI-Powered WordPress Theme Generator
-
-        Generate complete WordPress themes from natural language descriptions, design mockups, and content files.
-        """)
+        gr.Markdown(
+            "\n".join(
+                [
+                    "# 🎨 WPGen - AI-Powered WordPress Theme Generator",
+                    "",
+                    (
+                        "Generate complete WordPress themes from natural language descriptions, "
+                        "design mockups, and content files."
+                    ),
+                ]
+            )
+        )
 
         with gr.Row():
             with gr.Column(scale=2):
@@ -382,29 +397,36 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 prompt_input = gr.Textbox(
                     label="Website Description",
-                    placeholder="Example: Create a dark-themed photography portfolio site with a blog and contact form...",
+                    placeholder=(
+                        "Example: Create a dark-themed photography portfolio site with a blog "
+                        "and contact form..."
+                    ),
                     lines=5,
-                    info="Describe your desired website in detail"
+                    info="Describe your desired website in detail",
                 )
 
                 gr.Markdown("### 🖼️ Upload Design References (Optional)")
+                gr.Markdown(
+                    "Upload images (.png, .jpg) to guide the theme's visual design."
+                )
 
                 image_upload = gr.File(
                     label="Design Mockups / Screenshots",
                     file_types=["image"],
                     file_count="multiple",
                     type="filepath",
-                    info="Upload images (.png, .jpg) to guide the theme's visual design"
                 )
 
                 gr.Markdown("### 📄 Upload Content Files (Optional)")
+                gr.Markdown(
+                    "Upload text files (.txt, .md, .pdf) with site content or requirements."
+                )
 
                 text_upload = gr.File(
                     label="Content Documents",
                     file_types=[".txt", ".md", ".pdf"],
                     file_count="multiple",
                     type="filepath",
-                    info="Upload text files (.txt, .md, .pdf) with site content or requirements"
                 )
 
                 gr.Markdown("### ⚙️ Generation Options")
@@ -413,35 +435,32 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     push_checkbox = gr.Checkbox(
                         label="Push to GitHub",
                         value=True,
-                        info="Automatically create and push to a GitHub repository"
+                        info="Automatically create and push to a GitHub repository",
                     )
 
                     deploy_wp_checkbox = gr.Checkbox(
                         label="Deploy to WordPress",
                         value=False,
-                        info="Deploy theme to your WordPress site via REST API"
+                        info="Deploy theme to your WordPress site via REST API",
                     )
 
                 repo_input = gr.Textbox(
                     label="Repository Name (Optional)",
                     placeholder="Leave empty for auto-generated name",
-                    info="Custom repository name (e.g., 'my-wordpress-theme')"
+                    info="Custom repository name (e.g., 'my-wordpress-theme')",
                 )
 
                 generate_btn = gr.Button(
                     "🚀 Generate WordPress Theme",
                     variant="primary",
-                    size="lg"
+                    size="lg",
                 )
 
             with gr.Column(scale=2):
                 gr.Markdown("### 📊 Generation Status")
 
                 status_output = gr.Textbox(
-                    label="Status",
-                    lines=15,
-                    max_lines=20,
-                    interactive=False
+                    label="Status", lines=15, max_lines=20, interactive=False
                 )
 
                 gr.Markdown("### ℹ️ Theme Information")
@@ -450,13 +469,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 gr.Markdown("### 📁 Generated Files")
 
-                file_tree_output = gr.Code(
-                    label="File Structure",
-                    language="text",
-                    lines=15
-                )
+                file_tree_output = gr.Code(label="File Structure", language="text", lines=15)
 
-        gr.Markdown("""
+        gr.Markdown(
+            """
         ---
         ### 💡 Tips
 
@@ -471,7 +487,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         - "Build a modern corporate website with services section, team page, and testimonials"
         - "Design a minimal blog theme with clean typography and sidebar widgets"
         - "Make an e-commerce theme with WooCommerce support and product showcases"
-        """)
+        """
+        )
 
         # Connect the generate button
         generate_btn.click(
@@ -482,20 +499,18 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 text_upload,
                 push_checkbox,
                 repo_input,
-                deploy_wp_checkbox
+                deploy_wp_checkbox,
             ],
-            outputs=[
-                status_output,
-                theme_info_output,
-                file_tree_output
-            ]
+            outputs=[status_output, theme_info_output, file_tree_output],
         )
 
     logger.info("Gradio interface created successfully")
     return interface
 
 
-def launch_gui(config: dict, share: bool = False, server_name: str = "0.0.0.0", server_port: int = 7860):
+def launch_gui(
+    config: dict, share: bool = False, server_name: str = "0.0.0.0", server_port: int = 7860
+):
     """Launch the Gradio GUI interface.
 
     Args:
@@ -511,11 +526,6 @@ def launch_gui(config: dict, share: bool = False, server_name: str = "0.0.0.0", 
 
     logger.info(f"Launching Gradio interface on {server_name}:{server_port}")
 
-    interface.launch(
-        share=share,
-        server_name=server_name,
-        server_port=server_port,
-        show_error=True
-    )
+    interface.launch(share=share, server_name=server_name, server_port=server_port, show_error=True)
 
     return interface
