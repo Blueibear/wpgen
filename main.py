@@ -14,13 +14,12 @@ import yaml
 from dotenv import load_dotenv
 
 from wpgen import (
-    OpenAIProvider,
-    AnthropicProvider,
     PromptParser,
     WordPressGenerator,
     GitHubIntegration,
     setup_logger,
     get_logger,
+    get_llm_provider,
 )
 
 
@@ -46,38 +45,6 @@ def load_config(config_path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def get_llm_provider(config: dict):
-    """Initialize and return the configured LLM provider.
-
-    Args:
-        config: Configuration dictionary
-
-    Returns:
-        LLM provider instance
-
-    Raises:
-        ValueError: If provider is not configured correctly
-    """
-    provider_name = config.get("llm", {}).get("provider", "openai")
-
-    if provider_name == "openai":
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
-        provider_config = config.get("llm", {}).get("openai", {})
-        return OpenAIProvider(api_key, provider_config)
-
-    elif provider_name == "anthropic":
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-        provider_config = config.get("llm", {}).get("anthropic", {})
-        return AnthropicProvider(api_key, provider_config)
-
-    else:
-        raise ValueError(f"Unknown LLM provider: {provider_name}")
-
-
 @click.group()
 @click.version_option(version="1.0.0")
 def cli():
@@ -93,6 +60,7 @@ def cli():
 @click.option(
     "--config",
     "-c",
+    "config_path",
     default="config.yaml",
     help="Path to configuration file"
 )
@@ -121,7 +89,7 @@ def cli():
 )
 def generate(
     prompt: Optional[str],
-    config: str,
+    config_path: str,
     output: Optional[str],
     push: bool,
     repo_name: Optional[str],
@@ -136,7 +104,7 @@ def generate(
     """
     try:
         # Load configuration
-        cfg = load_config(config)
+        cfg = load_config(config_path)
 
         # Setup logging
         log_config = cfg.get("logging", {})
@@ -242,16 +210,17 @@ def generate(
 @click.option(
     "--config",
     "-c",
+    "config_path",
     default="config.yaml",
     help="Path to configuration file"
 )
-def serve(config: str):
+def serve(config_path: str):
     """Start the web UI server.
 
     Launch a Flask web server for the WPGen web interface.
     """
     try:
-        cfg = load_config(config)
+        cfg = load_config(config_path)
         web_config = cfg.get("web", {})
 
         if not web_config.get("enabled", True):
