@@ -7,7 +7,7 @@ It creates all necessary files including style.css, functions.php, templates, et
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from ..llm.base import BaseLLMProvider
@@ -38,11 +38,16 @@ class WordPressGenerator:
         self.config = config or {}
         logger.info(f"Initialized WordPressGenerator with output dir: {output_dir}")
 
-    def generate(self, requirements: Dict[str, Any]) -> str:
-        """Generate a complete WordPress theme from requirements.
+    def generate(
+        self,
+        requirements: Dict[str, Any],
+        images: Optional[List[Dict[str, Any]]] = None
+    ) -> str:
+        """Generate a complete WordPress theme from requirements with optional visual references.
 
         Args:
             requirements: Parsed theme requirements
+            images: Optional list of design mockup images for vision-based generation
 
         Returns:
             Path to the generated theme directory
@@ -52,6 +57,11 @@ class WordPressGenerator:
         """
         theme_name = requirements["theme_name"]
         logger.info(f"Starting theme generation: {theme_name}")
+
+        # Store images for use in code generation methods
+        self.design_images = images if images else None
+        if self.design_images:
+            logger.info(f"Using {len(self.design_images)} design reference image(s) for visual guidance")
 
         # Create theme directory
         theme_dir = self.output_dir / theme_name
@@ -144,7 +154,13 @@ Include:
 - Utility classes"""
 
         try:
-            css_code = self.llm_provider.generate_code(description, "css", context)
+            # Pass design images for visual reference (especially important for CSS styling)
+            css_code = self.llm_provider.generate_code(
+                description,
+                "css",
+                context,
+                images=self.design_images
+            )
             full_css = header + css_code
 
             style_file = theme_dir / "style.css"
@@ -186,7 +202,13 @@ Include:
 - Security best practices (sanitization, escaping)"""
 
         try:
-            php_code = self.llm_provider.generate_code(description, "php", context)
+            # Pass design images for visual reference
+            php_code = self.llm_provider.generate_code(
+                description,
+                "php",
+                context,
+                images=self.design_images
+            )
 
             # Ensure PHP opening tag
             if not php_code.strip().startswith("<?php"):
@@ -225,7 +247,13 @@ This is the fallback template. Include:
 Use modern WordPress template tags and best practices."""
 
         try:
-            php_code = self.llm_provider.generate_code(description, "php", context)
+            # Pass design images for layout/structure reference
+            php_code = self.llm_provider.generate_code(
+                description,
+                "php",
+                context,
+                images=self.design_images
+            )
 
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
@@ -262,7 +290,13 @@ Include:
 Follow WordPress coding standards."""
 
         try:
-            php_code = self.llm_provider.generate_code(description, "php", context)
+            # Pass design images for header layout/navigation reference
+            php_code = self.llm_provider.generate_code(
+                description,
+                "php",
+                context,
+                images=self.design_images
+            )
 
             if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
@@ -297,7 +331,13 @@ Include:
 Follow WordPress coding standards."""
 
         try:
-            php_code = self.llm_provider.generate_code(description, "php", context)
+            # Pass design images for footer layout reference
+            php_code = self.llm_provider.generate_code(
+                description,
+                "php",
+                context,
+                images=self.design_images
+            )
 
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
@@ -330,7 +370,13 @@ Include:
 - Follow WordPress coding standards."""
 
         try:
-            php_code = self.llm_provider.generate_code(description, "php", context)
+            # Pass design images for sidebar layout reference
+            php_code = self.llm_provider.generate_code(
+                description,
+                "php",
+                context,
+                images=self.design_images
+            )
 
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
@@ -379,7 +425,13 @@ Include:
 {description}. Include appropriate WordPress loop and template tags.
 Follow WordPress template hierarchy and coding standards."""
 
-                php_code = self.llm_provider.generate_code(full_description, "php", context)
+                # Pass design images for all template files
+                php_code = self.llm_provider.generate_code(
+                    full_description,
+                    "php",
+                    context,
+                    images=self.design_images
+                )
 
                 if not php_code.strip().startswith("<?php"):
                     php_code = "<?php\n" + php_code

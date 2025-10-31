@@ -188,7 +188,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             yield status, "", ""
 
             # Generate theme
-            status += "🏗️  Generating WordPress theme files...\n"
+            status += "🏗️  Generating WordPress theme files"
+            if processed_files['images']:
+                status += f" (using {len(processed_files['images'])} design reference(s))"
+            status += "...\n"
             yield status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
@@ -198,7 +201,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 config.get("wordpress", {})
             )
 
-            theme_dir = generator.generate(requirements)
+            # Pass design images to generator for vision-based code generation
+            theme_dir = generator.generate(
+                requirements,
+                images=processed_files['images'] if processed_files['images'] else None
+            )
 
             status += f"  ✓ Theme generated: {theme_dir}\n"
             yield status, "", ""

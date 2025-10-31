@@ -44,14 +44,17 @@ class BaseLLMProvider(ABC):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        images: Optional[List[Dict[str, Any]]] = None
     ) -> str:
-        """Generate code based on description and type.
+        """Generate code based on description and type with optional visual references.
 
         Args:
             description: Description of what the code should do
             file_type: Type of file to generate (e.g., 'php', 'css', 'js')
             context: Additional context for code generation
+            images: Optional list of image data dicts with 'data' (base64), 'mime_type', 'name'
+                   for vision-based code generation (e.g., matching mockup designs)
 
         Returns:
             Generated code as string
