@@ -7,6 +7,15 @@ on:
         description: 'Theme directory to deploy'
         required: true
         type: string
+      deployment_method:
+        description: 'Deployment method'
+        required: true
+        type: choice
+        options:
+          - ftp
+          - ssh
+          - manual
+        default: 'manual'
 
 jobs:
   deploy:
@@ -19,10 +28,11 @@ jobs:
       - name: Setup deployment info
         run: |
           echo "Deploying theme from: ${{ github.event.inputs.theme_dir }}"
+          echo "Deployment method: ${{ github.event.inputs.deployment_method }}"
           echo "This is a template workflow for deploying WPGen-generated themes."
 
-      - name: Deploy via FTP (if configured)
-        if: ${{ secrets.FTP_HOST != '' }}
+      - name: Deploy via FTP
+        if: github.event.inputs.deployment_method == 'ftp'
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -36,8 +46,8 @@ jobs:
             **/node_modules/**
             **/README.md
 
-      - name: Deploy via SSH (if configured)
-        if: ${{ secrets.SSH_HOST != '' }}
+      - name: Deploy via SSH
+        if: github.event.inputs.deployment_method == 'ssh'
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -46,7 +56,23 @@ jobs:
           SOURCE: ${{ github.event.inputs.theme_dir }}/
           TARGET: ${{ secrets.SSH_REMOTE_PATH }}
 
+      - name: Manual deployment instructions
+        if: github.event.inputs.deployment_method == 'manual'
+        run: |
+          echo "📋 Manual Deployment Instructions"
+          echo ""
+          echo "1. Download the theme files from: ${{ github.event.inputs.theme_dir }}"
+          echo "2. Create a ZIP archive of the theme directory"
+          echo "3. Log in to your WordPress admin panel"
+          echo "4. Navigate to Appearance > Themes > Add New > Upload Theme"
+          echo "5. Select the ZIP file and click 'Install Now'"
+          echo "6. After installation completes, click 'Activate'"
+          echo ""
+          echo "Alternatively, use FTP to upload directly to:"
+          echo "  /wp-content/themes/ on your WordPress server"
+
       - name: Deployment complete
+        if: github.event.inputs.deployment_method != 'manual'
         run: |
           echo "✅ Theme deployment completed successfully!"
           echo ""
