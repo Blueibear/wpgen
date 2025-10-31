@@ -475,5 +475,11 @@ def manage(command_text, config_path):
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the wpgen CLI tool."""
     cli()
+
+
+if __name__ == "__main__":
+    main()
+
