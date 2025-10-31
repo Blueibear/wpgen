@@ -249,6 +249,51 @@ def serve(config_path: str):
 
 
 @cli.command()
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    default="config.yaml",
+    help="Path to configuration file"
+)
+@click.option(
+    "--share",
+    is_flag=True,
+    help="Create a public share link"
+)
+@click.option(
+    "--port",
+    "-p",
+    default=7860,
+    help="Port to run the GUI server on"
+)
+def gui(config_path: str, share: bool, port: int):
+    """Launch the graphical user interface.
+
+    Start a Gradio-based GUI for generating WordPress themes with
+    support for image uploads and document processing.
+    """
+    try:
+        cfg = load_config(config_path)
+
+        # Import GUI module
+        from wpgen.gui import launch_gui
+
+        click.echo(f"\n🎨 Launching WPGen GUI on http://localhost:{port}\n")
+        if share:
+            click.echo("📡 Creating public share link...\n")
+        click.echo("Press CTRL+C to stop\n")
+
+        launch_gui(cfg, share=share, server_port=port)
+
+    except Exception as e:
+        click.echo(f"\n❌ Error: {str(e)}\n", err=True)
+        if "--debug" in sys.argv:
+            raise
+        sys.exit(1)
+
+
+@cli.command()
 def init():
     """Initialize WPGen configuration.
 

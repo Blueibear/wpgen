@@ -4,7 +4,7 @@ This module takes natural language descriptions and converts them into
 structured theme requirements using LLM providers.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
 
@@ -64,6 +64,53 @@ class PromptParser:
 
         except Exception as e:
             logger.error(f"Failed to parse prompt: {str(e)}")
+            raise
+
+    def parse_multimodal(
+        self,
+        prompt: str,
+        images: Optional[List[Dict[str, Any]]] = None,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Parse a prompt with multi-modal inputs (images, additional text).
+
+        Args:
+            prompt: Natural language description of the WordPress site
+            images: List of image data dicts with 'data' (base64) and 'mime_type'
+            additional_context: Additional text context from uploaded files
+
+        Returns:
+            Dictionary containing structured requirements
+
+        Raises:
+            ValueError: If prompt is empty or invalid
+            Exception: If parsing fails
+        """
+        if not prompt or not prompt.strip():
+            raise ValueError("Prompt cannot be empty")
+
+        logger.info(
+            f"Parsing multi-modal prompt: {prompt[:100]}... "
+            f"(images: {len(images) if images else 0}, "
+            f"context: {len(additional_context) if additional_context else 0} chars)"
+        )
+
+        try:
+            # Use the LLM provider's multi-modal analyze method
+            requirements = self.llm_provider.analyze_prompt_multimodal(
+                prompt,
+                images=images,
+                additional_context=additional_context
+            )
+
+            # Validate and normalize the requirements
+            requirements = self._validate_requirements(requirements)
+
+            logger.info(f"Successfully parsed multi-modal prompt into theme: {requirements['theme_name']}")
+            return requirements
+
+        except Exception as e:
+            logger.error(f"Failed to parse multi-modal prompt: {str(e)}")
             raise
 
     def _validate_requirements(self, requirements: Dict[str, Any]) -> Dict[str, Any]:

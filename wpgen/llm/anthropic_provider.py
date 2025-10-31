@@ -4,7 +4,7 @@ Implements the LLM provider interface using Anthropic's Claude API.
 """
 
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from anthropic import Anthropic
 
 from .base import BaseLLMProvider
@@ -182,3 +182,103 @@ Return ONLY valid JSON, no other text."""
         except Exception as e:
             logger.error(f"Failed to analyze prompt: {str(e)}")
             raise
+
+    def analyze_prompt_multimodal(
+        self,
+        prompt: str,
+        images: Optional[List[Dict[str, Any]]] = None,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Analyze user prompt with multi-modal inputs (images, additional text).
+
+        Args:
+            prompt: Natural language description of the website
+            images: List of image data dicts with 'data' (base64) and 'mime_type'
+            additional_context: Additional text context from uploaded files
+
+        Returns:
+            Dictionary containing extracted requirements
+
+        Raises:
+            Exception: If analysis fails
+        """
+        system_prompt = """You are an expert at analyzing WordPress website requirements.
+        Extract key information from user descriptions, design references, and additional context.
+        Return a structured JSON object. Be specific and infer reasonable defaults."""
+
+        # Build multi-modal content
+        content = []
+
+        # Add text prompt
+        text_content = f"""Analyze this WordPress website description and extract the following information:
+
+Description: "{prompt}"
+"""
+
+        if additional_context:
+            text_content += f"\n\nAdditional Context from uploaded files:\n{additional_context}\n"
+
+        # Add images if provided (Claude supports vision)
+        if images and len(images) > 0:
+            text_content += f"\n\nDesign reference images ({len(images)} provided): Analyze these images for style, layout, color scheme, and design patterns.\n"
+
+            for idx, image in enumerate(images):
+                content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image.get("mime_type", "image/jpeg"),
+                        "data": image["data"]
+                    }
+                })
+
+        text_content += """
+Return a JSON object with these fields:
+- theme_name: A short, kebab-case name for the theme
+- theme_display_name: A human-readable name
+- description: A one-sentence theme description
+- color_scheme: Primary color scheme inferred from description or images
+- features: Array of features to implement
+- pages: Array of page templates needed
+- layout: Layout type (analyze from images if provided)
+- post_types: Custom post types needed
+- navigation: Navigation requirements
+- integrations: External integrations
+- design_notes: Additional design observations from images (if provided)
+
+Return ONLY valid JSON, no other text."""
+
+        content.insert(0, {"type": "text", "text": text_content})
+
+        try:
+            logger.debug(f"Sending multi-modal request to Anthropic (images: {len(images) if images else 0})")
+
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                system=system_prompt,
+                messages=[{"role": "user", "content": content}]
+            )
+
+            result_text = response.content[0].text
+
+            # Extract JSON from response
+            result_text = result_text.strip()
+            if result_text.startswith("```"):
+                lines = result_text.split("\n")
+                result_text = "\n".join(lines[1:-1]) if len(lines) > 2 else result_text
+
+            result = json.loads(result_text)
+            logger.info(f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}")
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON from multi-modal response: {str(e)}")
+            # Fallback to text-only analysis
+            return super().analyze_prompt_multimodal(prompt, images, additional_context)
+
+        except Exception as e:
+            logger.error(f"Failed to analyze multi-modal prompt: {str(e)}")
+            # Fallback to text-only analysis
+            return super().analyze_prompt_multimodal(prompt, images, additional_context)
