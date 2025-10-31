@@ -23,7 +23,10 @@ setup(
     version="1.0.0",
     author="WPGen Contributors",
     author_email="",
-    description="AI-powered WordPress theme generator with multi-modal support and LLM-based site management",
+    description=(
+        "AI-powered WordPress theme generator with multi-modal support and "
+        "LLM-based site management"
+    ),
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/wpgen",
@@ -32,7 +35,6 @@ setup(
         "Source": "https://github.com/yourusername/wpgen",
     },
     packages=find_packages(exclude=["tests", "tests.*", "docs", "examples"]),
-    py_modules=["main"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -60,7 +62,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "wpgen=main:main",
+            "wpgen=wpgen.main:main",
         ],
     },
     include_package_data=True,

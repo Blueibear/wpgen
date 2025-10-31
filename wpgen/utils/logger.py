@@ -20,11 +20,11 @@ class ColoredFormatter(logging.Formatter):
     """Custom formatter that adds colors to log levels."""
 
     COLORS = {
-        'DEBUG': Fore.CYAN,
-        'INFO': Fore.GREEN,
-        'WARNING': Fore.YELLOW,
-        'ERROR': Fore.RED,
-        'CRITICAL': Fore.RED + Style.BRIGHT,
+        "DEBUG": Fore.CYAN,
+        "INFO": Fore.GREEN,
+        "WARNING": Fore.YELLOW,
+        "ERROR": Fore.RED,
+        "CRITICAL": Fore.RED + Style.BRIGHT,
     }
 
     def format(self, record):
@@ -69,19 +69,19 @@ def setup_logger(
 
         if format_type == "json":
             console_format = jsonlogger.JsonFormatter(
-                '%(timestamp)s %(level)s %(name)s %(message)s',
-                rename_fields={'timestamp': 'asctime', 'level': 'levelname'}
+                "%(timestamp)s %(level)s %(name)s %(message)s",
+                rename_fields={"timestamp": "asctime", "level": "levelname"},
             )
         else:
             if colored_console:
                 console_format = ColoredFormatter(
-                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S'
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S",
                 )
             else:
                 console_format = logging.Formatter(
-                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S'
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S",
                 )
 
         console_handler.setFormatter(console_format)
@@ -93,18 +93,18 @@ def setup_logger(
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(getattr(logging, level.upper()))
 
         if format_type == "json":
             file_format = jsonlogger.JsonFormatter(
-                '%(timestamp)s %(level)s %(name)s %(message)s %(pathname)s %(lineno)d',
-                rename_fields={'timestamp': 'asctime', 'level': 'levelname'}
+                "%(timestamp)s %(level)s %(name)s %(message)s %(pathname)s %(lineno)d",
+                rename_fields={"timestamp": "asctime", "level": "levelname"},
             )
         else:
             file_format = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(pathname)s:%(lineno)d]',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(pathname)s:%(lineno)d]",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
 
         file_handler.setFormatter(file_format)
