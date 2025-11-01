@@ -505,6 +505,10 @@ For issues, questions, or contributions:
 - Check the documentation
 - Review existing issues for solutions
 
+If you find WPGen useful, consider supporting the project:
+
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="Blueibear" data-color="#FFDD00" data-emoji=""  data-font="Comic" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+
 ## Roadmap
 
 Future enhancements planned:
