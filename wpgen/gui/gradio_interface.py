@@ -43,6 +43,22 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
+        # Guided Mode parameters
+        gm_site_name: str = "",
+        gm_tagline: str = "",
+        gm_goal: str = "inform",
+        gm_pages: Optional[List] = None,
+        gm_mood: str = "modern-minimal",
+        gm_palette: str = "",
+        gm_typography: str = "sans",
+        gm_layout_header: str = "split",
+        gm_layout_hero: str = "image",
+        gm_sidebar: str = "none",
+        gm_container: str = "full",
+        gm_components: Optional[List] = None,
+        gm_accessibility: Optional[List] = None,
+        gm_integrations: Optional[List] = None,
+        gm_perf_lcp: float = 2500,
     ) -> Tuple[str, str, str]:
         try:
             if not prompt or not prompt.strip():
@@ -126,20 +142,59 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             else:
                 structured_context = None
 
+            # Build Guided Mode brief if any guided values provided
+            guided_brief_md = ""
+            if any([gm_site_name, gm_tagline, gm_palette, gm_pages, gm_components]):
+                status += "🎯 Applying Guided Mode specifications...\n"
+                yield status, "", ""
+
+                gm_pages = gm_pages or []
+                gm_components = gm_components or []
+                gm_accessibility = gm_accessibility or []
+                gm_integrations = gm_integrations or []
+                colors_list = [c.strip() for c in (gm_palette or "").split(",") if c.strip()]
+
+                guided_brief_md = "## Design Brief (Guided Mode)\n"
+                if gm_site_name:
+                    guided_brief_md += f"- Site name: {gm_site_name}\n"
+                if gm_tagline:
+                    guided_brief_md += f"- Tagline: {gm_tagline}\n"
+                guided_brief_md += f"- Goal: {gm_goal}\n"
+                if gm_pages:
+                    guided_brief_md += f"- Pages: {', '.join(gm_pages)}\n"
+                guided_brief_md += f"- Mood: {gm_mood}; Typography: {gm_typography}\n"
+                if colors_list:
+                    guided_brief_md += f"- Colors: {', '.join(colors_list)}\n"
+                guided_brief_md += (
+                    f"- Layout: header={gm_layout_header}, hero={gm_layout_hero}, "
+                    f"sidebar={gm_sidebar}, container={gm_container}\n"
+                )
+                if gm_components:
+                    guided_brief_md += f"- Components: {', '.join(gm_components)}\n"
+                if gm_accessibility:
+                    guided_brief_md += f"- Accessibility: {', '.join(gm_accessibility)}\n"
+                if gm_integrations:
+                    guided_brief_md += f"- Integrations: {', '.join(gm_integrations)}\n"
+                guided_brief_md += f"- Performance: LCP≤{int(gm_perf_lcp)}ms\n"
+
+                status += "  ✓ Guided specifications added to context\n"
+                yield status, "", ""
+
             status += "🔍 Analyzing requirements with AI...\n"
             yield status, "", ""
 
             parser = PromptParser(llm_provider)
 
-            if structured_context:
-                # Use the structured context as additional_context
+            # Combine structured context with guided brief
+            combined_context = (structured_context or "") + "\n\n" + guided_brief_md if guided_brief_md else structured_context
+
+            if combined_context or processed_files["images"]:
+                # Use the combined context as additional_context
                 requirements = parser.parse_multimodal(
                     prompt,
                     images=processed_files["images"] if processed_files["images"] else None,
-                    additional_context=structured_context,
+                    additional_context=combined_context,
                 )
-            elif processed_files["images"]:
-                requirements = parser.parse_multimodal(prompt, images=processed_files["images"])
             else:
                 requirements = parser.parse(prompt)
 
@@ -366,6 +421,93 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     lines=5,
                 )
 
+                # Guided Mode (optional structured inputs)
+                with gr.Accordion("🎯 Guided Mode (optional)", open=False):
+                    gr.Markdown("*Provide structured details for more consistent theme output*")
+
+                    with gr.Row():
+                        gm_site_name = gr.Textbox(label="Site name", placeholder="e.g., Finch Studio")
+                        gm_tagline = gr.Textbox(label="Tagline", placeholder="Short tagline")
+
+                    gm_goal = gr.Dropdown(
+                        label="Primary goal",
+                        choices=["inform", "convert", "sell"],
+                        value="inform"
+                    )
+
+                    gm_pages = gr.CheckboxGroup(
+                        label="Top-level pages",
+                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"],
+                        value=["Home", "About", "Blog", "Contact"]
+                    )
+
+                    with gr.Row():
+                        gm_mood = gr.Dropdown(
+                            label="Mood",
+                            choices=["modern-minimal", "playful", "brutalist", "elegant"],
+                            value="modern-minimal"
+                        )
+                        gm_typography = gr.Dropdown(
+                            label="Typography",
+                            choices=["sans", "serif", "mono"],
+                            value="sans"
+                        )
+
+                    gm_palette = gr.Textbox(
+                        label="Primary colors (hex, comma-separated)",
+                        placeholder="#0f172a, #f59e0b"
+                    )
+
+                    with gr.Row():
+                        gm_layout_header = gr.Dropdown(
+                            label="Header",
+                            choices=["centered", "split", "stacked"],
+                            value="split"
+                        )
+                        gm_layout_hero = gr.Dropdown(
+                            label="Hero",
+                            choices=["image", "video", "text"],
+                            value="image"
+                        )
+
+                    with gr.Row():
+                        gm_sidebar = gr.Dropdown(
+                            label="Sidebar",
+                            choices=["none", "left", "right"],
+                            value="none"
+                        )
+                        gm_container = gr.Dropdown(
+                            label="Container width",
+                            choices=["boxed", "full"],
+                            value="full"
+                        )
+
+                    gm_components = gr.CheckboxGroup(
+                        label="Components",
+                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"],
+                        value=["blog", "contact_form", "cta"]
+                    )
+
+                    gm_accessibility = gr.CheckboxGroup(
+                        label="Accessibility",
+                        choices=["keyboard", "high-contrast", "reduced-motion"],
+                        value=[]
+                    )
+
+                    gm_integrations = gr.CheckboxGroup(
+                        label="Integrations",
+                        choices=["woocommerce", "seo", "analytics", "newsletter"],
+                        value=["seo", "analytics"]
+                    )
+
+                    gm_perf_lcp = gr.Slider(
+                        label="LCP target (ms)",
+                        minimum=1500,
+                        maximum=5000,
+                        step=100,
+                        value=2500
+                    )
+
                 gr.Markdown("### 🖼️ Upload Design References (Optional)")
                 gr.Markdown(
                     "Upload images (.png, .jpg) to guide the theme's visual design."
@@ -461,6 +603,22 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 push_checkbox,
                 repo_input,
                 deploy_wp_checkbox,
+                # Guided Mode inputs
+                gm_site_name,
+                gm_tagline,
+                gm_goal,
+                gm_pages,
+                gm_mood,
+                gm_palette,
+                gm_typography,
+                gm_layout_header,
+                gm_layout_hero,
+                gm_sidebar,
+                gm_container,
+                gm_components,
+                gm_accessibility,
+                gm_integrations,
+                gm_perf_lcp,
             ],
             outputs=[status_output, theme_info_output, file_tree_output],
         )

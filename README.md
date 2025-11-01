@@ -97,9 +97,25 @@ Then open your browser to `http://localhost:7860`
 **Features:**
 - ✅ Upload design mockups and screenshots
 - ✅ Upload content documents (PDF, Markdown, Text)
+- ✅ **Guided Mode** for structured theme specifications
 - ✅ Real-time generation status
 - ✅ Visual file tree preview
 - ✅ One-click GitHub push
+
+#### Guided Mode (optional)
+
+Alongside the natural-language prompt, Guided Mode lets you specify:
+
+- **Brand basics**: Site name, tagline, primary goal (inform/convert/sell)
+- **Pages**: Select top-level pages (Home, About, Blog, Contact, Services, etc.)
+- **Style**: Mood (modern-minimal, playful, brutalist, elegant), color palette (hex codes), typography (sans/serif/mono)
+- **Layout**: Header style (centered/split/stacked), hero type (image/video/text), sidebar position, container width
+- **Components**: Blog, cards, gallery, testimonials, pricing, FAQ, contact form, newsletter, CTA, breadcrumbs
+- **Accessibility**: Keyboard navigation, high-contrast mode, reduced-motion support
+- **Integrations**: WooCommerce, SEO, analytics, newsletter
+- **Performance**: LCP (Largest Contentful Paint) target in milliseconds
+
+These explicit choices override AI inferences and are translated into CSS variables, template parts, and generator options for more consistent, production-ready themes.
 
 #### Windows tip: bind to IPv4 explicitly
 
