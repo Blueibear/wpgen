@@ -219,12 +219,12 @@ Requirements:
             response = self.generate(analysis_prompt, system_prompt)
 
             # Extract JSON from response (handle if wrapped in markdown)
-            response = response.strip()
-            if response.startswith("```"):
-                lines = response.split("\n")
-                response = "\n".join(lines[1:-1]) if len(lines) > 2 else response
+            result = self._extract_json(response)
 
-            result = json.loads(response)
+            # Ensure theme_display_name exists
+            if "theme_display_name" not in result and "theme_name" in result:
+                result["theme_display_name"] = result["theme_name"].replace("-", " ").title()
+
             logger.info(f"Successfully analyzed prompt: {result.get('theme_name', 'unknown')}")
             return result
 
@@ -344,12 +344,12 @@ Return ONLY valid JSON, no other text."""
             result_text = response.choices[0].message.content
 
             # Extract JSON from response
-            result_text = result_text.strip()
-            if result_text.startswith("```"):
-                lines = result_text.split("\n")
-                result_text = "\n".join(lines[1:-1]) if len(lines) > 2 else result_text
+            result = self._extract_json(result_text)
 
-            result = json.loads(result_text)
+            # Ensure theme_display_name exists
+            if "theme_display_name" not in result and "theme_name" in result:
+                result["theme_display_name"] = result["theme_name"].replace("-", " ").title()
+
             logger.info(
                 f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}"
             )
@@ -357,6 +357,7 @@ Return ONLY valid JSON, no other text."""
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from multi-modal response: {str(e)}")
+            logger.error(f"Response text: {result_text[:500] if 'result_text' in locals() else 'N/A'}")
             # Fallback to text-only analysis
             return super().analyze_prompt_multimodal(prompt, images, additional_context)
 
@@ -418,3 +419,68 @@ Return ONLY valid JSON, no other text."""
         except Exception as e:
             logger.error(f"Failed to analyze image with GPT-4 Vision: {str(e)}")
             raise
+
+    def _extract_json(self, text: str) -> Dict[str, Any]:
+        """Extract JSON from LLM response text.
+
+        Handles various formats:
+        - Plain JSON
+        - JSON wrapped in markdown code blocks (```json, ```)
+        - JSON with extra text before/after
+
+        Args:
+            text: Response text from LLM
+
+        Returns:
+            Parsed JSON dictionary
+
+        Raises:
+            json.JSONDecodeError: If no valid JSON found
+        """
+        text = text.strip()
+
+        # Try direct parsing first
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Try removing markdown code blocks
+        if "```" in text:
+            # Find content between code blocks
+            parts = text.split("```")
+            for i, part in enumerate(parts):
+                # Skip the outer parts and language identifiers
+                if i % 2 == 1:  # Inside code block
+                    # Remove language identifier if present
+                    lines = part.strip().split("\n", 1)
+                    if lines[0].strip().lower() in ["json", ""]:
+                        json_text = lines[1] if len(lines) > 1 else lines[0]
+                    else:
+                        json_text = part
+
+                    try:
+                        return json.loads(json_text.strip())
+                    except json.JSONDecodeError:
+                        continue
+
+        # Try to find JSON object in text
+        # Look for content between { and }
+        start = text.find("{")
+        if start != -1:
+            # Find matching closing brace
+            depth = 0
+            for i in range(start, len(text)):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(text[start : i + 1])
+                        except json.JSONDecodeError:
+                            pass
+                        break
+
+        # If all else fails, raise the original error
+        raise json.JSONDecodeError("No valid JSON found in response", text, 0)
