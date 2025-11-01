@@ -144,7 +144,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 requirements = parser.parse(prompt)
 
             status += f"  ✓ Theme: {requirements['theme_display_name']}\n"
-            status += f"  ✓ Features: {', '.join(requirements['features'][:5])}\n"
+            # Ensure features are strings before joining
+            features = [str(f) for f in requirements.get('features', [])]
+            status += f"  ✓ Features: {', '.join(features[:5])}\n"
             if "design_notes" in requirements and requirements["design_notes"]:
                 status += "  ✓ Design insights extracted from images\n"
             yield status, "", ""
@@ -168,6 +170,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status += f"  ✓ Theme generated: {theme_dir}\n"
             yield status, "", ""
 
+            # Ensure all list items are strings for safe display
+            features_list = [str(f) for f in requirements.get('features', [])]
+            pages_list = [str(p) for p in requirements.get('pages', [])]
+
             theme_info = f"""## Theme Information
 
 **Name:** {requirements['theme_display_name']}
@@ -176,10 +182,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 **Layout:** {requirements.get('layout', 'full-width')}
 
 **Features:**
-{chr(10).join(f'- {feature}' for feature in requirements.get('features', []))}
+{chr(10).join(f'- {feature}' for feature in features_list)}
 
 **Page Templates:**
-{chr(10).join(f'- {page}' for page in requirements.get('pages', []))}
+{chr(10).join(f'- {page}' for page in pages_list)}
 """
 
             if "design_notes" in requirements and requirements["design_notes"]:
