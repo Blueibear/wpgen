@@ -1,9 +1,5 @@
 # wpgen/__main__.py
-"""Module launcher for wpgen package.
-
-Allows running wpgen as a module: python -m wpgen
-"""
-from .main import main
+from .main import main  # main() already calls cli()
 
 if __name__ == "__main__":
     main()
