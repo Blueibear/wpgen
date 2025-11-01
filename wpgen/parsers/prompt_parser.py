@@ -177,13 +177,20 @@ class PromptParser:
             theme_name = "wpgen-theme"
         requirements["theme_name"] = theme_name
 
-        # Ensure arrays are actually arrays
+        # Ensure arrays are actually arrays with string elements
         array_fields = ["features", "pages", "post_types", "navigation", "integrations"]
         for field in array_fields:
             if field not in requirements:
                 requirements[field] = []
             elif not isinstance(requirements[field], list):
-                requirements[field] = [requirements[field]]
+                # Convert single value to list
+                requirements[field] = [str(requirements[field])]
+            else:
+                # Ensure all items in the list are strings
+                requirements[field] = [
+                    str(item) if not isinstance(item, str) else item
+                    for item in requirements[field]
+                ]
 
         # Set defaults for optional fields
         if "color_scheme" not in requirements:
