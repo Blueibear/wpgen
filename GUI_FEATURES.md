@@ -354,7 +354,7 @@ pip install PyPDF2
   ```yaml
   llm:
     openai:
-      model: "gpt-4-vision-preview"  # or "gpt-4-turbo"
+      model: "gpt-4o"  # or "gpt-4-turbo"
   ```
 
 ---
@@ -368,7 +368,7 @@ pip install PyPDF2
 llm:
   provider: "openai"
   openai:
-    model: "gpt-4-vision-preview"  # or "gpt-4-turbo"
+    model: "gpt-4o"  # or "gpt-4-turbo"
     max_tokens: 4096
 ```
 
