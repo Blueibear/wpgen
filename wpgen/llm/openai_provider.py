@@ -144,7 +144,7 @@ Requirements:
                     )
 
                 # Use vision-capable model
-                vision_model = "gpt-4-vision-preview"
+                vision_model = "gpt-4o"
 
                 # Call OpenAI vision API
                 response = self.client.chat.completions.create(
@@ -329,7 +329,7 @@ Return ONLY valid JSON, no other text."""
             )
 
             # Use vision model if images are provided
-            model = "gpt-4-vision-preview" if images else self.model
+            model = "gpt-4o" if images else self.model
 
             response = self.client.chat.completions.create(
                 model=model,
@@ -396,7 +396,7 @@ Return ONLY valid JSON, no other text."""
             ]
 
             # Use vision-capable model
-            vision_model = "gpt-4-vision-preview"
+            vision_model = "gpt-4o"
 
             # Call OpenAI vision API
             response = self.client.chat.completions.create(
