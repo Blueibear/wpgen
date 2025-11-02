@@ -107,6 +107,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 text_files=text_paths if text_paths else None,
             )
 
+            # Check if images were uploaded but failed to process
+            if image_paths and not processed_files["images"]:
+                logger.warning(f"User uploaded {len(image_paths)} image(s) but none were successfully processed!")
+                status += f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be processed. Generation will continue without image analysis.\n"
+                yield status, "", ""
+
             image_summaries = None
             if processed_files["images"]:
                 status += (
