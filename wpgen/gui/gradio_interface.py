@@ -38,8 +38,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     def generate_theme(
         prompt: str,
-        image_files: Optional[List] = None,
-        text_files: Optional[List] = None,
+        image_files=None,
+        text_files=None,
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
@@ -47,7 +47,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_site_name: str = "",
         gm_tagline: str = "",
         gm_goal: str = "inform",
-        gm_pages: Optional[List] = None,
+        gm_pages=None,
         gm_mood: str = "modern-minimal",
         gm_palette: str = "",
         gm_typography: str = "sans",
@@ -55,11 +55,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_layout_hero: str = "image",
         gm_sidebar: str = "none",
         gm_container: str = "full",
-        gm_components: Optional[List] = None,
-        gm_accessibility: Optional[List] = None,
-        gm_integrations: Optional[List] = None,
+        gm_components=None,
+        gm_accessibility=None,
+        gm_integrations=None,
         gm_perf_lcp: float = 2500,
-    ) -> Tuple[str, str, str]:
+    ):
         try:
             if not prompt or not prompt.strip():
                 return "❌ Error: Please provide a description of your website.", "", ""
