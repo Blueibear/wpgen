@@ -75,6 +75,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_accessibility: list | None = None,
         gm_integrations: list | None = None,
         gm_perf_lcp: float = 2500,
+        # Optional Features parameters
+        woo_enabled: bool = False,
+        blocks_enabled: list | None = None,
+        darkmode_enabled: bool = False,
+        preloader_enabled: bool = False,
     ):
         try:
             if not prompt or not prompt.strip():
@@ -205,13 +210,36 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 status += "  ✓ Guided specifications added to context\n"
                 yield status, "", ""
 
+            # Build Optional Features brief
+            blocks_enabled = blocks_enabled or []
+            options_brief_md = ""
+            if any([woo_enabled, blocks_enabled, darkmode_enabled, preloader_enabled]):
+                status += "✨ Adding optional features...\n"
+                yield status, "", ""
+
+                options_brief_md = "## Build Options\n"
+                options_brief_md += f"- WooCommerce: {woo_enabled}\n"
+                options_brief_md += f"- Blocks: {', '.join(blocks_enabled) if blocks_enabled else 'none'}\n"
+                options_brief_md += f"- Dark/Light Toggle: {darkmode_enabled}\n"
+                options_brief_md += f"- Animated Preloader: {preloader_enabled}\n"
+                options_brief_md += f"- Smooth Transitions: True (always on)\n"
+                options_brief_md += f"- Thumb-friendly Mobile Nav: True (always on)\n"
+
+                status += "  ✓ Optional features configured\n"
+                yield status, "", ""
+
             status += "🔍 Analyzing requirements with AI...\n"
             yield status, "", ""
 
             parser = PromptParser(llm_provider)
 
-            # Combine structured context with guided brief
-            combined_context = (structured_context or "") + "\n\n" + guided_brief_md if guided_brief_md else structured_context
+            # Combine structured context with guided brief and options
+            combined_context = structured_context or ""
+            if guided_brief_md:
+                combined_context += "\n\n" + guided_brief_md
+            if options_brief_md:
+                combined_context += "\n\n" + options_brief_md
+            combined_context = combined_context if combined_context.strip() else None
 
             if combined_context or processed_files["images"]:
                 # Use the combined context as additional_context
@@ -236,6 +264,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             if processed_files["images"]:
                 status += f" (using {len(processed_files['images'])} design reference(s))"
             status += "...\n"
+            yield status, "", ""
+
+            # Add timing warning
+            status += "⚠️  This step can take a couple of minutes. Please keep this tab open...\n"
             yield status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
@@ -529,6 +561,32 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         value=2500
                     )
 
+                with gr.Accordion("✨ Optional Features", open=False):
+                    gr.Markdown("*Add advanced features to your theme*")
+
+                    woo_checkbox = gr.Checkbox(
+                        label="WooCommerce support & styling",
+                        value=False
+                    )
+
+                    blocks_checkboxgroup = gr.CheckboxGroup(
+                        label="Custom Gutenberg blocks",
+                        choices=["featured_products", "lifestyle_image", "promo_banner"],
+                        value=[]
+                    )
+
+                    darkmode_checkbox = gr.Checkbox(
+                        label="Light/Dark mode toggle",
+                        value=False
+                    )
+
+                    preloader_checkbox = gr.Checkbox(
+                        label="Animated loading logo (preloader)",
+                        value=False
+                    )
+
+                    gr.Markdown("*Note: Smooth page transitions and mobile-friendly navigation are always included.*")
+
                 gr.Markdown("### 🖼️ Upload Design References (Optional)")
                 gr.Markdown(
                     "Upload images (.png, .jpg) to guide the theme's visual design."
@@ -640,6 +698,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 gm_accessibility,
                 gm_integrations,
                 gm_perf_lcp,
+                # Optional Features inputs
+                woo_checkbox,
+                blocks_checkboxgroup,
+                darkmode_checkbox,
+                preloader_checkbox,
             ],
             outputs=[status_output, theme_info_output, file_tree_output],
         )

@@ -10,6 +10,9 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 - **💬 Natural Language Input**: Describe your website in plain English
 - **🤖 AI-Powered Generation**: Uses OpenAI GPT-4 Vision or Anthropic Claude 3+ for intelligent theme creation
 - **📦 Complete WordPress Themes**: Generates all necessary files (style.css, functions.php, templates, etc.)
+- **🎭 Theme Identity**: Every theme includes a valid style.css header and auto-generated screenshot.png (from your uploads or a branded placeholder)
+- **✨ Optional Features**: WooCommerce support, custom Gutenberg blocks, dark mode toggle, animated preloader
+- **🚀 Always-On UX**: Smooth page transitions and mobile-first, thumb-friendly navigation in every theme
 - **🐙 GitHub Integration**: Automatically pushes generated themes to GitHub repositories
 - **🖥️  Three Interfaces**: Graphical UI, Web UI, or CLI - choose your preference
 - **🏗️  Modular Architecture**: Clean, extensible codebase
@@ -116,6 +119,24 @@ Alongside the natural-language prompt, Guided Mode lets you specify:
 - **Performance**: LCP (Largest Contentful Paint) target in milliseconds
 
 These explicit choices override AI inferences and are translated into CSS variables, template parts, and generator options for more consistent, production-ready themes.
+
+#### Optional Features
+
+WPGen now includes advanced optional features you can enable via checkboxes:
+
+- **WooCommerce support & styling**: Adds WooCommerce template compatibility, basic product loop styles, and shop page support (theme works even without WooCommerce plugin installed)
+- **Custom Gutenberg blocks**:
+  - **Featured Products**: Showcase product highlights
+  - **Lifestyle Image**: Large image block with overlay text
+  - **Promo Banner**: Call-to-action banner with custom styling
+- **Light/Dark mode toggle**: Floating toggle button with localStorage persistence and `prefers-color-scheme` support
+- **Animated loading logo (preloader)**: Smooth page preloader with spinner (auto-hides after load, max 3s timeout)
+
+**Always-on defaults** (included in every theme):
+- **Smooth page transitions**: CSS opacity fade on navigation + hover transitions
+- **Thumb-friendly mobile navigation**: Minimum 44×44px tap targets, responsive hamburger menu, mobile-first CSS
+
+**Note on generation time**: When the GUI displays "🏗️ Generating WordPress theme files…", theme generation can take **a couple of minutes** depending on complexity. Please keep the tab open during this process.
 
 #### Windows tip: bind to IPv4 explicitly
 
