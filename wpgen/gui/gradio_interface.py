@@ -19,6 +19,22 @@ from ..utils.text_utils import TextProcessor
 
 logger = get_logger(__name__)
 
+# Monkeypatch Gradio bug: additionalProperties can be boolean
+try:
+    from gradio_client import utils as gradio_utils
+    _original_json_schema_to_python_type = gradio_utils._json_schema_to_python_type
+
+    def _patched_json_schema_to_python_type(schema, defs):
+        """Fix: Handle case where schema is a boolean (for additionalProperties)."""
+        if isinstance(schema, bool):
+            return "dict" if schema else "None"
+        return _original_json_schema_to_python_type(schema, defs)
+
+    gradio_utils._json_schema_to_python_type = _patched_json_schema_to_python_type
+    logger.info("Applied Gradio schema bug fix at module level")
+except Exception as e:
+    logger.warning(f"Could not apply Gradio patch at module level: {e}")
+
 def create_gradio_interface(config: dict) -> gr.Blocks:
     log_config = config.get("logging", {})
     setup_logger(
@@ -38,8 +54,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     def generate_theme(
         prompt: str,
-        image_files=None,
-        text_files=None,
+        image_files: list | None = None,
+        text_files: list | None = None,
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
@@ -47,7 +63,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_site_name: str = "",
         gm_tagline: str = "",
         gm_goal: str = "inform",
-        gm_pages=None,
+        gm_pages: list | None = None,
         gm_mood: str = "modern-minimal",
         gm_palette: str = "",
         gm_typography: str = "sans",
@@ -55,9 +71,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_layout_hero: str = "image",
         gm_sidebar: str = "none",
         gm_container: str = "full",
-        gm_components=None,
-        gm_accessibility=None,
-        gm_integrations=None,
+        gm_components: list | None = None,
+        gm_accessibility: list | None = None,
+        gm_integrations: list | None = None,
         gm_perf_lcp: float = 2500,
     ):
         try:
@@ -148,10 +164,19 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 status += "🎯 Applying Guided Mode specifications...\n"
                 yield status, "", ""
 
+                # Handle None values from components
                 gm_pages = gm_pages or []
                 gm_components = gm_components or []
                 gm_accessibility = gm_accessibility or []
                 gm_integrations = gm_integrations or []
+                gm_goal = gm_goal or "inform"
+                gm_mood = gm_mood or "modern-minimal"
+                gm_typography = gm_typography or "sans"
+                gm_layout_header = gm_layout_header or "split"
+                gm_layout_hero = gm_layout_hero or "image"
+                gm_sidebar = gm_sidebar or "none"
+                gm_container = gm_container or "full"
+                gm_perf_lcp = gm_perf_lcp or 2500
                 colors_list = [c.strip() for c in (gm_palette or "").split(",") if c.strip()]
 
                 guided_brief_md = "## Design Brief (Guided Mode)\n"
@@ -437,8 +462,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                     gm_pages = gr.CheckboxGroup(
                         label="Top-level pages",
-                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"],
-                        value=["Home", "About", "Blog", "Contact"]
+                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"]
                     )
 
                     with gr.Row():
@@ -484,20 +508,17 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                     gm_components = gr.CheckboxGroup(
                         label="Components",
-                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"],
-                        value=["blog", "contact_form", "cta"]
+                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"]
                     )
 
                     gm_accessibility = gr.CheckboxGroup(
                         label="Accessibility",
-                        choices=["keyboard", "high-contrast", "reduced-motion"],
-                        value=[]
+                        choices=["keyboard", "high-contrast", "reduced-motion"]
                     )
 
                     gm_integrations = gr.CheckboxGroup(
                         label="Integrations",
-                        choices=["woocommerce", "seo", "analytics", "newsletter"],
-                        value=["seo", "analytics"]
+                        choices=["woocommerce", "seo", "analytics", "newsletter"]
                     )
 
                     gm_perf_lcp = gr.Slider(
