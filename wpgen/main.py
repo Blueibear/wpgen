@@ -66,6 +66,19 @@ def cli():
     help="GitHub repository name (auto-generated if not specified)",
 )
 @click.option("--interactive", "-i", is_flag=True, help="Interactive mode - prompt for input")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(["openai", "anthropic", "local-lmstudio", "local-ollama"], case_sensitive=False),
+    default=None,
+    help="LLM provider (overrides config file)",
+)
+@click.option(
+    "--model",
+    "-m",
+    default=None,
+    help="Model name (overrides config file)",
+)
 def generate(
     prompt: Optional[str],
     config_path: str,
@@ -73,6 +86,8 @@ def generate(
     push: bool,
     repo_name: Optional[str],
     interactive: bool,
+    provider: Optional[str],
+    model: Optional[str],
 ):
     """Generate a WordPress theme from a description.
 
@@ -84,6 +99,16 @@ def generate(
     try:
         # Load configuration
         cfg = load_config(config_path)
+
+        # Apply CLI overrides to config
+        if provider:
+            if "llm" not in cfg:
+                cfg["llm"] = {}
+            cfg["llm"]["provider"] = provider
+        if model:
+            if "llm" not in cfg:
+                cfg["llm"] = {}
+            cfg["llm"]["model"] = model
 
         # Setup logging
         log_config = cfg.get("logging", {})
@@ -110,8 +135,10 @@ def generate(
         click.echo(f"\n📝 Analyzing prompt: {prompt}\n")
 
         # Initialize LLM provider
+        provider_name = cfg.get("llm", {}).get("provider", "openai")
+        click.echo(f"🤖 Using LLM provider: {provider_name}")
         llm_provider = get_llm_provider(cfg)
-        logger.info(f"Initialized LLM provider: {cfg.get('llm', {}).get('provider', 'openai')}")
+        logger.info(f"Initialized LLM provider: {provider_name}")
 
         # Parse prompt
         click.echo("🔍 Parsing requirements...")

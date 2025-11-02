@@ -8,7 +8,8 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 - **🖼️  Multi-Modal AI**: Upload design mockups and screenshots - AI analyzes visual layouts and styles
 - **📄 Document Processing**: Upload content files (PDF, Markdown, Text) to guide theme generation
 - **💬 Natural Language Input**: Describe your website in plain English
-- **🤖 AI-Powered Generation**: Uses OpenAI GPT-4 Vision or Anthropic Claude 3+ for intelligent theme creation
+- **🤖 AI-Powered Generation**: Uses OpenAI GPT-4 Vision, Anthropic Claude 3+, **or local LLMs (LM Studio, Ollama)** for intelligent theme creation
+- **🔒 Local LLM Support**: Run 100% locally with LM Studio or Ollama - no cloud API keys required!
 - **📦 Complete WordPress Themes**: Generates all necessary files (style.css, functions.php, templates, etc.)
 - **🎭 Theme Identity**: Every theme includes a valid style.css header and auto-generated screenshot.png (from your uploads or a branded placeholder)
 - **✨ Optional Features**: WooCommerce support, custom Gutenberg blocks, dark mode toggle, animated preloader
@@ -21,7 +22,10 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 ## Requirements
 
 - Python 3.11 or higher
-- OpenAI or Anthropic API key
+- **One of the following AI providers:**
+  - OpenAI API key, OR
+  - Anthropic API key, OR
+  - Local LLM via LM Studio or Ollama (free, no API key needed!)
 - GitHub personal access token (optional, for GitHub integration)
 - Git installed on your system
 
@@ -294,7 +298,8 @@ The `config.yaml` file contains all configuration options:
 
 ```yaml
 llm:
-  provider: "openai"  # or "anthropic"
+  # Options: "openai", "anthropic", "local-lmstudio", "local-ollama"
+  provider: "openai"
 
   openai:
     model: "gpt-4-turbo-preview"
@@ -305,7 +310,24 @@ llm:
     model: "claude-3-5-sonnet-20241022"
     max_tokens: 4096
     temperature: 0.7
+
+  # Local LLM providers (no API key required!)
+  local-lmstudio:
+    base_url: "http://localhost:1234/v1"
+    model: "Meta-Llama-3.1-8B-Instruct"
+    max_tokens: 2048
+    temperature: 0.4
+    timeout: 60
+
+  local-ollama:
+    base_url: "http://localhost:11434/v1"
+    model: "llama3.1:8b-instruct"
+    max_tokens: 2048
+    temperature: 0.4
+    timeout: 60
 ```
+
+See the **"Using Local LLMs with LM Studio or Ollama"** section below for complete setup instructions.
 
 #### WordPress Generation Settings
 
@@ -385,6 +407,385 @@ deployment:
 3. Select scopes: `repo`, `workflow`
 4. Click "Generate token"
 5. Copy the token and add it to your `.env` file
+
+## Using Local LLMs with LM Studio or Ollama
+
+WPGen now supports running **100% locally** with LM Studio or Ollama - no cloud API keys required! Both platforms provide OpenAI-compatible API servers that work seamlessly with WPGen.
+
+### Why Use Local LLMs?
+
+- **Privacy**: All theme generation happens on your machine
+- **Cost**: No API usage fees
+- **Offline**: Works without internet connection
+- **Control**: Full control over model selection and parameters
+
+### Option A: LM Studio (Recommended for Beginners)
+
+[LM Studio](https://lmstudio.ai/) provides a user-friendly interface for running local LLMs with an OpenAI-compatible server.
+
+#### Setup Steps
+
+1. **Install LM Studio**
+   - Download from [lmstudio.ai](https://lmstudio.ai/)
+   - Available for Windows, macOS, and Linux
+
+2. **Download a Model**
+   - Open LM Studio's model search
+   - Recommended models for WPGen:
+     - **Meta-Llama-3.1-8B-Instruct** (balanced quality/speed, ~8GB RAM)
+     - **Qwen2.5-14B-Instruct** (better reasoning, ~14GB RAM)
+     - **Mixtral-8x7B-Instruct** (strongest quality, requires GPU with ~30GB VRAM)
+   - Click download and wait for completion
+
+3. **Start the OpenAI-Compatible Server**
+   - In LM Studio, go to the "Local Server" tab
+   - Load your downloaded model
+   - Click "Start Server"
+   - Default endpoint: `http://localhost:1234/v1`
+   - Verify server is running (you'll see a green indicator)
+
+4. **Configure WPGen**
+
+Edit `config.yaml`:
+
+```yaml
+llm:
+  provider: "local-lmstudio"
+
+  local-lmstudio:
+    base_url: "http://localhost:1234/v1"
+    model: "Meta-Llama-3.1-8B-Instruct"  # Must match loaded model in LM Studio
+    temperature: 0.4
+    max_tokens: 2048
+    timeout: 60
+```
+
+5. **Generate Your Theme**
+
+```bash
+# CLI
+wpgen generate "Modern portfolio with dark mode and gallery" --provider local-lmstudio
+
+# Or use the GUI
+wpgen gui
+# Then select "local-lmstudio" from the LLM Provider dropdown
+```
+
+#### Recommended LM Studio Settings
+
+**For general theming & UX copy:**
+- Model: `Meta-Llama-3.1-8B-Instruct`
+- Temperature: `0.4-0.6`
+- Top P: `0.9`
+- Max Tokens: `2048`
+
+**For complex layouts & reasoning:**
+- Model: `Qwen2.5-14B-Instruct` or `Mixtral-8x7B-Instruct`
+- Temperature: `0.3-0.5`
+- Max Tokens: `4096`
+
+#### Example System Prompt for LM Studio
+
+When configuring advanced settings in LM Studio, use this system prompt for best results:
+
+```
+You are WPGen's Theme Architect. Produce concise, production-ready WordPress theme specs:
+- Honor explicit guided options and pages.
+- Output clear color tokens, typography choices, and template parts.
+- Prefer accessible patterns (WCAG AA).
+- Be deterministic: no "maybe"; choose defaults when input is missing.
+```
+
+---
+
+### Option B: Ollama (Recommended for Developers)
+
+[Ollama](https://ollama.ai/) is a powerful CLI tool for running LLMs locally with excellent model management.
+
+#### Setup Steps
+
+1. **Install Ollama**
+
+```bash
+# macOS/Linux
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Or download from https://ollama.ai/download
+```
+
+2. **Pull a Model**
+
+```bash
+# Recommended for WPGen (fast, good quality)
+ollama pull llama3.1:8b-instruct
+
+# Other excellent choices:
+ollama pull qwen2.5:7b-instruct      # Strong reasoning
+ollama pull mixtral:8x7b-instruct    # Highest quality (requires GPU)
+```
+
+View available models at [ollama.ai/library](https://ollama.ai/library)
+
+3. **Start Ollama Server**
+
+Ollama automatically runs as a service on port 11434. Verify it's running:
+
+```bash
+curl http://localhost:11434/v1/models
+```
+
+The OpenAI-compatible API is available at `/v1`.
+
+4. **Configure WPGen**
+
+Edit `config.yaml`:
+
+```yaml
+llm:
+  provider: "local-ollama"
+
+  local-ollama:
+    base_url: "http://localhost:11434/v1"
+    model: "llama3.1:8b-instruct"  # Use Ollama's tag format
+    temperature: 0.4
+    max_tokens: 2048
+    timeout: 60
+```
+
+5. **Generate Your Theme**
+
+```bash
+# CLI with explicit provider
+wpgen generate "Minimal blog with sidebar" --provider local-ollama --model llama3.1:8b-instruct
+
+# Or use GUI
+wpgen gui
+```
+
+#### Recommended Ollama Models & Settings
+
+**For general theming:**
+- Model: `llama3.1:8b-instruct`
+- Temperature: `0.4-0.6`
+- Top P: `0.9`
+- Max Tokens: `2048`
+
+**For stronger reasoning (requires more RAM/GPU):**
+- Model: `mixtral:8x7b-instruct` or `qwen2.5:14b-instruct`
+- Temperature: `0.3-0.5`
+- Max Tokens: `4096`
+
+#### Example System Prompt for Ollama
+
+```
+System: You are WPGen's Theme Architect. Generate precise WordPress theme requirements and file plans.
+- Use user prompt + guided options.
+- Define tokens: --color-primary, --color-surface, --radius-lg; fonts and fallbacks.
+- Output page templates and template-parts required.
+- Use accessible, mobile-first patterns with smooth transitions.
+```
+
+---
+
+### How It Works: OpenAI-Compatible API
+
+Both LM Studio and Ollama expose OpenAI-compatible endpoints, so WPGen's existing OpenAI integration works seamlessly:
+
+```python
+from openai import OpenAI
+
+# LM Studio
+client = OpenAI(base_url="http://localhost:1234/v1", api_key="local")
+
+# Ollama
+client = OpenAI(base_url="http://localhost:11434/v1", api_key="local")
+
+# Use exactly like OpenAI's API
+response = client.chat.completions.create(
+    model="Meta-Llama-3.1-8B-Instruct",  # or "llama3.1:8b-instruct" for Ollama
+    messages=[
+        {"role": "system", "content": "You are WPGen's Theme Architect."},
+        {"role": "user", "content": "Build a modern portfolio theme..."}
+    ],
+    temperature=0.5,
+    max_tokens=2048,
+)
+```
+
+**Documentation:**
+- [LM Studio OpenAI-compatible API](https://lmstudio.ai/docs/api/openai-api)
+- [Ollama OpenAI Compatibility](https://github.com/ollama/ollama/blob/main/docs/openai.md)
+
+---
+
+### CLI Usage with Local Providers
+
+```bash
+# Use LM Studio
+wpgen generate "Dark portfolio theme" --provider local-lmstudio
+
+# Use Ollama with custom model
+wpgen generate "Corporate website" --provider local-ollama --model mixtral:8x7b-instruct
+
+# Use custom base URL (if running on different port)
+wpgen generate "Blog theme" --provider local-ollama
+# (Edit config.yaml to set custom base_url)
+```
+
+---
+
+### GUI Usage with Local Providers
+
+1. Launch the Gradio GUI:
+```bash
+wpgen gui
+```
+
+2. Expand the **"🤖 LLM Provider"** accordion
+
+3. Select your provider:
+   - `local-lmstudio` for LM Studio
+   - `local-ollama` for Ollama
+
+4. (Optional) Override the base URL or model name
+
+5. Describe your theme and click **"🚀 Generate WordPress Theme"**
+
+The GUI will show the selected provider in the status: `🤖 Initializing AI provider (local-ollama)...`
+
+---
+
+### Configuration Examples
+
+#### Minimal Config (Uses Defaults)
+
+```yaml
+llm:
+  provider: "local-ollama"
+```
+
+This automatically uses:
+- LM Studio: `http://localhost:1234/v1` with `Meta-Llama-3.1-8B-Instruct`
+- Ollama: `http://localhost:11434/v1` with `llama3.1:8b-instruct`
+
+#### Full Custom Config
+
+```yaml
+llm:
+  provider: "local-lmstudio"
+
+  local-lmstudio:
+    base_url: "http://192.168.1.100:1234/v1"  # Remote LM Studio server
+    model: "Qwen2.5-14B-Instruct"
+    temperature: 0.3
+    max_tokens: 4096
+    timeout: 120
+```
+
+---
+
+### Troubleshooting Local LLMs
+
+**LM Studio Issues:**
+
+1. **"Connection refused"**
+   - Ensure LM Studio server is running (green indicator)
+   - Check port 1234 is not blocked by firewall
+   - Try: `curl http://localhost:1234/v1/models`
+
+2. **"Model not found"**
+   - Model name in config.yaml must match loaded model in LM Studio
+   - Check model name in LM Studio's server tab
+
+3. **Slow generation**
+   - Use GPU acceleration (Settings > Hardware)
+   - Try a smaller model (8B instead of 14B)
+   - Reduce `max_tokens` in config
+
+**Ollama Issues:**
+
+1. **"Connection refused"**
+   - Start Ollama: `ollama serve`
+   - Check if running: `ps aux | grep ollama`
+   - Verify endpoint: `curl http://localhost:11434/v1/models`
+
+2. **"Model not found"**
+   - Pull the model first: `ollama pull llama3.1:8b-instruct`
+   - List models: `ollama list`
+   - Use exact tag format from `ollama list`
+
+3. **Out of memory**
+   - Use smaller model: `ollama pull llama3.1:8b-instruct`
+   - Set OLLAMA_NUM_GPU=0 to use CPU only
+   - Close other applications
+
+---
+
+### Performance Tips
+
+**Hardware Recommendations:**
+- **Minimum**: 8GB RAM, CPU-only (slow but works)
+- **Recommended**: 16GB RAM, NVIDIA GPU with 8GB+ VRAM
+- **Optimal**: 32GB RAM, NVIDIA GPU with 24GB+ VRAM (RTX 3090/4090)
+
+**Speed vs Quality:**
+- **Fast (1-2 min/theme)**: `llama3.1:8b-instruct`
+- **Balanced (3-5 min/theme)**: `qwen2.5:14b-instruct`
+- **Quality (5-10 min/theme)**: `mixtral:8x7b-instruct`
+
+**GPU Acceleration:**
+- LM Studio: Enable in Settings > Hardware > Use GPU
+- Ollama: Automatically uses GPU if available (CUDA/Metal/ROCm)
+
+---
+
+### Comparison: Cloud vs Local
+
+| Feature | Cloud (OpenAI/Anthropic) | Local (LM Studio/Ollama) |
+|---------|--------------------------|--------------------------|
+| **Cost** | Pay per token (~$0.01-0.10/theme) | Free after setup |
+| **Privacy** | Data sent to cloud | 100% local |
+| **Quality** | Excellent (GPT-4, Claude 3.5) | Good (Llama 3.1, Mixtral) |
+| **Speed** | Fast (2-10 sec/theme) | Slower (1-10 min/theme) |
+| **Setup** | API key only | Download models (~4-40GB) |
+| **Hardware** | None | 8GB+ RAM, GPU recommended |
+| **Offline** | No | Yes |
+
+---
+
+### Manual Test Plan
+
+Test local providers before generating full themes:
+
+```bash
+# Test LM Studio
+# 1. Start LM Studio's server on port 1234
+# 2. Load Meta-Llama-3.1-8B-Instruct
+# 3. Update config.yaml:
+#    provider: local-lmstudio
+#    base_url: http://localhost:1234/v1
+# 4. Generate:
+wpgen generate "Modern blog with dark mode" --provider local-lmstudio
+# Expected: Theme generates without needing OPENAI_API_KEY
+
+# Test Ollama
+ollama pull llama3.1:8b-instruct
+# 1. Ensure Ollama server is running (automatic)
+# 2. Update config.yaml:
+#    provider: local-ollama
+#    model: llama3.1:8b-instruct
+# 3. Generate:
+wpgen generate "Minimal portfolio with gallery" --provider local-ollama
+# Expected: Theme generates locally, check logs for "local-ollama"
+```
+
+---
+
+### Resources
+
+- **LM Studio**: [lmstudio.ai](https://lmstudio.ai/) | [Docs](https://lmstudio.ai/docs)
+- **Ollama**: [ollama.ai](https://ollama.ai/) | [Model Library](https://ollama.ai/library) | [GitHub](https://github.com/ollama/ollama)
+- **Recommended Models**: [DataCamp 2024 Guide](https://www.datacamp.com/blog/best-open-source-llms) | [Collabnix 2025 Roundup](https://collabnix.com/top-10-open-source-llms-you-need-to-know-in-2025/)
 
 ## Generated Theme Structure
 

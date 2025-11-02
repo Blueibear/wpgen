@@ -59,6 +59,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
+        # LLM Provider parameters
+        llm_provider_choice: str = "openai",
+        llm_base_url: str = "",
+        llm_model_override: str = "",
         # Guided Mode parameters
         gm_site_name: str = "",
         gm_tagline: str = "",
@@ -88,10 +92,25 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status = "🔀 Starting theme generation...\n"
             yield status, "", ""
 
-            status += "🤖 Initializing AI provider...\n"
+            # Apply LLM provider overrides from GUI
+            config_copy = config.copy()
+            if llm_provider_choice:
+                if "llm" not in config_copy:
+                    config_copy["llm"] = {}
+                config_copy["llm"]["provider"] = llm_provider_choice
+
+                # Apply base_url for local providers
+                if llm_base_url and llm_provider_choice in ["local-lmstudio", "local-ollama"]:
+                    config_copy["llm"]["base_url"] = llm_base_url
+
+                # Apply model override if provided
+                if llm_model_override:
+                    config_copy["llm"]["model"] = llm_model_override
+
+            status += f"🤖 Initializing AI provider ({llm_provider_choice})...\n"
             yield status, "", ""
 
-            llm_provider = get_llm_provider(config)
+            llm_provider = get_llm_provider(config_copy)
             nonlocal image_analyzer
             image_analyzer = ImageAnalyzer(llm_provider)
 
@@ -494,6 +513,46 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     lines=5,
                 )
 
+                # LLM Provider Selection (optional configuration)
+                with gr.Accordion("🤖 LLM Provider (optional)", open=False):
+                    gr.Markdown("*Configure which AI provider to use. Defaults to config.yaml settings.*")
+
+                    llm_provider_dropdown = gr.Dropdown(
+                        label="Provider",
+                        choices=["openai", "anthropic", "local-lmstudio", "local-ollama"],
+                        value=config.get("llm", {}).get("provider", "openai"),
+                        info="Select your LLM provider"
+                    )
+
+                    with gr.Row():
+                        llm_base_url_input = gr.Textbox(
+                            label="Base URL (for local providers)",
+                            placeholder="e.g., http://localhost:1234/v1",
+                            info="Leave empty to use defaults: LM Studio (1234) or Ollama (11434)",
+                            visible=False
+                        )
+                        llm_model_input = gr.Textbox(
+                            label="Model Name (optional)",
+                            placeholder="e.g., llama3.1:8b-instruct",
+                            info="Override the model specified in config.yaml"
+                        )
+
+                    # Show/hide base URL field based on provider selection
+                    def update_base_url_visibility(provider):
+                        is_local = provider in ["local-lmstudio", "local-ollama"]
+                        default_url = ""
+                        if provider == "local-lmstudio":
+                            default_url = "http://localhost:1234/v1"
+                        elif provider == "local-ollama":
+                            default_url = "http://localhost:11434/v1"
+                        return gr.update(visible=is_local, placeholder=default_url)
+
+                    llm_provider_dropdown.change(
+                        fn=update_base_url_visibility,
+                        inputs=[llm_provider_dropdown],
+                        outputs=[llm_base_url_input]
+                    )
+
                 # Guided Mode (optional structured inputs)
                 with gr.Accordion("🎯 Guided Mode (optional)", open=False):
                     gr.Markdown("*Provide structured details for more consistent theme output*")
@@ -698,6 +757,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 push_checkbox,
                 repo_input,
                 deploy_wp_checkbox,
+                # LLM Provider inputs
+                llm_provider_dropdown,
+                llm_base_url_input,
+                llm_model_input,
                 # Guided Mode inputs
                 gm_site_name,
                 gm_tagline,
