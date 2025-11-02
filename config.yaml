@@ -2,7 +2,7 @@
 
 # LLM Provider Settings
 llm:
-  # Options: "openai" or "anthropic"
+  # Options: "openai", "anthropic", "local-lmstudio", "local-ollama"
   provider: "openai"
 
   # Model configurations
@@ -15,6 +15,23 @@ llm:
     model: "claude-3-5-sonnet-20241022"
     max_tokens: 4096
     temperature: 0.7
+
+  # Local LLM configurations
+  # LM Studio - OpenAI-compatible local server
+  local-lmstudio:
+    base_url: "http://localhost:1234/v1"
+    model: "Meta-Llama-3.1-8B-Instruct"  # Example model name in LM Studio
+    max_tokens: 2048
+    temperature: 0.4
+    timeout: 60  # Request timeout in seconds
+
+  # Ollama - OpenAI-compatible local server
+  local-ollama:
+    base_url: "http://localhost:11434/v1"
+    model: "llama3.1:8b-instruct"  # Use Ollama's tag format
+    max_tokens: 2048
+    temperature: 0.4
+    timeout: 60
 
 # GitHub Settings
 github:
