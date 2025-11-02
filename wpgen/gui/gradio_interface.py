@@ -116,13 +116,17 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 yield status, "", ""
 
                 # Use LLM vision for detailed analysis of uploaded images
-                image_analyses = image_analyzer.batch_analyze_images(
-                    processed_files["images"], use_llm=True
-                )
+                try:
+                    image_analyses = image_analyzer.batch_analyze_images(
+                        processed_files["images"], use_llm=True
+                    )
+                    image_summaries = image_analyzer.generate_image_summary(image_analyses)
+                    status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
+                except Exception as e:
+                    logger.warning(f"Image analysis failed: {e}")
+                    status += f"  ⚠️  Could not analyze images (will use for screenshot only): {str(e)}\n"
+                    image_summaries = None
 
-                image_summaries = image_analyzer.generate_image_summary(image_analyses)
-
-                status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
                 yield status, "", ""
 
             text_content = None
