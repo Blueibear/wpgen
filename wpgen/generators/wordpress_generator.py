@@ -506,8 +506,21 @@ Include:
             logger.info("Generated sidebar.php successfully")
 
         except Exception as e:
-            logger.error(f"Failed to generate sidebar.php: {str(e)}")
-            raise
+            logger.warning(f"Failed to generate sidebar.php with images, trying without: {str(e)}")
+            # Retry without images if vision API failed
+            try:
+                php_code = self.llm_provider.generate_code(
+                    description, "php", context, images=None
+                )
+                if not php_code.strip().startswith("<?php"):
+                    php_code = "<?php\n" + php_code
+                sidebar_file = theme_dir / "sidebar.php"
+                sidebar_file.write_text(php_code, encoding="utf-8")
+                logger.info("Generated sidebar.php successfully (without images)")
+            except Exception as retry_error:
+                logger.error(f"Failed to generate sidebar.php even without images: {str(retry_error)}")
+                # Continue theme generation, sidebar.php is optional
+                pass
 
     def _generate_templates(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate additional template files based on requirements.
@@ -554,8 +567,21 @@ Follow WordPress template hierarchy and coding standards."""
                 logger.info(f"Generated {template_file} successfully")
 
             except Exception as e:
-                logger.warning(f"Failed to generate {template_file}: {str(e)}")
-                continue
+                logger.warning(f"Failed to generate {template_file} with images: {str(e)}")
+                # Retry without images if vision API failed
+                try:
+                    logger.info(f"Retrying {template_file} without images...")
+                    php_code = self.llm_provider.generate_code(
+                        full_description, "php", context, images=None
+                    )
+                    if not php_code.strip().startswith("<?php"):
+                        php_code = "<?php\n" + php_code
+                    (theme_dir / template_file).write_text(php_code, encoding="utf-8")
+                    logger.info(f"Generated {template_file} successfully (without images)")
+                except Exception as retry_error:
+                    logger.error(f"Failed to generate {template_file} even without images: {str(retry_error)}")
+                    # Continue to next template
+                    continue
 
     def _generate_wpgen_ui_assets(self, theme_dir: Path) -> None:
         """Generate always-on UI enhancement assets (CSS/JS for transitions and mobile nav).
