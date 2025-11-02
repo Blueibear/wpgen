@@ -107,6 +107,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 text_files=text_paths if text_paths else None,
             )
 
+            # Check if images were uploaded but failed to process
+            if image_paths and not processed_files["images"]:
+                logger.warning(f"User uploaded {len(image_paths)} image(s) but none were successfully processed!")
+                status += f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be processed. Generation will continue without image analysis.\n"
+                yield status, "", ""
+
             image_summaries = None
             if processed_files["images"]:
                 status += (
@@ -116,13 +122,17 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 yield status, "", ""
 
                 # Use LLM vision for detailed analysis of uploaded images
-                image_analyses = image_analyzer.batch_analyze_images(
-                    processed_files["images"], use_llm=True
-                )
+                try:
+                    image_analyses = image_analyzer.batch_analyze_images(
+                        processed_files["images"], use_llm=True
+                    )
+                    image_summaries = image_analyzer.generate_image_summary(image_analyses)
+                    status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
+                except Exception as e:
+                    logger.warning(f"Image analysis failed: {e}")
+                    status += f"  ⚠️  Could not analyze images (will use for screenshot only): {str(e)}\n"
+                    image_summaries = None
 
-                image_summaries = image_analyzer.generate_image_summary(image_analyses)
-
-                status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
                 yield status, "", ""
 
             text_content = None

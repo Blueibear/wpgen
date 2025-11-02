@@ -89,7 +89,20 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List
     if images and len(images) > 0:
         try:
             # Images are dicts with 'path', 'data', 'mime_type' etc
-            src = images[0].get('path', images[0]) if isinstance(images[0], dict) else images[0]
+            img_data = images[0]
+            if isinstance(img_data, dict):
+                src = img_data.get('path')
+                if not src:
+                    logger.warning("Image dict has no 'path' key, falling back to placeholder")
+                    raise ValueError("No path in image data")
+            else:
+                src = img_data
+
+            # Verify path exists
+            if not os.path.exists(src):
+                logger.warning(f"Image path does not exist: {src}")
+                raise FileNotFoundError(f"Image not found: {src}")
+
             with Image.open(src) as im:
                 im = im.convert("RGB")
                 canvas = Image.new("RGB", (1200, 900), (247, 248, 250))
@@ -99,10 +112,10 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List
                 y = (900 - r.height) // 2
                 canvas.paste(r, (x, y))
                 canvas.save(shot_path, format="PNG", optimize=True)
-                logger.info("Generated screenshot from uploaded image")
+                logger.info(f"Generated screenshot from uploaded image: {os.path.basename(src)}")
                 return
         except Exception as e:
-            logger.warning(f"Could not use uploaded image for screenshot: {e}")
+            logger.warning(f"Could not use uploaded image for screenshot: {e}. Generating placeholder instead.")
 
     # Generate placeholder screenshot
     title = (requirements.get("theme_display_name")
