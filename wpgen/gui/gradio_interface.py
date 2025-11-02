@@ -325,15 +325,21 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     status += "📤 Pushing to GitHub...\n"
                     yield status, theme_info, file_tree
 
-                    github = GitHubIntegration(github_token, config.get("github", {}))
+                    try:
+                        github = GitHubIntegration(github_token, config.get("github", {}))
 
-                    if not repo_name or not repo_name.strip():
-                        repo_name = github.generate_repo_name(requirements["theme_name"])
+                        if not repo_name or not repo_name.strip():
+                            repo_name = github.generate_repo_name(requirements["theme_name"])
 
-                    repo_url = github.push_to_github(theme_dir, repo_name, requirements)
+                        repo_url = github.push_to_github(theme_dir, repo_name, requirements)
 
-                    status += f"  ✓ Pushed to GitHub: {repo_url}\n"
-                    theme_info += f"\n**GitHub Repository:** [{repo_name}]({repo_url})\n"
+                        status += f"  ✓ Pushed to GitHub: {repo_url}\n"
+                        theme_info += f"\n**GitHub Repository:** [{repo_name}]({repo_url})\n"
+                    except Exception as e:
+                        status += f"  ⚠️  GitHub push failed: {str(e)}\n"
+                        status += "  ℹ️  Theme was generated successfully and saved locally.\n"
+                        logger.error(f"GitHub push failed: {e}")
+
                     yield status, theme_info, file_tree
 
             # Deploy to WordPress if requested
