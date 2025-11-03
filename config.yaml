@@ -5,6 +5,11 @@ llm:
   # Options: "openai", "anthropic", "local-lmstudio", "local-ollama"
   provider: "openai"
 
+  # Global LLM settings
+  temperature: 0.4
+  max_tokens: 2048
+  timeout: 60
+
   # Model configurations
   openai:
     model: "gpt-4-turbo-preview"
@@ -16,22 +21,28 @@ llm:
     max_tokens: 4096
     temperature: 0.7
 
-  # Local LLM configurations
+  # Local LLM configurations (Dual-model: Brains + Vision)
   # LM Studio - OpenAI-compatible local server
   local-lmstudio:
-    base_url: "http://localhost:1234/v1"
-    model: "Meta-Llama-3.1-8B-Instruct"  # Example model name in LM Studio
-    max_tokens: 2048
-    temperature: 0.4
-    timeout: 60  # Request timeout in seconds
+    # Brains model: used for text-only reasoning (prompt analysis, code generation without images)
+    brains_model: "Meta-Llama-3.1-8B-Instruct"
+    brains_base_url: "http://localhost:1234/v1"
+
+    # Vision model: used when images are provided (design analysis, vision-based code generation)
+    # Leave empty to disable vision support (requests with images will fail gracefully)
+    vision_model: "Llama-3.2-Vision-11B-Instruct"
+    vision_base_url: "http://localhost:1234/v1"
 
   # Ollama - OpenAI-compatible local server
   local-ollama:
-    base_url: "http://localhost:11434/v1"
-    model: "llama3.1:8b-instruct"  # Use Ollama's tag format
-    max_tokens: 2048
-    temperature: 0.4
-    timeout: 60
+    # Brains model: conversational model for text-only tasks
+    brains_model: "llama3.1:8b-instruct"
+    brains_base_url: "http://localhost:11434/v1"
+
+    # Vision model: for image analysis and design-driven generation
+    # Suggested: llama3.2-vision:11b-instruct, qwen2-vl:7b-instruct, llava:13b
+    vision_model: "llama3.2-vision:11b-instruct"
+    vision_base_url: "http://localhost:11434/v1"
 
 # GitHub Settings
 github:

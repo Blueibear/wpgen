@@ -59,10 +59,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
-        # LLM Provider parameters
+        # LLM Provider parameters (dual-model for local)
         llm_provider_choice: str = "openai",
-        llm_base_url: str = "",
-        llm_model_override: str = "",
+        llm_brains_model: str = "",
+        llm_brains_base_url: str = "",
+        llm_vision_model: str = "",
+        llm_vision_base_url: str = "",
         # Guided Mode parameters
         gm_site_name: str = "",
         gm_tagline: str = "",
@@ -92,6 +94,22 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status = "🔀 Starting theme generation...\n"
             yield status, "", ""
 
+            # Check for vision model requirement early (for local providers with images)
+            is_local = llm_provider_choice in ["local-lmstudio", "local-ollama"]
+            has_images = bool(image_files)
+
+            if is_local and has_images and not llm_vision_model:
+                error_msg = (
+                    "❌ Error: Vision model required for image analysis\n\n"
+                    "You have uploaded images but no vision model is configured.\n\n"
+                    "**To fix this:**\n"
+                    "1. Set a vision model in the 'LLM Provider' section (e.g., 'Llama-3.2-Vision-11B-Instruct' for LM Studio or 'llama3.2-vision:11b-instruct' for Ollama), OR\n"
+                    "2. Remove the uploaded images to use text-only generation\n\n"
+                    "Vision models are required for analyzing design references and mockups."
+                )
+                yield error_msg, "", ""
+                return
+
             # Apply LLM provider overrides from GUI
             config_copy = config.copy()
             if llm_provider_choice:
@@ -99,15 +117,23 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     config_copy["llm"] = {}
                 config_copy["llm"]["provider"] = llm_provider_choice
 
-                # Apply base_url for local providers
-                if llm_base_url and llm_provider_choice in ["local-lmstudio", "local-ollama"]:
-                    config_copy["llm"]["base_url"] = llm_base_url
-
-                # Apply model override if provided
-                if llm_model_override:
-                    config_copy["llm"]["model"] = llm_model_override
+                # Apply dual-model overrides for local providers
+                if is_local:
+                    if llm_brains_model:
+                        config_copy["llm"]["brains_model"] = llm_brains_model
+                    if llm_brains_base_url:
+                        config_copy["llm"]["brains_base_url"] = llm_brains_base_url
+                    if llm_vision_model:
+                        config_copy["llm"]["vision_model"] = llm_vision_model
+                    if llm_vision_base_url:
+                        config_copy["llm"]["vision_base_url"] = llm_vision_base_url
 
             status += f"🤖 Initializing AI provider ({llm_provider_choice})...\n"
+            if is_local:
+                if llm_vision_model:
+                    status += f"   ✓ Dual-model: Brains ({llm_brains_model or 'default'}) + Vision ({llm_vision_model})\n"
+                else:
+                    status += f"   ✓ Brains model: {llm_brains_model or 'default'} (vision disabled)\n"
             yield status, "", ""
 
             llm_provider = get_llm_provider(config_copy)
@@ -511,6 +537,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         "and contact form..."
                     ),
                     lines=5,
+                    info="Natural language brief describing your brand, pages, layout, colors, and tone. More detail = better results."
                 )
 
                 # LLM Provider Selection (optional configuration)
@@ -521,36 +548,76 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         label="Provider",
                         choices=["openai", "anthropic", "local-lmstudio", "local-ollama"],
                         value=config.get("llm", {}).get("provider", "openai"),
-                        info="Select your LLM provider"
+                        info="Choose cloud (OpenAI/Anthropic) or local (LM Studio/Ollama). Local options require running local servers."
                     )
 
-                    with gr.Row():
-                        llm_base_url_input = gr.Textbox(
-                            label="Base URL (for local providers)",
-                            placeholder="e.g., http://localhost:1234/v1",
-                            info="Leave empty to use defaults: LM Studio (1234) or Ollama (11434)",
-                            visible=False
-                        )
-                        llm_model_input = gr.Textbox(
-                            label="Model Name (optional)",
-                            placeholder="e.g., llama3.1:8b-instruct",
-                            info="Override the model specified in config.yaml"
-                        )
+                    # Dual-model fields for local providers (brains + vision)
+                    with gr.Group(visible=False) as local_models_group:
+                        gr.Markdown("**Dual-Model Configuration: Brains (text) + Vision (images)**")
 
-                    # Show/hide base URL field based on provider selection
-                    def update_base_url_visibility(provider):
+                        with gr.Row():
+                            llm_brains_model = gr.Textbox(
+                                label="Brains Model",
+                                placeholder="Meta-Llama-3.1-8B-Instruct",
+                                info="Text-only reasoning model for prompt analysis and code generation without images."
+                            )
+                            llm_brains_base_url = gr.Textbox(
+                                label="Brains Base URL",
+                                placeholder="http://localhost:1234/v1",
+                                info="OpenAI-compatible endpoint for the brains model (LM Studio: 1234, Ollama: 11434)."
+                            )
+
+                        with gr.Row():
+                            llm_vision_model = gr.Textbox(
+                                label="Vision Model (optional)",
+                                placeholder="Llama-3.2-Vision-11B-Instruct",
+                                info="Image-capable model for design analysis. REQUIRED if uploading images. Leave empty to disable vision."
+                            )
+                            llm_vision_base_url = gr.Textbox(
+                                label="Vision Base URL",
+                                placeholder="http://localhost:1234/v1",
+                                info="OpenAI-compatible endpoint for vision model. Can be same server as brains."
+                            )
+
+                    # Show/hide dual-model fields based on provider selection
+                    def update_provider_fields(provider):
                         is_local = provider in ["local-lmstudio", "local-ollama"]
-                        default_url = ""
+
+                        # Set default placeholders based on provider
                         if provider == "local-lmstudio":
-                            default_url = "http://localhost:1234/v1"
+                            brains_model_ph = "Meta-Llama-3.1-8B-Instruct"
+                            brains_url_ph = "http://localhost:1234/v1"
+                            vision_model_ph = "Llama-3.2-Vision-11B-Instruct"
+                            vision_url_ph = "http://localhost:1234/v1"
                         elif provider == "local-ollama":
-                            default_url = "http://localhost:11434/v1"
-                        return gr.update(visible=is_local, placeholder=default_url)
+                            brains_model_ph = "llama3.1:8b-instruct"
+                            brains_url_ph = "http://localhost:11434/v1"
+                            vision_model_ph = "llama3.2-vision:11b-instruct"
+                            vision_url_ph = "http://localhost:11434/v1"
+                        else:
+                            brains_model_ph = ""
+                            brains_url_ph = ""
+                            vision_model_ph = ""
+                            vision_url_ph = ""
+
+                        return (
+                            gr.update(visible=is_local),
+                            gr.update(placeholder=brains_model_ph),
+                            gr.update(placeholder=brains_url_ph),
+                            gr.update(placeholder=vision_model_ph),
+                            gr.update(placeholder=vision_url_ph),
+                        )
 
                     llm_provider_dropdown.change(
-                        fn=update_base_url_visibility,
+                        fn=update_provider_fields,
                         inputs=[llm_provider_dropdown],
-                        outputs=[llm_base_url_input]
+                        outputs=[
+                            local_models_group,
+                            llm_brains_model,
+                            llm_brains_base_url,
+                            llm_vision_model,
+                            llm_vision_base_url,
+                        ]
                     )
 
                 # Guided Mode (optional structured inputs)
@@ -558,74 +625,94 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     gr.Markdown("*Provide structured details for more consistent theme output*")
 
                     with gr.Row():
-                        gm_site_name = gr.Textbox(label="Site name", placeholder="e.g., Finch Studio")
-                        gm_tagline = gr.Textbox(label="Tagline", placeholder="Short tagline")
+                        gm_site_name = gr.Textbox(
+                            label="Site name",
+                            placeholder="e.g., Finch Studio",
+                            info="Your brand or site name. Used in theme metadata and templates."
+                        )
+                        gm_tagline = gr.Textbox(
+                            label="Tagline",
+                            placeholder="Short tagline",
+                            info="One-line description or slogan. Appears in header/hero sections."
+                        )
 
                     gm_goal = gr.Dropdown(
                         label="Primary goal",
                         choices=["inform", "convert", "sell"],
-                        value="inform"
+                        value="inform",
+                        info="Site purpose: inform (blog/magazine), convert (lead gen/services), sell (e-commerce)."
                     )
 
                     gm_pages = gr.CheckboxGroup(
                         label="Top-level pages",
-                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"]
+                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"],
+                        info="Select which top-level page templates to generate. Creates navigation structure."
                     )
 
                     with gr.Row():
                         gm_mood = gr.Dropdown(
                             label="Mood",
                             choices=["modern-minimal", "playful", "brutalist", "elegant"],
-                            value="modern-minimal"
+                            value="modern-minimal",
+                            info="Visual style: modern-minimal (clean), playful (fun), brutalist (bold), elegant (refined)."
                         )
                         gm_typography = gr.Dropdown(
                             label="Typography",
                             choices=["sans", "serif", "mono"],
-                            value="sans"
+                            value="sans",
+                            info="Font style: sans (clean, modern), serif (traditional, readable), mono (tech, code)."
                         )
 
                     gm_palette = gr.Textbox(
                         label="Primary colors (hex, comma-separated)",
-                        placeholder="#0f172a, #f59e0b"
+                        placeholder="#0f172a, #f59e0b",
+                        info="Brand colors as hex codes (e.g., #0f172a, #f59e0b). Generates CSS custom properties."
                     )
 
                     with gr.Row():
                         gm_layout_header = gr.Dropdown(
                             label="Header",
                             choices=["centered", "split", "stacked"],
-                            value="split"
+                            value="split",
+                            info="Header layout: centered (logo+nav center), split (logo left/nav right), stacked (vertical)."
                         )
                         gm_layout_hero = gr.Dropdown(
                             label="Hero",
                             choices=["image", "video", "text"],
-                            value="image"
+                            value="image",
+                            info="Hero section style: image (background image), video (background video), text (text-only)."
                         )
 
                     with gr.Row():
                         gm_sidebar = gr.Dropdown(
                             label="Sidebar",
                             choices=["none", "left", "right"],
-                            value="none"
+                            value="none",
+                            info="Sidebar position: none (full-width), left (sidebar left), right (sidebar right)."
                         )
                         gm_container = gr.Dropdown(
                             label="Container width",
                             choices=["boxed", "full"],
-                            value="full"
+                            value="full",
+                            info="Content width: boxed (max-width container), full (edge-to-edge)."
                         )
 
                     gm_components = gr.CheckboxGroup(
                         label="Components",
-                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"]
+                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"],
+                        info="UI components to include: blog posts, card grids, image galleries, testimonials, pricing tables, etc."
                     )
 
                     gm_accessibility = gr.CheckboxGroup(
                         label="Accessibility",
-                        choices=["keyboard", "high-contrast", "reduced-motion"]
+                        choices=["keyboard", "high-contrast", "reduced-motion"],
+                        info="A11y features: keyboard nav (focus states), high-contrast (WCAG AA), reduced-motion (respects prefers-reduced-motion)."
                     )
 
                     gm_integrations = gr.CheckboxGroup(
                         label="Integrations",
-                        choices=["woocommerce", "seo", "analytics", "newsletter"]
+                        choices=["woocommerce", "seo", "analytics", "newsletter"],
+                        info="Third-party integrations: WooCommerce, SEO meta tags, analytics scripts, newsletter signup forms."
                     )
 
                     gm_perf_lcp = gr.Slider(
@@ -633,7 +720,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         minimum=1500,
                         maximum=5000,
                         step=100,
-                        value=2500
+                        value=2500,
+                        info="Largest Contentful Paint target in milliseconds. Lower = faster perceived load. Affects asset loading strategy."
                     )
 
                 with gr.Accordion("✨ Optional Features", open=False):
@@ -641,23 +729,27 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                     woo_checkbox = gr.Checkbox(
                         label="WooCommerce support & styling",
-                        value=False
+                        value=False,
+                        info="Adds WooCommerce templates, product loop styles, and shop page support. Safe even if WooCommerce isn't installed."
                     )
 
                     blocks_checkboxgroup = gr.CheckboxGroup(
                         label="Custom Gutenberg blocks",
                         choices=["featured_products", "lifestyle_image", "promo_banner"],
-                        value=[]
+                        value=[],
+                        info="Custom Gutenberg blocks: featured_products (product showcase), lifestyle_image (image+overlay), promo_banner (CTA banner)."
                     )
 
                     darkmode_checkbox = gr.Checkbox(
                         label="Light/Dark mode toggle",
-                        value=False
+                        value=False,
+                        info="Floating toggle button with localStorage persistence and prefers-color-scheme support. Switches between light/dark themes."
                     )
 
                     preloader_checkbox = gr.Checkbox(
                         label="Animated loading logo (preloader)",
-                        value=False
+                        value=False,
+                        info="Smooth page preloader with spinner. Auto-hides after load with 3-second max timeout."
                     )
 
                     gr.Markdown("*Note: Smooth page transitions and mobile-friendly navigation are always included.*")
@@ -671,6 +763,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     file_types=["image"],
                     file_count="multiple",
                     type="filepath",
+                    info="Design references, logos, mood boards, mockups. If provided, the Vision model analyzes visual layout and styles. Requires vision model for local providers."
                 )
 
                 gr.Markdown("### 📄 Upload Content Files (Optional)")
@@ -682,6 +775,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     file_types=[".txt", ".md", ".pdf"],
                     file_count="multiple",
                     type="filepath",
+                    info="Copy, requirements, product sheets, or design briefs. Content is merged into the design context for more accurate generation."
                 )
 
                 gr.Markdown("### ⚙️ Generation Options")
@@ -693,16 +787,19 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     push_checkbox = gr.Checkbox(
                         label="Push to GitHub",
                         value=True,
+                        info="Automatically create GitHub repository and push generated theme. Requires GITHUB_TOKEN in .env."
                     )
 
                     deploy_wp_checkbox = gr.Checkbox(
                         label="Deploy to WordPress",
                         value=False,
+                        info="Package and prepare theme for WordPress deployment. Requires WordPress credentials in .env."
                     )
 
                 repo_input = gr.Textbox(
                     label="Repository Name (Optional)",
                     placeholder="Leave empty for auto-generated name",
+                    info="Custom GitHub repository name. Leave blank for auto-generated (e.g., wp-theme-name-20250103)."
                 )
                 gr.Markdown(
                     "Enter a custom repository name or leave blank for an automatic choice."
@@ -757,10 +854,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 push_checkbox,
                 repo_input,
                 deploy_wp_checkbox,
-                # LLM Provider inputs
+                # LLM Provider inputs (dual-model)
                 llm_provider_dropdown,
-                llm_base_url_input,
-                llm_model_input,
+                llm_brains_model,
+                llm_brains_base_url,
+                llm_vision_model,
+                llm_vision_base_url,
                 # Guided Mode inputs
                 gm_site_name,
                 gm_tagline,
