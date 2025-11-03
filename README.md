@@ -311,23 +311,27 @@ llm:
     max_tokens: 4096
     temperature: 0.7
 
-  # Local LLM providers (no API key required!)
+  # Local LLM providers (no API key required!) - Dual-Model Configuration
   local-lmstudio:
-    base_url: "http://localhost:1234/v1"
-    model: "Meta-Llama-3.1-8B-Instruct"
-    max_tokens: 2048
-    temperature: 0.4
-    timeout: 60
+    # Brains model (text-only reasoning)
+    brains_model: "Meta-Llama-3.1-8B-Instruct"
+    brains_base_url: "http://localhost:1234/v1"
+
+    # Vision model (image analysis, optional)
+    vision_model: "Llama-3.2-Vision-11B-Instruct"
+    vision_base_url: "http://localhost:1234/v1"
 
   local-ollama:
-    base_url: "http://localhost:11434/v1"
-    model: "llama3.1:8b-instruct"
-    max_tokens: 2048
-    temperature: 0.4
-    timeout: 60
+    # Brains model (text-only reasoning)
+    brains_model: "llama3.1:8b-instruct"
+    brains_base_url: "http://localhost:11434/v1"
+
+    # Vision model (image analysis, optional)
+    vision_model: "llama3.2-vision:11b-instruct"
+    vision_base_url: "http://localhost:11434/v1"
 ```
 
-See the **"Using Local LLMs with LM Studio or Ollama"** section below for complete setup instructions.
+See the **"Using Local LLMs with LM Studio or Ollama (Dual-Model)"** section below for complete setup instructions.
 
 #### WordPress Generation Settings
 
@@ -408,101 +412,153 @@ deployment:
 4. Click "Generate token"
 5. Copy the token and add it to your `.env` file
 
-## Using Local LLMs with LM Studio or Ollama
+## Using Local LLMs with LM Studio or Ollama (Dual-Model)
 
-WPGen now supports running **100% locally** with LM Studio or Ollama - no cloud API keys required! Both platforms provide OpenAI-compatible API servers that work seamlessly with WPGen.
+WPGen now supports running **100% locally** with **dual-model configuration**: separate **brains** (text-only reasoning) and **vision** (image analysis) models. No cloud API keys required! Both LM Studio and Ollama provide OpenAI-compatible API servers.
 
 ### Why Use Local LLMs?
 
 - **Privacy**: All theme generation happens on your machine
-- **Cost**: No API usage fees
+- **Cost**: No API usage fees after initial setup
 - **Offline**: Works without internet connection
 - **Control**: Full control over model selection and parameters
+- **Dual-Model**: Use separate brains (text) and vision (images) models for optimal performance
+
+### Dual-Model Architecture
+
+WPGen's local LLM support uses **two models**:
+
+1. **Brains Model** (Text-Only)
+   - Used for: Prompt analysis, code generation without images, text-based reasoning
+   - Examples: `Llama-3.1-8B-Instruct`, `Qwen2.5-14B-Instruct`
+   - Faster, lighter, handles all text-only tasks
+
+2. **Vision Model** (Image-Capable)
+   - Used for: Design analysis, image-guided code generation, mockup interpretation
+   - Examples: `Llama-3.2-Vision-11B-Instruct`, `qwen2-vl:7b-instruct`, `llava:13b`
+   - Required ONLY when uploading design images/mockups
+
+**Automatic Routing**: WPGen automatically routes requests to the appropriate model:
+- Images present → Uses vision model
+- Text-only → Uses brains model
+
+**Vision Model is Optional**: If you only provide text prompts (no images), you don't need a vision model.
+
+---
 
 ### Option A: LM Studio (Recommended for Beginners)
 
 [LM Studio](https://lmstudio.ai/) provides a user-friendly interface for running local LLMs with an OpenAI-compatible server.
 
-#### Setup Steps
+#### Setup Steps (Dual-Model)
 
 1. **Install LM Studio**
    - Download from [lmstudio.ai](https://lmstudio.ai/)
    - Available for Windows, macOS, and Linux
 
-2. **Download a Model**
+2. **Download Both Models**
+
+   **Brains Model (Text-Only - Required):**
    - Open LM Studio's model search
-   - Recommended models for WPGen:
-     - **Meta-Llama-3.1-8B-Instruct** (balanced quality/speed, ~8GB RAM)
-     - **Qwen2.5-14B-Instruct** (better reasoning, ~14GB RAM)
-     - **Mixtral-8x7B-Instruct** (strongest quality, requires GPU with ~30GB VRAM)
-   - Click download and wait for completion
+   - Download one of:
+     - `Meta-Llama-3.1-8B-Instruct` (balanced, ~8GB RAM)
+     - `Qwen2.5-14B-Instruct` (stronger reasoning, ~14GB RAM)
+     - `Mixtral-8x7B-Instruct` (best quality, needs GPU ~30GB VRAM)
+
+   **Vision Model (Image Analysis - Optional):**
+   - Download one of:
+     - `Llama-3.2-Vision-11B-Instruct` (recommended, ~11GB RAM)
+     - `Qwen2-VL-7B-Instruct` (lighter, ~7GB RAM)
+     - `Phi-3.5-Vision-Instruct` (lightweight, ~3.8GB RAM)
 
 3. **Start the OpenAI-Compatible Server**
    - In LM Studio, go to the "Local Server" tab
-   - Load your downloaded model
+   - Load your **brains model** first (e.g., `Meta-Llama-3.1-8B-Instruct`)
    - Click "Start Server"
    - Default endpoint: `http://localhost:1234/v1`
-   - Verify server is running (you'll see a green indicator)
+   - **Note**: LM Studio can switch models on the fly. When WPGen requests vision, manually switch to your vision model in LM Studio, or run two instances on different ports.
 
-4. **Configure WPGen**
+4. **Configure WPGen (Dual-Model)**
 
 Edit `config.yaml`:
 
 ```yaml
 llm:
   provider: "local-lmstudio"
+  temperature: 0.4
+  max_tokens: 2048
+  timeout: 60
 
   local-lmstudio:
-    base_url: "http://localhost:1234/v1"
-    model: "Meta-Llama-3.1-8B-Instruct"  # Must match loaded model in LM Studio
-    temperature: 0.4
-    max_tokens: 2048
-    timeout: 60
+    # Brains model (text-only reasoning)
+    brains_model: "Meta-Llama-3.1-8B-Instruct"
+    brains_base_url: "http://localhost:1234/v1"
+
+    # Vision model (for image analysis)
+    vision_model: "Llama-3.2-Vision-11B-Instruct"
+    vision_base_url: "http://localhost:1234/v1"  # Same server, switch models manually
+```
+
+**For separate servers (recommended for production):**
+```yaml
+  local-lmstudio:
+    brains_model: "Meta-Llama-3.1-8B-Instruct"
+    brains_base_url: "http://localhost:1234/v1"  # First LM Studio instance
+
+    vision_model: "Llama-3.2-Vision-11B-Instruct"
+    vision_base_url: "http://localhost:1235/v1"  # Second LM Studio instance on different port
 ```
 
 5. **Generate Your Theme**
 
 ```bash
-# CLI
-wpgen generate "Modern portfolio with dark mode and gallery" --provider local-lmstudio
+# CLI (text-only, uses brains model)
+wpgen generate "Modern portfolio with dark mode" --provider local-lmstudio
 
-# Or use the GUI
+# GUI with image uploads (uses both brains + vision models)
 wpgen gui
-# Then select "local-lmstudio" from the LLM Provider dropdown
+# 1. Select "local-lmstudio" from LLM Provider
+# 2. Upload design mockups
+# 3. Generate (automatically routes to vision model for images)
 ```
 
-#### Recommended LM Studio Settings
+#### Recommended LM Studio Models & Settings
 
-**For general theming & UX copy:**
-- Model: `Meta-Llama-3.1-8B-Instruct`
-- Temperature: `0.4-0.6`
-- Top P: `0.9`
-- Max Tokens: `2048`
+**Brains Models (Text-Only Reasoning):**
 
-**For complex layouts & reasoning:**
-- Model: `Qwen2.5-14B-Instruct` or `Mixtral-8x7B-Instruct`
-- Temperature: `0.3-0.5`
-- Max Tokens: `4096`
+| Model | Best For | RAM | Settings |
+|-------|----------|-----|----------|
+| `Meta-Llama-3.1-8B-Instruct` | General theming, balanced | ~8GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `Qwen2.5-14B-Instruct` | Complex layouts, stronger reasoning | ~14GB | temp: 0.3-0.5, max_tokens: 4096 |
+| `Mixtral-8x7B-Instruct` | Best quality, detailed specs | ~30GB VRAM | temp: 0.3-0.5, max_tokens: 4096 |
 
-#### Example System Prompt for LM Studio
+**Vision Models (Image Analysis):**
 
-When configuring advanced settings in LM Studio, use this system prompt for best results:
+| Model | Best For | RAM | Settings |
+|-------|----------|-----|----------|
+| `Llama-3.2-Vision-11B-Instruct` | Best balance, design analysis | ~11GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `Qwen2-VL-7B-Instruct` | Lighter, good color/layout extraction | ~7GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `Phi-3.5-Vision-Instruct` | Fastest, basic mockup analysis | ~3.8GB | temp: 0.5-0.7, max_tokens: 2048 |
 
+#### Example System Prompts
+
+**Brains Model (Text):**
 ```
-You are WPGen's Theme Architect. Produce concise, production-ready WordPress theme specs:
-- Honor explicit guided options and pages.
-- Output clear color tokens, typography choices, and template parts.
-- Prefer accessible patterns (WCAG AA).
-- Be deterministic: no "maybe"; choose defaults when input is missing.
+You are WPGen's Theme Architect. Generate precise WordPress theme requirements (pages, template parts, color tokens, typography, accessibility defaults). Be deterministic: choose defaults when input is missing. Output clean, production-ready specs.
+```
+
+**Vision Model (Images):**
+```
+You are a design analyst. Extract layout patterns, color palette (hex codes), typography vibe, spacing density, and component list from design mockups. Output concise, structured findings: colors, fonts, layout type, key components.
 ```
 
 ---
 
 ### Option B: Ollama (Recommended for Developers)
 
-[Ollama](https://ollama.ai/) is a powerful CLI tool for running LLMs locally with excellent model management.
+[Ollama](https://ollama.ai/) is a powerful CLI tool for running LLMs locally with excellent model management and easy switching between models.
 
-#### Setup Steps
+#### Setup Steps (Dual-Model)
 
 1. **Install Ollama**
 
@@ -511,72 +567,104 @@ You are WPGen's Theme Architect. Produce concise, production-ready WordPress the
 curl -fsSL https://ollama.ai/install.sh | sh
 
 # Or download from https://ollama.ai/download
+# Windows: Download installer from ollama.ai
 ```
 
-2. **Pull a Model**
+2. **Pull Both Models**
+
+   **Brains Model (Text-Only - Required):**
+   ```bash
+   # Recommended baseline
+   ollama pull llama3.1:8b-instruct
+
+   # Or stronger alternatives:
+   ollama pull qwen2.5:14b-instruct    # Better reasoning
+   ollama pull mixtral:8x7b-instruct   # Best quality (needs GPU)
+   ```
+
+   **Vision Model (Image Analysis - Optional):**
+   ```bash
+   # Recommended for design analysis
+   ollama pull llama3.2-vision:11b-instruct
+
+   # Or alternatives:
+   ollama pull qwen2-vl:7b-instruct    # Lighter, good color extraction
+   ollama pull llava:13b                # Mature VSN model
+   ```
+
+   View all available models at [ollama.ai/library](https://ollama.ai/library)
+
+3. **Verify Ollama Server**
+
+Ollama automatically runs as a service on port 11434:
 
 ```bash
-# Recommended for WPGen (fast, good quality)
-ollama pull llama3.1:8b-instruct
-
-# Other excellent choices:
-ollama pull qwen2.5:7b-instruct      # Strong reasoning
-ollama pull mixtral:8x7b-instruct    # Highest quality (requires GPU)
-```
-
-View available models at [ollama.ai/library](https://ollama.ai/library)
-
-3. **Start Ollama Server**
-
-Ollama automatically runs as a service on port 11434. Verify it's running:
-
-```bash
+# Check if running
 curl http://localhost:11434/v1/models
+
+# If not running, start manually:
+ollama serve
 ```
 
 The OpenAI-compatible API is available at `/v1`.
 
-4. **Configure WPGen**
+4. **Configure WPGen (Dual-Model)**
 
 Edit `config.yaml`:
 
 ```yaml
 llm:
   provider: "local-ollama"
+  temperature: 0.4
+  max_tokens: 2048
+  timeout: 60
 
   local-ollama:
-    base_url: "http://localhost:11434/v1"
-    model: "llama3.1:8b-instruct"  # Use Ollama's tag format
-    temperature: 0.4
-    max_tokens: 2048
-    timeout: 60
+    # Brains model (text-only reasoning)
+    brains_model: "llama3.1:8b-instruct"
+    brains_base_url: "http://localhost:11434/v1"
+
+    # Vision model (for image analysis)
+    vision_model: "llama3.2-vision:11b-instruct"
+    vision_base_url: "http://localhost:11434/v1"  # Same server, Ollama auto-switches
 ```
+
+**Ollama automatically switches models** - no need to run multiple instances!
 
 5. **Generate Your Theme**
 
 ```bash
-# CLI with explicit provider
-wpgen generate "Minimal blog with sidebar" --provider local-ollama --model llama3.1:8b-instruct
+# CLI (text-only, uses brains model)
+wpgen generate "Minimal blog with sidebar" --provider local-ollama
 
-# Or use GUI
+# GUI with image uploads (uses both brains + vision models)
 wpgen gui
+# 1. Select "local-ollama" from LLM Provider
+# 2. Upload design mockups
+# 3. Generate (automatically routes to vision model for images)
 ```
 
 #### Recommended Ollama Models & Settings
 
-**For general theming:**
-- Model: `llama3.1:8b-instruct`
-- Temperature: `0.4-0.6`
-- Top P: `0.9`
-- Max Tokens: `2048`
+**Brains Models (Text-Only Reasoning):**
 
-**For stronger reasoning (requires more RAM/GPU):**
-- Model: `mixtral:8x7b-instruct` or `qwen2.5:14b-instruct`
-- Temperature: `0.3-0.5`
-- Max Tokens: `4096`
+| Model | Best For | RAM/VRAM | Settings |
+|-------|----------|----------|----------|
+| `llama3.1:8b-instruct` | General theming, baseline | ~8GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `qwen2.5:14b-instruct` | Complex layouts, better reasoning | ~14GB | temp: 0.3-0.5, max_tokens: 4096 |
+| `mixtral:8x7b-instruct` | Best quality, detailed specs | ~30GB VRAM | temp: 0.3-0.5, max_tokens: 4096 |
 
-#### Example System Prompt for Ollama
+**Vision Models (Image Analysis):**
 
+| Model | Best For | RAM/VRAM | Settings |
+|-------|----------|----------|----------|
+| `llama3.2-vision:11b-instruct` | Best balance, design analysis | ~11GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `qwen2-vl:7b-instruct` | Lighter, good color/layout extraction | ~7GB | temp: 0.4-0.6, max_tokens: 2048 |
+| `llava:13b` | Mature VSN, reliable mockup analysis | ~13GB | temp: 0.4-0.6, max_tokens: 2048 |
+
+#### Example System Prompts
+
+**Brains Model (Text):**
 ```
 System: You are WPGen's Theme Architect. Generate precise WordPress theme requirements and file plans.
 - Use user prompt + guided options.
@@ -585,29 +673,55 @@ System: You are WPGen's Theme Architect. Generate precise WordPress theme requir
 - Use accessible, mobile-first patterns with smooth transitions.
 ```
 
+**Vision Model (Images):**
+```
+System: You are a design analyst for WordPress themes. Extract these details from design mockups:
+- Color palette (hex codes for primary, secondary, background, text)
+- Typography (font families, sizes, weights)
+- Layout patterns (grid, flexbox, columns)
+- Component list (header, hero, cards, footer, forms)
+- Spacing/density (tight, balanced, spacious)
+Output structured, concise findings.
+```
+
 ---
 
-### How It Works: OpenAI-Compatible API
+### How It Works: Dual-Model Routing
 
-Both LM Studio and Ollama expose OpenAI-compatible endpoints, so WPGen's existing OpenAI integration works seamlessly:
+WPGen's `CompositeLLMProvider` automatically routes requests to the appropriate model:
 
 ```python
 from openai import OpenAI
 
-# LM Studio
-client = OpenAI(base_url="http://localhost:1234/v1", api_key="local")
+# Create two clients (brains + vision)
+brains_client = OpenAI(base_url="http://localhost:11434/v1", api_key="local")
+vision_client = OpenAI(base_url="http://localhost:11434/v1", api_key="local")
 
-# Ollama
-client = OpenAI(base_url="http://localhost:11434/v1", api_key="local")
+# WPGen routes automatically:
+# - Text-only request → uses brains_model
+# - Request with images → uses vision_model
 
-# Use exactly like OpenAI's API
-response = client.chat.completions.create(
-    model="Meta-Llama-3.1-8B-Instruct",  # or "llama3.1:8b-instruct" for Ollama
+# Example text-only (brains):
+response = brains_client.chat.completions.create(
+    model="llama3.1:8b-instruct",  # Brains model
     messages=[
         {"role": "system", "content": "You are WPGen's Theme Architect."},
         {"role": "user", "content": "Build a modern portfolio theme..."}
     ],
-    temperature=0.5,
+    temperature=0.4,
+    max_tokens=2048,
+)
+
+# Example with images (vision):
+response = vision_client.chat.completions.create(
+    model="llama3.2-vision:11b-instruct",  # Vision model
+    messages=[
+        {"role": "user", "content": [
+            {"type": "text", "text": "Extract colors and layout from this mockup"},
+            {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+        ]}
+    ],
+    temperature=0.4,
     max_tokens=2048,
 )
 ```
@@ -621,15 +735,14 @@ response = client.chat.completions.create(
 ### CLI Usage with Local Providers
 
 ```bash
-# Use LM Studio
+# Text-only generation (uses brains model)
 wpgen generate "Dark portfolio theme" --provider local-lmstudio
 
-# Use Ollama with custom model
-wpgen generate "Corporate website" --provider local-ollama --model mixtral:8x7b-instruct
+# Or with Ollama
+wpgen generate "Corporate website" --provider local-ollama
 
-# Use custom base URL (if running on different port)
-wpgen generate "Blog theme" --provider local-ollama
-# (Edit config.yaml to set custom base_url)
+# GUI allows image uploads (automatically uses vision model when images present)
+wpgen gui
 ```
 
 ---
@@ -753,30 +866,82 @@ llm:
 
 ---
 
-### Manual Test Plan
+### Manual Test Plan (Dual-Model)
 
-Test local providers before generating full themes:
+Test local providers with both text-only and vision scenarios:
 
 ```bash
-# Test LM Studio
-# 1. Start LM Studio's server on port 1234
-# 2. Load Meta-Llama-3.1-8B-Instruct
+# ===== LM Studio Dual-Model Test =====
+# 1. Download models in LM Studio:
+#    - Meta-Llama-3.1-8B-Instruct (brains)
+#    - Llama-3.2-Vision-11B-Instruct (vision)
+# 2. Start server on port 1234 with brains model loaded
 # 3. Update config.yaml:
 #    provider: local-lmstudio
-#    base_url: http://localhost:1234/v1
-# 4. Generate:
-wpgen generate "Modern blog with dark mode" --provider local-lmstudio
-# Expected: Theme generates without needing OPENAI_API_KEY
+#    brains_model: Meta-Llama-3.1-8B-Instruct
+#    brains_base_url: http://localhost:1234/v1
+#    vision_model: Llama-3.2-Vision-11B-Instruct
+#    vision_base_url: http://localhost:1234/v1
 
-# Test Ollama
+# Test 1: Text-only generation (uses brains model)
+wpgen generate "Modern blog with dark mode" --provider local-lmstudio
+# Expected: Theme generates using brains model, no vision needed
+
+# Test 2: GUI with image upload (uses vision model)
+wpgen gui
+# 1. Select local-lmstudio provider
+# 2. Upload a design mockup image
+# 3. Generate
+# Expected: GUI shows "Dual-model: Brains + Vision" in status
+# Manually switch to vision model in LM Studio when image analysis starts
+
+# Test 3: Missing vision model error
+# 1. In GUI, clear vision_model field
+# 2. Upload an image
+# 3. Try to generate
+# Expected: Clear error message telling user to set vision model or remove images
+
+# ===== Ollama Dual-Model Test =====
+# 1. Pull both models:
 ollama pull llama3.1:8b-instruct
-# 1. Ensure Ollama server is running (automatic)
-# 2. Update config.yaml:
+ollama pull llama3.2-vision:11b-instruct
+
+# 2. Ensure Ollama server running:
+curl http://localhost:11434/v1/models
+
+# 3. Update config.yaml:
 #    provider: local-ollama
-#    model: llama3.1:8b-instruct
-# 3. Generate:
-wpgen generate "Minimal portfolio with gallery" --provider local-ollama
-# Expected: Theme generates locally, check logs for "local-ollama"
+#    brains_model: llama3.1:8b-instruct
+#    vision_model: llama3.2-vision:11b-instruct
+#    (both use http://localhost:11434/v1)
+
+# Test 1: Text-only (uses brains model)
+wpgen generate "Minimal portfolio" --provider local-ollama
+# Expected: Theme generates locally, logs show brains model usage
+
+# Test 2: GUI with image (uses vision model)
+wpgen gui
+# 1. Select local-ollama
+# 2. Upload mockup
+# 3. Generate
+# Expected: Ollama automatically switches to vision model when analyzing images
+
+# Test 3: Verify automatic routing
+# Check logs for model switching: brains → vision → brains
+
+# ===== Verify GUI Hover Tooltips =====
+# 1. Launch GUI: wpgen gui
+# 2. Hover over each control and verify info tooltips appear:
+#    - Website Description
+#    - LLM Provider dropdown
+#    - Brains Model/Base URL
+#    - Vision Model/Base URL
+#    - All Guided Mode fields (Site name, Tagline, Goal, etc.)
+#    - Optional Features (WooCommerce, Gutenberg blocks, Dark mode, Preloader)
+#    - Image upload
+#    - Text upload
+#    - Generation Options (Push to GitHub, Deploy to WordPress, Repo name)
+# Expected: Every control has a clear 1-2 line tooltip explaining its purpose
 ```
 
 ---
