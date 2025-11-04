@@ -8,11 +8,192 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Any, Dict, Tuple, Optional
 from .logger import get_logger
 
 
 logger = get_logger(__name__)
+
+
+class CodeValidator:
+    """Code validator with strict mode support."""
+
+    def __init__(self, strict: bool = False, php_path: str = "php"):
+        """Initialize code validator.
+
+        Args:
+            strict: If True, fail on warnings. If False, only fail on errors.
+            php_path: Path to PHP binary (default: "php")
+        """
+        self.strict = strict
+        self.php_path = php_path
+        self.php_available = self._check_php_available()
+
+    def _check_php_available(self) -> bool:
+        """Check if PHP is available on the system.
+
+        Returns:
+            True if PHP is available, False otherwise
+        """
+        try:
+            result = subprocess.run(
+                [self.php_path, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                logger.debug(f"PHP is available: {result.stdout.splitlines()[0]}")
+                return True
+            logger.warning(f"PHP command failed with code {result.returncode}")
+            return False
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            logger.warning(f"PHP is not available: {e}")
+            return False
+
+    def validate_php_syntax(self, php_code: str) -> Tuple[bool, Optional[str], bool]:
+        """Validate PHP code syntax.
+
+        Args:
+            php_code: PHP code to validate
+
+        Returns:
+            Tuple of (is_valid, error_message, is_warning)
+            - is_valid: True if validation passed or was skipped
+            - error_message: Error/warning message if any
+            - is_warning: True if this is a warning (PHP not available), False for actual error
+        """
+        if not self.php_available:
+            warning_msg = f"PHP binary not found at '{self.php_path}' - skipping syntax validation"
+            if self.strict:
+                logger.error(f"STRICT MODE: {warning_msg}")
+                return False, warning_msg, True
+            else:
+                logger.warning(warning_msg)
+                return True, warning_msg, True
+
+        # Create temporary file with PHP code
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+                f.write(php_code)
+                temp_path = f.name
+
+            # Run php -l to check syntax
+            result = subprocess.run(
+                [self.php_path, "-l", temp_path],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            # Clean up temp file
+            Path(temp_path).unlink()
+
+            if result.returncode == 0:
+                logger.debug("PHP syntax validation passed")
+                return True, None, False
+            else:
+                error_msg = result.stderr or result.stdout
+                logger.error(f"PHP syntax validation failed: {error_msg}")
+                return False, error_msg, False
+
+        except Exception as e:
+            warning_msg = f"Could not validate PHP syntax: {str(e)}"
+            if self.strict:
+                logger.error(f"STRICT MODE: {warning_msg}")
+                return False, warning_msg, True
+            else:
+                logger.warning(warning_msg)
+                return True, warning_msg, True
+
+    def validate_file(self, file_path: Path) -> Dict[str, Any]:
+        """Validate a single file.
+
+        Args:
+            file_path: Path to file to validate
+
+        Returns:
+            Dictionary with validation results
+        """
+        result = {
+            "file": str(file_path),
+            "valid": True,
+            "errors": [],
+            "warnings": [],
+        }
+
+        if file_path.suffix == '.php':
+            try:
+                php_code = file_path.read_text(encoding='utf-8')
+                is_valid, message, is_warning = self.validate_php_syntax(php_code)
+
+                if not is_valid:
+                    if is_warning:
+                        result["warnings"].append(message)
+                        if self.strict:
+                            result["valid"] = False
+                    else:
+                        result["errors"].append(message)
+                        result["valid"] = False
+                elif message and is_warning:
+                    result["warnings"].append(message)
+
+            except Exception as e:
+                error_msg = f"Failed to read file: {e}"
+                result["errors"].append(error_msg)
+                result["valid"] = False
+
+        return result
+
+    def validate_directory(self, directory: str) -> Dict[str, Any]:
+        """Validate all PHP files in a directory.
+
+        Args:
+            directory: Path to directory to validate
+
+        Returns:
+            Dictionary with aggregated validation results
+        """
+        dir_path = Path(directory)
+        results = {
+            "valid": True,
+            "files_checked": 0,
+            "files_with_errors": 0,
+            "files_with_warnings": 0,
+            "errors": [],
+            "warnings": [],
+            "details": [],
+        }
+
+        if not dir_path.exists():
+            results["valid"] = False
+            results["errors"].append(f"Directory does not exist: {directory}")
+            return results
+
+        # Find all PHP files
+        php_files = list(dir_path.rglob("*.php"))
+        results["files_checked"] = len(php_files)
+
+        for php_file in php_files:
+            file_result = self.validate_file(php_file)
+            results["details"].append(file_result)
+
+            if not file_result["valid"]:
+                results["files_with_errors"] += 1
+                results["valid"] = False
+                for error in file_result["errors"]:
+                    results["errors"].append(f"{php_file.name}: {error}")
+
+            if file_result["warnings"]:
+                results["files_with_warnings"] += 1
+                for warning in file_result["warnings"]:
+                    results["warnings"].append(f"{php_file.name}: {warning}")
+
+        # In strict mode, warnings make the overall result invalid
+        if self.strict and results["warnings"]:
+            results["valid"] = False
+
+        return results
 
 
 def validate_php_syntax(php_code: str) -> Tuple[bool, Optional[str]]:

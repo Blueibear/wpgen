@@ -23,6 +23,12 @@ colorama==0.4.6
 # Logging
 python-json-logger==2.0.7
 
+# Configuration validation
+pydantic>=2.0,<3
+
+# Retries and resilience
+tenacity>=8.0,<9
+
 # GUI interface
 gradio>=4.44,<5
 huggingface_hub<0.26
