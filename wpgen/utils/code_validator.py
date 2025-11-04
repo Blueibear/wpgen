@@ -69,6 +69,50 @@ def validate_php_syntax(php_code: str) -> Tuple[bool, Optional[str]]:
         return True, None  # Don't block on validation errors
 
 
+def remove_nonexistent_requires(php_code: str, theme_dir: Optional[Path] = None) -> str:
+    """Remove or comment out require/include statements for files that don't exist.
+
+    Args:
+        php_code: PHP code to check
+        theme_dir: Optional theme directory path to check file existence
+
+    Returns:
+        Modified PHP code with non-existent requires removed/commented
+    """
+    if not theme_dir:
+        # Can't validate without theme directory
+        return php_code
+
+    lines = php_code.split('\n')
+    modified_lines = []
+    changes_made = False
+
+    for line in lines:
+        # Check for require/include statements
+        if re.search(r'\b(require|include|require_once|include_once)\s*\(?\s*get_template_directory', line):
+            # Extract the file path
+            match = re.search(r"['\"]([^'\"]+\.php)['\"]", line)
+            if match:
+                file_path = match.group(1)
+                # Remove leading slash if present
+                file_path = file_path.lstrip('/')
+                full_path = theme_dir / file_path
+
+                if not full_path.exists():
+                    # Comment out the line
+                    modified_lines.append(f"// REMOVED: File does not exist - {line.strip()}")
+                    logger.warning(f"Removed require for non-existent file: {file_path}")
+                    changes_made = True
+                    continue
+
+        modified_lines.append(line)
+
+    if changes_made:
+        logger.info("Removed require/include statements for non-existent files")
+
+    return '\n'.join(modified_lines)
+
+
 def clean_generated_code(code: str, file_type: str) -> str:
     """Clean generated code by removing markdown and explanatory text.
 
@@ -147,6 +191,7 @@ function {theme_name.replace('-', '_')}_setup() {{
     // Add theme support
     add_theme_support( 'title-tag' );
     add_theme_support( 'post-thumbnails' );
+    add_theme_support( 'automatic-feed-links' );
     add_theme_support( 'html5', array(
         'search-form',
         'comment-form',
