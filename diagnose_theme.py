@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Diagnostic script to examine a generated WordPress theme.
+
+This script provides detailed information about a theme to help
+diagnose WordPress crashes that aren't caught by syntax validation.
+"""
+
+import sys
+import os
+from pathlib import Path
+
+
+def diagnose_theme(theme_path: str):
+    """Diagnose a WordPress theme directory.
+
+    Args:
+        theme_path: Path to theme directory
+    """
+    theme_dir = Path(theme_path)
+
+    if not theme_dir.exists():
+        print(f"❌ Theme directory not found: {theme_path}")
+        sys.exit(1)
+
+    print("=" * 70)
+    print(f"WordPress Theme Diagnostic: {theme_dir.name}")
+    print("=" * 70)
+    print()
+
+    # Check all files
+    print("📁 Theme Structure:")
+    all_files = sorted(theme_dir.rglob("*"))
+    for f in all_files:
+        if f.is_file():
+            rel_path = f.relative_to(theme_dir)
+            size = f.stat().st_size
+            print(f"   {rel_path} ({size} bytes)")
+    print()
+
+    # Check required files
+    print("📋 Required Files:")
+    required = {
+        "style.css": theme_dir / "style.css",
+        "index.php": theme_dir / "index.php",
+    }
+
+    for name, path in required.items():
+        if path.exists():
+            print(f"   ✅ {name}")
+        else:
+            print(f"   ❌ {name} MISSING")
+    print()
+
+    # Check recommended files
+    print("📝 Recommended Files:")
+    recommended = {
+        "functions.php": theme_dir / "functions.php",
+        "header.php": theme_dir / "header.php",
+        "footer.php": theme_dir / "footer.php",
+        "sidebar.php": theme_dir / "sidebar.php",
+        "single.php": theme_dir / "single.php",
+        "page.php": theme_dir / "page.php",
+    }
+
+    for name, path in recommended.items():
+        if path.exists():
+            print(f"   ✅ {name}")
+        else:
+            print(f"   ⚠️  {name} missing")
+    print()
+
+    # Check style.css header
+    style_css = theme_dir / "style.css"
+    if style_css.exists():
+        print("🎨 style.css Header:")
+        with open(style_css, 'r', encoding='utf-8') as f:
+            content = f.read(500)
+            if "Theme Name:" in content:
+                print("   ✅ Has WordPress theme header")
+            else:
+                print("   ❌ Missing WordPress theme header")
+    print()
+
+    # Check for common issues in PHP files
+    print("🔍 Checking PHP Files for Common Issues:")
+    php_files = list(theme_dir.rglob("*.php"))
+
+    issues_found = []
+
+    for php_file in php_files:
+        rel_path = php_file.relative_to(theme_dir)
+        try:
+            with open(php_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Check for common issues
+            if "```" in content:
+                issues_found.append(f"{rel_path}: Contains markdown code blocks")
+
+            if "<?php" not in content and "<!DOCTYPE" not in str(content[:200]):
+                issues_found.append(f"{rel_path}: Missing PHP opening tag")
+
+            # Check for short tags (deprecated)
+            if content.strip().startswith("<?") and not content.strip().startswith("<?php"):
+                issues_found.append(f"{rel_path}: Uses short PHP tags (deprecated)")
+
+            # Check for closing PHP tags in functions.php (bad practice)
+            if php_file.name == "functions.php" and "?>" in content:
+                issues_found.append(f"{rel_path}: functions.php contains closing ?> tag (not recommended)")
+
+            # Check for wp_head() in header
+            if php_file.name == "header.php":
+                if "wp_head()" not in content:
+                    issues_found.append(f"{rel_path}: Missing wp_head() call")
+
+            # Check for wp_footer() in footer
+            if php_file.name == "footer.php":
+                if "wp_footer()" not in content:
+                    issues_found.append(f"{rel_path}: Missing wp_footer() call")
+
+            # Check for get_header/get_footer calls
+            if php_file.name in ["index.php", "single.php", "page.php", "archive.php"]:
+                if "get_header()" not in content:
+                    issues_found.append(f"{rel_path}: Missing get_header() call")
+                if "get_footer()" not in content:
+                    issues_found.append(f"{rel_path}: Missing get_footer() call")
+
+        except Exception as e:
+            issues_found.append(f"{rel_path}: Error reading file - {e}")
+
+    if issues_found:
+        print("   ⚠️  Issues Found:")
+        for issue in issues_found:
+            print(f"      • {issue}")
+    else:
+        print("   ✅ No common issues detected")
+    print()
+
+    # Print first 50 lines of functions.php if it exists
+    functions_php = theme_dir / "functions.php"
+    if functions_php.exists():
+        print("📄 functions.php (first 50 lines):")
+        print("-" * 70)
+        with open(functions_php, 'r', encoding='utf-8') as f:
+            lines = f.readlines()[:50]
+            for i, line in enumerate(lines, 1):
+                print(f"{i:3d} | {line.rstrip()}")
+        if len(lines) >= 50:
+            print("... (truncated)")
+        print("-" * 70)
+    print()
+
+    print("=" * 70)
+    print("Diagnostic Complete")
+    print()
+    print("💡 If WordPress is still crashing:")
+    print("   1. Check WordPress debug.log for the actual error")
+    print("   2. Try activating WordPress default theme (Twenty Twenty-Four)")
+    print("   3. Then try this theme again to see the specific error")
+    print("   4. Share the functions.php content above for analysis")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python diagnose_theme.py <theme-path>")
+        print("Example: python diagnose_theme.py output/my-theme")
+        sys.exit(1)
+
+    diagnose_theme(sys.argv[1])
