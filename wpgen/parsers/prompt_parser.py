@@ -192,6 +192,25 @@ class PromptParser:
                     for item in requirements[field]
                 ]
 
+        # Ensure scalar string fields are actually strings (not dicts or other types)
+        string_fields = ["color_scheme", "layout", "description", "theme_display_name"]
+        for field in string_fields:
+            if field in requirements and not isinstance(requirements[field], str):
+                # Convert dict or other types to string representation
+                if isinstance(requirements[field], dict):
+                    # For dicts, try to extract a reasonable string value
+                    if field == "color_scheme" and "primary" in requirements[field]:
+                        requirements[field] = str(requirements[field]["primary"])
+                    elif "value" in requirements[field]:
+                        requirements[field] = str(requirements[field]["value"])
+                    else:
+                        # Use first value if dict
+                        values = list(requirements[field].values())
+                        requirements[field] = str(values[0]) if values else "default"
+                else:
+                    requirements[field] = str(requirements[field])
+                logger.warning(f"Converted {field} from {type(requirements[field]).__name__} to string")
+
         # Set defaults for optional fields
         if "color_scheme" not in requirements:
             requirements["color_scheme"] = "default"

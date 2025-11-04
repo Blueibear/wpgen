@@ -29,7 +29,18 @@ def _ensure_style_header(theme_dir: str, requirements: dict) -> None:
     style_path = os.path.join(theme_dir, "style.css")
     theme_name = (requirements.get("theme_display_name")
                   or requirements.get("theme_name") or "WPGen Theme")
+
+    # Ensure theme_name is a string
+    if not isinstance(theme_name, str):
+        theme_name = str(theme_name) if theme_name else "WPGen Theme"
+
     slug = (requirements.get("slug") or theme_name).lower()
+
+    # Ensure slug is a string (defensive check)
+    if not isinstance(slug, str):
+        slug = str(slug) if slug else "wpgen-theme"
+        slug = slug.lower()
+
     text_domain = re.sub(r"[^a-z0-9-]+", "-", slug)
 
     header = f"""/*
@@ -67,6 +78,12 @@ def _first_hex(color_scheme: Optional[str], fallback: str = "#0f172a") -> str:
     """
     if not color_scheme:
         return fallback
+
+    # Ensure color_scheme is a string (defensive check)
+    if not isinstance(color_scheme, str):
+        logger.warning(f"color_scheme is not a string: {type(color_scheme).__name__}, using fallback")
+        return fallback
+
     m = re.search(r"#([0-9a-fA-F]{6})", color_scheme)
     return f"#{m.group(1)}" if m else fallback
 
