@@ -6,7 +6,6 @@ diagnose WordPress crashes that aren't caught by syntax validation.
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Fix Windows console encoding for UTF-8 output

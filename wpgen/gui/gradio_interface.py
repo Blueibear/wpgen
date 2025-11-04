@@ -7,7 +7,6 @@ with support for text prompts, image uploads, and document uploads.
 import gradio as gr
 import os
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from ..parsers import PromptParser
 from ..generators import WordPressGenerator
@@ -277,8 +276,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 options_brief_md += f"- Blocks: {', '.join(blocks_enabled) if blocks_enabled else 'none'}\n"
                 options_brief_md += f"- Dark/Light Toggle: {darkmode_enabled}\n"
                 options_brief_md += f"- Animated Preloader: {preloader_enabled}\n"
-                options_brief_md += f"- Smooth Transitions: True (always on)\n"
-                options_brief_md += f"- Thumb-friendly Mobile Nav: True (always on)\n"
+                options_brief_md += "- Smooth Transitions: True (always on)\n"
+                options_brief_md += "- Thumb-friendly Mobile Nav: True (always on)\n"
 
                 status += "  ✓ Optional features configured\n"
                 yield status, "", ""
