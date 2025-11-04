@@ -21,7 +21,7 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 
 ## Requirements
 
-- Python 3.11 or higher
+- Python 3.8 or higher
 - **One of the following AI providers:**
   - OpenAI API key, OR
   - Anthropic API key, OR
@@ -406,11 +406,21 @@ deployment:
 
 ### GitHub Personal Access Token
 
+WPGen uses **secure authentication** via GIT_ASKPASS - your token is **never embedded in Git remote URLs** or stored in Git config.
+
 1. Go to [GitHub Settings > Tokens](https://github.com/settings/tokens)
 2. Click "Generate new token (classic)"
-3. Select scopes: `repo`, `workflow`
+3. Select minimal scopes needed:
+   - `repo` (for repository creation and push)
+   - `workflow` (optional, only if using GitHub Actions)
 4. Click "Generate token"
 5. Copy the token and add it to your `.env` file
+
+**Security Note**: WPGen uses a temporary GIT_ASKPASS script to provide credentials securely. Your token will never appear in:
+- Git remote URLs
+- Git configuration files
+- Log output (automatically redacted)
+- Command history
 
 ## Using Local LLMs with LM Studio or Ollama (Dual-Model)
 
@@ -1095,7 +1105,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Credits
 
-- Built with Python 3.11+
+- Built with Python 3.8+
 - Uses OpenAI GPT-4 or Anthropic Claude for AI generation
 - Flask for web interface
 - GitPython for Git operations

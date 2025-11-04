@@ -12,11 +12,39 @@ import requests
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from base64 import b64encode
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
+import logging
 
 from ..utils.logger import get_logger
 
 
 logger = get_logger(__name__)
+
+
+def is_retryable_error(exception):
+    """Check if an HTTP error is retryable."""
+    if isinstance(exception, requests.exceptions.HTTPError):
+        # Retry on 5xx server errors and 429 rate limit
+        return exception.response.status_code >= 500 or exception.response.status_code == 429
+    # Retry on connection and timeout errors
+    return isinstance(exception, (requests.exceptions.ConnectionError, requests.exceptions.Timeout))
+
+
+def get_retry_decorator():
+    """Get configured retry decorator for WordPress API calls."""
+    return retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=0.2, max=8),
+        retry=retry_if_exception_type((requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        reraise=True,
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+    )
 
 
 class WordPressAPI:
@@ -57,6 +85,7 @@ class WordPressAPI:
 
         logger.info(f"Initialized WordPress API client for {self.site_url}")
 
+    @get_retry_decorator()
     def test_connection(self) -> Dict[str, Any]:
         """Test connection to WordPress REST API.
 
@@ -303,6 +332,7 @@ class WordPressAPI:
             logger.error(f"Page update failed: {str(e)}")
             raise Exception(f"Failed to update page: {str(e)}")
 
+    @get_retry_decorator()
     def get_pages(self, **params) -> List[Dict[str, Any]]:
         """Get list of pages.
 
@@ -415,6 +445,7 @@ class WordPressAPI:
             logger.error(f"Post creation failed: {str(e)}")
             raise Exception(f"Failed to create post: {str(e)}")
 
+    @get_retry_decorator()
     def get_posts(self, **params) -> List[Dict[str, Any]]:
         """Get list of posts.
 
