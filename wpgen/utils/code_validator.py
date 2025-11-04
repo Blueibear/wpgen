@@ -203,7 +203,7 @@ def get_fallback_template(template_name: str, theme_name: str) -> str:
     Returns:
         Fallback template code
     """
-    templates = {{
+    templates = {
         'single.php': """<?php
 /**
  * Single post template
@@ -350,15 +350,15 @@ get_footer();
 /**
  * Sidebar template
  */
-if ( ! is_active_sidebar( 'sidebar-1' ) ) {{
+if ( ! is_active_sidebar( 'sidebar-1' ) ) {
     return;
-}}
+}
 ?>
 
 <aside id="secondary" class="widget-area">
     <?php dynamic_sidebar( 'sidebar-1' ); ?>
 </aside>
 """
-    }}
+    }
 
     return templates.get(template_name, "")
