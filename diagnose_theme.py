@@ -9,6 +9,40 @@ import sys
 import os
 from pathlib import Path
 
+# Fix Windows console encoding for UTF-8 output
+USE_EMOJI = True
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, Exception):
+        # If UTF-8 reconfiguration fails, disable emojis
+        USE_EMOJI = False
+
+
+def safe_print(text: str = ""):
+    """Print text with emoji fallback for Windows."""
+    if not USE_EMOJI:
+        # Remove emojis for Windows terminals that don't support UTF-8
+        emoji_map = {
+            '📁': '[FILES]',
+            '📋': '[REQUIRED]',
+            '📝': '[RECOMMENDED]',
+            '🎨': '[STYLE]',
+            '🔍': '[CHECKING]',
+            '📄': '[FILE]',
+            '💡': '[TIP]',
+            '✅': '[OK]',
+            '❌': '[ERROR]',
+            '⚠️': '[WARNING]',
+        }
+        for emoji, replacement in emoji_map.items():
+            text = text.replace(emoji, replacement)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Last resort: encode as ASCII, ignore errors
+        print(text.encode('ascii', 'ignore').decode('ascii'))
+
 
 def diagnose_theme(theme_path: str):
     """Diagnose a WordPress theme directory.
@@ -19,26 +53,26 @@ def diagnose_theme(theme_path: str):
     theme_dir = Path(theme_path)
 
     if not theme_dir.exists():
-        print(f"❌ Theme directory not found: {theme_path}")
+        safe_print(f"❌ Theme directory not found: {theme_path}")
         sys.exit(1)
 
-    print("=" * 70)
-    print(f"WordPress Theme Diagnostic: {theme_dir.name}")
-    print("=" * 70)
-    print()
+    safe_print("=" * 70)
+    safe_print(f"WordPress Theme Diagnostic: {theme_dir.name}")
+    safe_print("=" * 70)
+    safe_print()
 
     # Check all files
-    print("📁 Theme Structure:")
+    safe_print("📁 Theme Structure:")
     all_files = sorted(theme_dir.rglob("*"))
     for f in all_files:
         if f.is_file():
             rel_path = f.relative_to(theme_dir)
             size = f.stat().st_size
-            print(f"   {rel_path} ({size} bytes)")
-    print()
+            safe_print(f"   {rel_path} ({size} bytes)")
+    safe_print()
 
     # Check required files
-    print("📋 Required Files:")
+    safe_print("📋 Required Files:")
     required = {
         "style.css": theme_dir / "style.css",
         "index.php": theme_dir / "index.php",
@@ -46,13 +80,13 @@ def diagnose_theme(theme_path: str):
 
     for name, path in required.items():
         if path.exists():
-            print(f"   ✅ {name}")
+            safe_print(f"   ✅ {name}")
         else:
-            print(f"   ❌ {name} MISSING")
-    print()
+            safe_print(f"   ❌ {name} MISSING")
+    safe_print()
 
     # Check recommended files
-    print("📝 Recommended Files:")
+    safe_print("📝 Recommended Files:")
     recommended = {
         "functions.php": theme_dir / "functions.php",
         "header.php": theme_dir / "header.php",
@@ -64,25 +98,25 @@ def diagnose_theme(theme_path: str):
 
     for name, path in recommended.items():
         if path.exists():
-            print(f"   ✅ {name}")
+            safe_print(f"   ✅ {name}")
         else:
-            print(f"   ⚠️  {name} missing")
-    print()
+            safe_print(f"   ⚠️  {name} missing")
+    safe_print()
 
     # Check style.css header
     style_css = theme_dir / "style.css"
     if style_css.exists():
-        print("🎨 style.css Header:")
+        safe_print("🎨 style.css Header:")
         with open(style_css, 'r', encoding='utf-8') as f:
             content = f.read(500)
             if "Theme Name:" in content:
-                print("   ✅ Has WordPress theme header")
+                safe_print("   ✅ Has WordPress theme header")
             else:
-                print("   ❌ Missing WordPress theme header")
-    print()
+                safe_print("   ❌ Missing WordPress theme header")
+    safe_print()
 
     # Check for common issues in PHP files
-    print("🔍 Checking PHP Files for Common Issues:")
+    safe_print("🔍 Checking PHP Files for Common Issues:")
     php_files = list(theme_dir.rglob("*.php"))
 
     issues_found = []
@@ -129,42 +163,42 @@ def diagnose_theme(theme_path: str):
             issues_found.append(f"{rel_path}: Error reading file - {e}")
 
     if issues_found:
-        print("   ⚠️  Issues Found:")
+        safe_print("   ⚠️  Issues Found:")
         for issue in issues_found:
-            print(f"      • {issue}")
+            safe_print(f"      • {issue}")
     else:
-        print("   ✅ No common issues detected")
-    print()
+        safe_print("   ✅ No common issues detected")
+    safe_print()
 
     # Print first 50 lines of functions.php if it exists
     functions_php = theme_dir / "functions.php"
     if functions_php.exists():
-        print("📄 functions.php (first 50 lines):")
-        print("-" * 70)
+        safe_print("📄 functions.php (first 50 lines):")
+        safe_print("-" * 70)
         with open(functions_php, 'r', encoding='utf-8') as f:
             lines = f.readlines()[:50]
             for i, line in enumerate(lines, 1):
-                print(f"{i:3d} | {line.rstrip()}")
+                safe_print(f"{i:3d} | {line.rstrip()}")
         if len(lines) >= 50:
-            print("... (truncated)")
-        print("-" * 70)
-    print()
+            safe_print("... (truncated)")
+        safe_print("-" * 70)
+    safe_print()
 
-    print("=" * 70)
-    print("Diagnostic Complete")
-    print()
-    print("💡 If WordPress is still crashing:")
-    print("   1. Check WordPress debug.log for the actual error")
-    print("   2. Try activating WordPress default theme (Twenty Twenty-Four)")
-    print("   3. Then try this theme again to see the specific error")
-    print("   4. Share the functions.php content above for analysis")
-    print("=" * 70)
+    safe_print("=" * 70)
+    safe_print("Diagnostic Complete")
+    safe_print()
+    safe_print("💡 If WordPress is still crashing:")
+    safe_print("   1. Check WordPress debug.log for the actual error")
+    safe_print("   2. Try activating WordPress default theme (Twenty Twenty-Four)")
+    safe_print("   3. Then try this theme again to see the specific error")
+    safe_print("   4. Share the functions.php content above for analysis")
+    safe_print("=" * 70)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python diagnose_theme.py <theme-path>")
-        print("Example: python diagnose_theme.py output/my-theme")
+        safe_print("Usage: python diagnose_theme.py <theme-path>")
+        safe_print("Example: python diagnose_theme.py output/my-theme")
         sys.exit(1)
 
     diagnose_theme(sys.argv[1])
