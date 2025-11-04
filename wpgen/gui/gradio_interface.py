@@ -762,8 +762,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     label="Images",
                     file_types=["image"],
                     file_count="multiple",
-                    type="filepath",
-                    info="Design references, logos, mood boards, mockups. If provided, the Vision model analyzes visual layout and styles. Requires vision model for local providers."
+                    type="filepath"
                 )
 
                 gr.Markdown("### 📄 Upload Content Files (Optional)")
@@ -774,8 +773,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     label="Documents",
                     file_types=[".txt", ".md", ".pdf"],
                     file_count="multiple",
-                    type="filepath",
-                    info="Copy, requirements, product sheets, or design briefs. Content is merged into the design context for more accurate generation."
+                    type="filepath"
                 )
 
                 gr.Markdown("### ⚙️ Generation Options")
