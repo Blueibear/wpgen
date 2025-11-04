@@ -180,6 +180,11 @@ class WordPressGenerator:
         self.llm_provider = llm_provider
         self.output_dir = Path(output_dir)
         self.config = config or {}
+        self.safe_mode = self.config.get("safe_mode", False)
+
+        if self.safe_mode:
+            logger.warning("⚠️  SAFE MODE ENABLED - Using only validated fallback templates")
+
         logger.info(f"Initialized WordPressGenerator with output dir: {output_dir}")
 
     def generate(
@@ -332,6 +337,15 @@ Include:
             requirements: Theme requirements
         """
         logger.info("Generating functions.php")
+
+        # SAFE MODE: Always use fallback
+        if self.safe_mode:
+            logger.info("Safe mode: Using fallback functions.php")
+            php_code = get_fallback_functions_php(requirements["theme_name"])
+            functions_file = theme_dir / "functions.php"
+            functions_file.write_text(php_code, encoding="utf-8")
+            logger.info("Created safe-mode functions.php")
+            return
 
         context = {
             "theme_name": requirements["theme_name"],
