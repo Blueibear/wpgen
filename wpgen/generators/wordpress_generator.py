@@ -14,7 +14,12 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
-from ..utils.code_validator import validate_php_syntax, get_fallback_functions_php, get_fallback_template
+from ..utils.code_validator import (
+    validate_php_syntax,
+    get_fallback_functions_php,
+    get_fallback_template,
+    remove_nonexistent_requires,
+)
 
 
 logger = get_logger(__name__)
@@ -379,6 +384,9 @@ wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-u
             # Ensure PHP opening tag
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
+
+            # Remove require/include statements for non-existent files
+            php_code = remove_nonexistent_requires(php_code, theme_dir)
 
             # Validate PHP syntax
             is_valid, error_msg = validate_php_syntax(php_code)
