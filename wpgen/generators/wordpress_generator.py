@@ -10,7 +10,6 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
@@ -104,6 +103,13 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List
         requirements: Theme requirements dict
         images: List of image dicts with 'path' key, or None
     """
+    # Import PIL here to avoid hard dependency
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        logger.warning("PIL (Pillow) not installed. Skipping screenshot generation.")
+        return
+
     shot_path = os.path.join(theme_dir, "screenshot.png")
     if os.path.exists(shot_path):
         return
