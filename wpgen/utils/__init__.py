@@ -5,6 +5,7 @@ from .config import get_llm_provider
 from .file_handler import FileHandler
 from .image_analysis import ImageAnalyzer
 from .text_utils import TextProcessor
+from .code_validator import validate_php_syntax, clean_generated_code, get_fallback_functions_php
 
 __all__ = [
     "setup_logger",
@@ -13,4 +14,7 @@ __all__ = [
     "FileHandler",
     "ImageAnalyzer",
     "TextProcessor",
+    "validate_php_syntax",
+    "clean_generated_code",
+    "get_fallback_functions_php",
 ]

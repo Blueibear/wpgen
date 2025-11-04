@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
+from ..utils.code_validator import validate_php_syntax, get_fallback_functions_php
 
 
 logger = get_logger(__name__)
@@ -365,13 +366,53 @@ wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-u
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
 
+            # Validate PHP syntax
+            is_valid, error_msg = validate_php_syntax(php_code)
+            if not is_valid:
+                logger.error(f"Generated functions.php has syntax errors: {error_msg}")
+                logger.warning("Using fallback functions.php template")
+                php_code = get_fallback_functions_php(requirements["theme_name"])
+
             functions_file = theme_dir / "functions.php"
             functions_file.write_text(php_code, encoding="utf-8")
             logger.info("Generated functions.php successfully")
 
         except Exception as e:
             logger.error(f"Failed to generate functions.php: {str(e)}")
-            raise
+            logger.warning("Using fallback functions.php template")
+            php_code = get_fallback_functions_php(requirements["theme_name"])
+            functions_file = theme_dir / "functions.php"
+            functions_file.write_text(php_code, encoding="utf-8")
+            logger.info("Created fallback functions.php")
+
+    def _validate_and_write_php(
+        self, theme_dir: Path, filename: str, php_code: str, fallback_code: Optional[str] = None
+    ) -> None:
+        """Validate PHP code and write to file with fallback.
+
+        Args:
+            theme_dir: Theme directory path
+            filename: Name of the PHP file
+            php_code: Generated PHP code
+            fallback_code: Optional fallback code if validation fails
+        """
+        # Ensure PHP opening tag
+        if not php_code.strip().startswith("<?php"):
+            php_code = "<?php\n" + php_code
+
+        # Validate PHP syntax
+        is_valid, error_msg = validate_php_syntax(php_code)
+        if not is_valid:
+            logger.error(f"Generated {filename} has syntax errors: {error_msg}")
+            if fallback_code:
+                logger.warning(f"Using fallback {filename} template")
+                php_code = fallback_code
+            else:
+                logger.warning(f"No fallback available for {filename}, using generated code anyway")
+
+        file_path = theme_dir / filename
+        file_path.write_text(php_code, encoding="utf-8")
+        logger.info(f"Written {filename} successfully")
 
     def _generate_index_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate index.php template file.
@@ -403,16 +444,31 @@ Use modern WordPress template tags and best practices."""
                 description, "php", context, images=self.design_images
             )
 
-            if not php_code.strip().startswith("<?php"):
-                php_code = "<?php\n" + php_code
-
-            index_file = theme_dir / "index.php"
-            index_file.write_text(php_code, encoding="utf-8")
-            logger.info("Generated index.php successfully")
+            self._validate_and_write_php(theme_dir, "index.php", php_code)
 
         except Exception as e:
             logger.error(f"Failed to generate index.php: {str(e)}")
-            raise
+            # Use minimal fallback
+            fallback = """<?php
+get_header();
+
+if ( have_posts() ) :
+    while ( have_posts() ) : the_post();
+        ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+            <div class="entry-content">
+                <?php the_content(); ?>
+            </div>
+        </article>
+        <?php
+    endwhile;
+    the_posts_pagination();
+endif;
+
+get_footer();
+"""
+            self._validate_and_write_php(theme_dir, "index.php", fallback)
 
     def _generate_header_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate header.php template file.
@@ -443,18 +499,39 @@ Follow WordPress coding standards."""
                 description, "php", context, images=self.design_images
             )
 
+            # Special handling for header - might start with <!DOCTYPE
             if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith(
                 "<?php"
             ):
                 php_code = "<?php\n" + php_code
 
-            header_file = theme_dir / "header.php"
-            header_file.write_text(php_code, encoding="utf-8")
-            logger.info("Generated header.php successfully")
+            self._validate_and_write_php(theme_dir, "header.php", php_code)
 
         except Exception as e:
             logger.error(f"Failed to generate header.php: {str(e)}")
-            raise
+            fallback = """<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+<header class="site-header">
+    <h1><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+    <nav>
+        <?php
+        wp_nav_menu( array(
+            'theme_location' => 'primary',
+            'menu_class'     => 'primary-menu',
+        ) );
+        ?>
+    </nav>
+</header>
+<main id="main" class="site-main">
+"""
+            self._validate_and_write_php(theme_dir, "header.php", fallback)
 
     def _generate_footer_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate footer.php template file.
@@ -481,16 +558,19 @@ Follow WordPress coding standards."""
                 description, "php", context, images=self.design_images
             )
 
-            if not php_code.strip().startswith("<?php"):
-                php_code = "<?php\n" + php_code
-
-            footer_file = theme_dir / "footer.php"
-            footer_file.write_text(php_code, encoding="utf-8")
-            logger.info("Generated footer.php successfully")
+            self._validate_and_write_php(theme_dir, "footer.php", php_code)
 
         except Exception as e:
             logger.error(f"Failed to generate footer.php: {str(e)}")
-            raise
+            fallback = """</main>
+<footer class="site-footer">
+    <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+</footer>
+<?php wp_footer(); ?>
+</body>
+</html>
+"""
+            self._validate_and_write_php(theme_dir, "footer.php", fallback)
 
     def _generate_sidebar_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate sidebar.php template file.
