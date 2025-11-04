@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
-from ..utils.code_validator import validate_php_syntax, get_fallback_functions_php
+from ..utils.code_validator import validate_php_syntax, get_fallback_functions_php, get_fallback_template
 
 
 logger = get_logger(__name__)
@@ -595,29 +595,13 @@ Include:
                 description, "php", context, images=self.design_images
             )
 
-            if not php_code.strip().startswith("<?php"):
-                php_code = "<?php\n" + php_code
-
-            sidebar_file = theme_dir / "sidebar.php"
-            sidebar_file.write_text(php_code, encoding="utf-8")
-            logger.info("Generated sidebar.php successfully")
+            fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
+            self._validate_and_write_php(theme_dir, "sidebar.php", php_code, fallback)
 
         except Exception as e:
-            logger.warning(f"Failed to generate sidebar.php with images, trying without: {str(e)}")
-            # Retry without images if vision API failed
-            try:
-                php_code = self.llm_provider.generate_code(
-                    description, "php", context, images=None
-                )
-                if not php_code.strip().startswith("<?php"):
-                    php_code = "<?php\n" + php_code
-                sidebar_file = theme_dir / "sidebar.php"
-                sidebar_file.write_text(php_code, encoding="utf-8")
-                logger.info("Generated sidebar.php successfully (without images)")
-            except Exception as retry_error:
-                logger.error(f"Failed to generate sidebar.php even without images: {str(retry_error)}")
-                # Continue theme generation, sidebar.php is optional
-                pass
+            logger.error(f"Failed to generate sidebar.php: {str(e)}")
+            fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
+            self._validate_and_write_php(theme_dir, "sidebar.php", fallback)
 
     def _generate_templates(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate additional template files based on requirements.
@@ -657,27 +641,21 @@ Follow WordPress template hierarchy and coding standards."""
                     full_description, "php", context, images=self.design_images
                 )
 
-                if not php_code.strip().startswith("<?php"):
-                    php_code = "<?php\n" + php_code
+                # Get fallback template if available
+                fallback = get_fallback_template(template_file, requirements["theme_name"])
 
-                (theme_dir / template_file).write_text(php_code, encoding="utf-8")
+                self._validate_and_write_php(theme_dir, template_file, php_code, fallback if fallback else None)
                 logger.info(f"Generated {template_file} successfully")
 
             except Exception as e:
-                logger.warning(f"Failed to generate {template_file} with images: {str(e)}")
-                # Retry without images if vision API failed
-                try:
-                    logger.info(f"Retrying {template_file} without images...")
-                    php_code = self.llm_provider.generate_code(
-                        full_description, "php", context, images=None
-                    )
-                    if not php_code.strip().startswith("<?php"):
-                        php_code = "<?php\n" + php_code
-                    (theme_dir / template_file).write_text(php_code, encoding="utf-8")
-                    logger.info(f"Generated {template_file} successfully (without images)")
-                except Exception as retry_error:
-                    logger.error(f"Failed to generate {template_file} even without images: {str(retry_error)}")
-                    # Continue to next template
+                logger.error(f"Failed to generate {template_file}: {str(e)}")
+                # Use fallback template if available
+                fallback = get_fallback_template(template_file, requirements["theme_name"])
+                if fallback:
+                    logger.warning(f"Using fallback template for {template_file}")
+                    self._validate_and_write_php(theme_dir, template_file, fallback)
+                else:
+                    logger.warning(f"No fallback available for {template_file}, skipping")
                     continue
 
     def _generate_wpgen_ui_assets(self, theme_dir: Path) -> None:

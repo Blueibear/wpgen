@@ -191,3 +191,174 @@ function {theme_name.replace('-', '_')}_widgets_init() {{
 }}
 add_action( 'widgets_init', '{theme_name.replace('-', '_')}_widgets_init' );
 """
+
+
+def get_fallback_template(template_name: str, theme_name: str) -> str:
+    """Get fallback template for various WordPress template files.
+
+    Args:
+        template_name: Name of the template (e.g., 'single', 'page', 'archive')
+        theme_name: Theme name for text domain
+
+    Returns:
+        Fallback template code
+    """
+    templates = {{
+        'single.php': """<?php
+/**
+ * Single post template
+ */
+get_header();
+
+if ( have_posts() ) :
+    while ( have_posts() ) : the_post();
+        ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <header class="entry-header">
+                <h1 class="entry-title"><?php the_title(); ?></h1>
+                <div class="entry-meta">
+                    <span class="posted-on"><?php echo get_the_date(); ?></span>
+                    <span class="byline"> by <?php the_author(); ?></span>
+                </div>
+            </header>
+            <div class="entry-content">
+                <?php the_content(); ?>
+            </div>
+        </article>
+        <?php
+        if ( comments_open() || get_comments_number() ) :
+            comments_template();
+        endif;
+    endwhile;
+endif;
+
+get_footer();
+""",
+        'page.php': """<?php
+/**
+ * Page template
+ */
+get_header();
+
+if ( have_posts() ) :
+    while ( have_posts() ) : the_post();
+        ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <header class="entry-header">
+                <h1 class="entry-title"><?php the_title(); ?></h1>
+            </header>
+            <div class="entry-content">
+                <?php the_content(); ?>
+            </div>
+        </article>
+        <?php
+    endwhile;
+endif;
+
+get_footer();
+""",
+        'archive.php': """<?php
+/**
+ * Archive template
+ */
+get_header();
+?>
+
+<header class="page-header">
+    <?php
+    the_archive_title( '<h1 class="page-title">', '</h1>' );
+    the_archive_description( '<div class="archive-description">', '</div>' );
+    ?>
+</header>
+
+<?php
+if ( have_posts() ) :
+    while ( have_posts() ) : the_post();
+        ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+            <div class="entry-summary">
+                <?php the_excerpt(); ?>
+            </div>
+        </article>
+        <?php
+    endwhile;
+    the_posts_pagination();
+else :
+    ?>
+    <p><?php esc_html_e( 'No posts found.', '{theme_name}' ); ?></p>
+    <?php
+endif;
+
+get_footer();
+""",
+        'search.php': """<?php
+/**
+ * Search results template
+ */
+get_header();
+?>
+
+<header class="page-header">
+    <h1 class="page-title">
+        <?php printf( esc_html__( 'Search Results for: %s', '{theme_name}' ), '<span>' . get_search_query() . '</span>' ); ?>
+    </h1>
+</header>
+
+<?php
+if ( have_posts() ) :
+    while ( have_posts() ) : the_post();
+        ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+            <div class="entry-summary">
+                <?php the_excerpt(); ?>
+            </div>
+        </article>
+        <?php
+    endwhile;
+    the_posts_pagination();
+else :
+    ?>
+    <p><?php esc_html_e( 'Nothing found. Try a different search?', '{theme_name}' ); ?></p>
+    <?php get_search_form(); ?>
+    <?php
+endif;
+
+get_footer();
+""",
+        '404.php': """<?php
+/**
+ * 404 error page template
+ */
+get_header();
+?>
+
+<header class="page-header">
+    <h1 class="page-title"><?php esc_html_e( 'Page Not Found', '{theme_name}' ); ?></h1>
+</header>
+
+<div class="page-content">
+    <p><?php esc_html_e( 'The page you are looking for does not exist.', '{theme_name}' ); ?></p>
+    <?php get_search_form(); ?>
+</div>
+
+<?php
+get_footer();
+""",
+        'sidebar.php': """<?php
+/**
+ * Sidebar template
+ */
+if ( ! is_active_sidebar( 'sidebar-1' ) ) {{
+    return;
+}}
+?>
+
+<aside id="secondary" class="widget-area">
+    <?php dynamic_sidebar( 'sidebar-1' ); ?>
+</aside>
+"""
+    }}
+
+    return templates.get(template_name, "")

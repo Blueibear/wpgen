@@ -287,6 +287,38 @@ def gui(config_path: str, share: bool, server_name: str, server_port: int):
 
 
 @cli.command()
+@click.argument("theme_path")
+def validate(theme_path: str):
+    """Validate a WordPress theme for syntax errors.
+
+    THEME_PATH: Path to the theme directory to validate.
+
+    This command checks all PHP files in the theme for syntax errors
+    that could cause WordPress to crash.
+
+    Example:
+        wpgen validate output/my-theme
+    """
+    try:
+        from wpgen.utils.theme_validator import validate_theme_directory, print_validation_report
+
+        click.echo(f"\n🔍 Validating theme: {theme_path}\n")
+
+        results = validate_theme_directory(theme_path)
+        print_validation_report(results)
+
+        # Exit with error code if validation failed
+        if results.get('invalid_files', 0) > 0 or results.get('errors'):
+            sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"\n❌ Error: {str(e)}\n", err=True)
+        if "--debug" in sys.argv:
+            raise
+        sys.exit(1)
+
+
+@cli.command()
 def init():
     """Initialize WPGen configuration.
 
