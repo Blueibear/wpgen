@@ -164,14 +164,16 @@ class GitHubIntegration:
             logger.info(f"Remote URL: {remote_url}")
             logger.debug("Token will be provided via GIT_ASKPASS (not in URL)")
 
-            # Add all files
-            # Get all files in the directory recursively
+            # Add all files (excluding .git directory and other git-related files)
+            # Get all files in the directory recursively, excluding .git
             all_files = [
-                str(f.relative_to(theme_path)) for f in theme_path.rglob("*") if f.is_file()
+                str(f.relative_to(theme_path))
+                for f in theme_path.rglob("*")
+                if f.is_file() and not any(part.startswith(".git") for part in f.parts)
             ]
             if all_files:
                 repo.index.add(all_files)
-            logger.info(f"Added {len(all_files)} files to git index")
+            logger.info(f"Added {len(all_files)} files to git index (excluding .git directory)")
 
             # Create commit
             commit_message = f"""Initial commit: {requirements['theme_display_name']}
