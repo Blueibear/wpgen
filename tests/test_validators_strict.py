@@ -1,9 +1,11 @@
 """Tests for validator strict mode behavior."""
 
-import pytest
 import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
+
+import pytest
+
 from wpgen.utils.code_validator import CodeValidator
 from wpgen.utils.theme_validator import ThemeValidator
 

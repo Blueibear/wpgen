@@ -5,12 +5,11 @@ and preparing files for LLM multi-modal context.
 """
 
 import base64
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
 import mimetypes
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..utils.logger import get_logger
-
 
 logger = get_logger(__name__)
 

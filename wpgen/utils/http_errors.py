@@ -1,7 +1,7 @@
 """HTTP error handling utilities with detailed error messages."""
 
+
 import requests
-from typing import Optional
 
 
 def format_http_error(

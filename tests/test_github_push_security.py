@@ -1,9 +1,11 @@
 """Tests for secure GitHub push without tokens in URLs."""
 
 import os
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
 from wpgen.github.credentials import (
     SecureCredentialHelper,
     build_askpass_env,

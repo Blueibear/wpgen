@@ -6,10 +6,12 @@ are generated at runtime using obfuscated patterns.
 """
 
 import logging
+
 import pytest
+
 from wpgen.utils.logger import (
-    redact_sensitive_data,
     SecretRedactingFilter,
+    redact_sensitive_data,
     setup_logger,
 )
 

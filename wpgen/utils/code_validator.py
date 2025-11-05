@@ -8,9 +8,9 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
-from .logger import get_logger
+from typing import Any, Dict, Optional, Tuple
 
+from .logger import get_logger
 
 logger = get_logger(__name__)
 

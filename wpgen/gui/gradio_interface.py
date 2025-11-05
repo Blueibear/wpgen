@@ -4,17 +4,18 @@ Provides a user-friendly graphical interface for generating WordPress themes
 with support for text prompts, image uploads, and document uploads.
 """
 
-import gradio as gr
 import os
 from pathlib import Path
 
-from ..parsers import PromptParser
+import gradio as gr
+
 from ..generators import WordPressGenerator
 from ..github import GitHubIntegration
-from ..wordpress import WordPressAPI
-from ..utils import setup_logger, get_logger, get_llm_provider, FileHandler
+from ..parsers import PromptParser
+from ..utils import FileHandler, get_llm_provider, get_logger, setup_logger
 from ..utils.image_analysis import ImageAnalyzer
 from ..utils.text_utils import TextProcessor
+from ..wordpress import WordPressAPI
 
 logger = get_logger(__name__)
 
