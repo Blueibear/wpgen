@@ -260,7 +260,7 @@ Requirements:
             try:
                 result = self._extract_json(result_text)
             except (json.JSONDecodeError, ValueError):
-                logger.error(f"Failed to extract JSON from response")
+                logger.error("Failed to extract JSON from response")
                 result = self._get_fallback_requirements()
 
             # Ensure theme_display_name exists
@@ -364,7 +364,7 @@ Return ONLY valid JSON, no other text."""
             try:
                 result = self._extract_json(result_text)
             except (json.JSONDecodeError, ValueError):
-                logger.error(f"Failed to extract JSON from multi-modal response")
+                logger.error("Failed to extract JSON from multi-modal response")
                 result = self._get_fallback_requirements()
 
             # Ensure theme_display_name exists

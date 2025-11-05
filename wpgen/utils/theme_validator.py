@@ -4,10 +4,9 @@ This module provides tools to validate an existing theme directory
 and identify which files are causing WordPress to crash.
 """
 
-import os
 import subprocess
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import Tuple, Dict
 from .logger import get_logger
 
 
@@ -361,7 +360,7 @@ def print_validation_report(results: Dict[str, any]) -> None:
         return
 
     # Summary
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Total PHP files: {results['php_files']}")
     print(f"   Valid files: {results['valid_files']} ✅")
     print(f"   Invalid files: {results['invalid_files']} ❌")
@@ -387,47 +386,3 @@ def print_validation_report(results: Dict[str, any]) -> None:
         print("   Please fix the errors listed above before activating the theme.")
 
     print("="*70 + "\n")
-
-
-def validate_php_syntax_file(file_path: str) -> Tuple[bool, str]:
-    """Validate PHP syntax of a file.
-
-    Args:
-        file_path: Path to PHP file
-
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
-    # Check if PHP is available
-    try:
-        result = subprocess.run(
-            ["php", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if result.returncode != 0:
-            return True, "PHP command not available"
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return True, "PHP command not available"
-
-    # Run php -l to check syntax
-    try:
-        result = subprocess.run(
-            ["php", "-l", file_path],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-
-        if result.returncode == 0:
-            return True, ""
-        else:
-            error_msg = result.stderr or result.stdout
-            # Extract just the error message, not the full path
-            if "Parse error:" in error_msg:
-                error_msg = error_msg.split("Parse error:")[1].split(" in ")[0].strip()
-            return False, error_msg
-
-    except Exception as e:
-        return True, f"Validation failed: {str(e)}"

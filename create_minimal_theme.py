@@ -5,7 +5,6 @@ ZERO external files, and ZERO advanced features. Just the bare minimum
 required for WordPress to activate it.
 """
 
-import os
 from pathlib import Path
 
 
