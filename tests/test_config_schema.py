@@ -1,14 +1,16 @@
 """Tests for configuration schema validation."""
 
 import os
+from pathlib import Path
+
 import pytest
 import yaml
-from pathlib import Path
+
 from wpgen.config_schema import (
-    load_and_validate_config,
-    WPGenConfig,
     LLMProviderEnum,
+    WPGenConfig,
     get_redacted_config_summary,
+    load_and_validate_config,
 )
 
 

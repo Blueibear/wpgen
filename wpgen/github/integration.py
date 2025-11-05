@@ -6,16 +6,16 @@ This module handles:
 - Secure authentication using GIT_ASKPASS (no tokens in URLs)
 """
 
-import requests
 import subprocess
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import git
+import requests
 
 from ..utils.logger import get_logger
 from .credentials import SecureCredentialHelper
-
 
 logger = get_logger(__name__)
 

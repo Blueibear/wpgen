@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from wpgen.utils.code_validator import (
+    clean_generated_code,
     get_fallback_functions_php,
     get_fallback_template,
     validate_theme_for_wordpress_safety,
-    clean_generated_code,
 )
 
 

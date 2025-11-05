@@ -9,12 +9,12 @@ This module provides comprehensive image analysis capabilities including:
 """
 
 import base64
-from typing import Dict, Any, List, Optional
-from PIL import Image
 import io
+from typing import Any, Dict, List, Optional
+
+from PIL import Image
 
 from ..utils.logger import get_logger
-
 
 logger = get_logger(__name__)
 

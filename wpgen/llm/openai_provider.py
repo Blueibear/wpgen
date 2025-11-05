@@ -4,11 +4,10 @@ Implements the LLM provider interface using OpenAI's API.
 """
 
 import json
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
-from .base import BaseLLMProvider
 from ..utils.logger import get_logger
-
+from .base import BaseLLMProvider
 
 logger = get_logger(__name__)
 

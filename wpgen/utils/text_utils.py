@@ -4,12 +4,11 @@ This module provides text extraction and processing capabilities for
 various file formats including markdown, plain text, and PDFs.
 """
 
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from ..utils.logger import get_logger
-
 
 logger = get_logger(__name__)
 

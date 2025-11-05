@@ -1,7 +1,9 @@
 """Validation report formatting utilities."""
 
-from typing import Dict, List, Any
-from colorama import Fore, Style, init as colorama_init
+from typing import Any, Dict, List
+
+from colorama import Fore, Style
+from colorama import init as colorama_init
 
 colorama_init(autoreset=True)
 
