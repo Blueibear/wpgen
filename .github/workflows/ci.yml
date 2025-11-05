@@ -21,6 +21,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
+    env:
+      WPGEN_CHECK_MODELS: "0"
+      WPGEN_OFFLINE_TESTS: "1"
+      PYTHONWARNINGS: default
+      NO_COLOR: "1"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,8 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -e ".[dev]"
+          pip install -e .[dev]
 
       - name: Lint with flake8
         run: |
