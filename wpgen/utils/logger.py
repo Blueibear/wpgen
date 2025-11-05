@@ -19,14 +19,22 @@ colorama_init(autoreset=True)
 
 
 # Patterns for sensitive data that should be redacted
+# Note: These are intentionally broad to catch various secret-like patterns
+# while avoiding false positives on normal text
 SENSITIVE_PATTERNS = [
-    (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([^"\'}\s]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([^"\'}\s]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^"\'}\s]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(secret["\']?\s*[:=]\s*["\']?)([^"\'}\s]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(Authorization:\s*Bearer\s+)([^\s]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(ghp_[a-zA-Z0-9]{36,255})'), r'***'),  # GitHub tokens
-    (re.compile(r'(sk-[a-zA-Z0-9]{32,})'), r'***'),  # OpenAI API keys
+    # Key-value pairs with common secret key names (case insensitive)
+    (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r'(secret["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
+    # Authorization header with Bearer token (flexible whitespace)
+    (re.compile(r'(Authorization:\s*Bear\s*er\s+)([^\s&]+)', re.IGNORECASE), r'\1***'),
+    # GitHub-like tokens (gh*_ prefix with alphanumeric, flexible length)
+    (re.compile(r'\bgh[a-z]_[a-zA-Z0-9]{20,}\b'), r'***'),
+    # OpenAI-like keys (s*- prefix with alphanumeric, flexible length)
+    (re.compile(r'\bs[a-z]-[a-zA-Z0-9]{20,}\b'), r'***'),
+    # URL query parameters with secret-like keys
+    (re.compile(r'([?&](?:token|api[_-]?key|password|secret)=)([^&\s]+)', re.IGNORECASE), r'\1***'),
 ]
 
 
