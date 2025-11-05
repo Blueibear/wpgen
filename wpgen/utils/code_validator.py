@@ -354,6 +354,9 @@ def get_fallback_functions_php(theme_name: str) -> str:
     Returns:
         Fallback functions.php code
     """
+    # Convert theme name to valid PHP function name (replace hyphens with underscores)
+    safe_function_name = theme_name.replace('-', '_')
+
     return f"""<?php
 /**
  * Theme functions and definitions
@@ -368,7 +371,7 @@ if ( ! defined( 'ABSPATH' ) ) {{
 /**
  * Sets up theme defaults and registers support for various WordPress features.
  */
-function {theme_name.replace('-', '_')}_setup() {{
+function {safe_function_name}_setup() {{
     // Add theme support
     add_theme_support( 'title-tag' );
     add_theme_support( 'post-thumbnails' );
@@ -386,12 +389,12 @@ function {theme_name.replace('-', '_')}_setup() {{
         'primary' => __( 'Primary Menu', '{theme_name}' ),
     ) );
 }}
-add_action( 'after_setup_theme', '{theme_name.replace('-', '_')}_setup' );
+add_action( 'after_setup_theme', '{safe_function_name}_setup' );
 
 /**
  * Enqueue scripts and styles.
  */
-function {theme_name.replace('-', '_')}_scripts() {{
+function {safe_function_name}_scripts() {{
     // Enqueue styles
     wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array(), '1.0.0' );
 
@@ -399,12 +402,12 @@ function {theme_name.replace('-', '_')}_scripts() {{
     wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
     wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
 }}
-add_action( 'wp_enqueue_scripts', '{theme_name.replace('-', '_')}_scripts' );
+add_action( 'wp_enqueue_scripts', '{safe_function_name}_scripts' );
 
 /**
  * Register widget areas.
  */
-function {theme_name.replace('-', '_')}_widgets_init() {{
+function {safe_function_name}_widgets_init() {{
     register_sidebar( array(
         'name'          => __( 'Sidebar', '{theme_name}' ),
         'id'            => 'sidebar-1',
@@ -415,7 +418,7 @@ function {theme_name.replace('-', '_')}_widgets_init() {{
         'after_title'   => '</h2>',
     ) );
 }}
-add_action( 'widgets_init', '{theme_name.replace('-', '_')}_widgets_init' );
+add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
 """
 
 
