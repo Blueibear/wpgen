@@ -11,6 +11,7 @@ from .code_validator import (
     get_fallback_functions_php,
     get_fallback_template,
     remove_nonexistent_requires,
+    validate_theme_for_wordpress_safety,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "get_fallback_functions_php",
     "get_fallback_template",
     "remove_nonexistent_requires",
+    "validate_theme_for_wordpress_safety",
 ]
