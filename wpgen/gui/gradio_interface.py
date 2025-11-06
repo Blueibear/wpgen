@@ -4,6 +4,7 @@ Provides a user-friendly graphical interface for generating WordPress themes
 with support for text prompts, image uploads, and document uploads.
 """
 
+from typing import List, Optional
 import os
 from pathlib import Path
 
@@ -54,8 +55,8 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     def generate_theme(
         prompt: str,
-        image_files: list | None = None,
-        text_files: list | None = None,
+        image_files: Optional[List] = None,
+        text_files: Optional[List] = None,
         push_to_github: bool = False,
         repo_name: str = "",
         deploy_to_wordpress: bool = False,
@@ -69,7 +70,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_site_name: str = "",
         gm_tagline: str = "",
         gm_goal: str = "inform",
-        gm_pages: list | None = None,
+        gm_pages: Optional[List] = None,
         gm_mood: str = "modern-minimal",
         gm_palette: str = "",
         gm_typography: str = "sans",
@@ -77,13 +78,13 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
         gm_layout_hero: str = "image",
         gm_sidebar: str = "none",
         gm_container: str = "full",
-        gm_components: list | None = None,
-        gm_accessibility: list | None = None,
-        gm_integrations: list | None = None,
+        gm_components: Optional[List] = None,
+        gm_accessibility: Optional[List] = None,
+        gm_integrations: Optional[List] = None,
         gm_perf_lcp: float = 2500,
         # Optional Features parameters
         woo_enabled: bool = False,
-        blocks_enabled: list | None = None,
+        blocks_enabled: Optional[List] = None,
         darkmode_enabled: bool = False,
         preloader_enabled: bool = False,
     ):
