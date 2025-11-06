@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from wpgen.utils.code_validator import get_fallback_functions_php, get_fallback_template
+from wpgen.utils.code_validator import (
+    clean_generated_code,
+    get_fallback_functions_php,
+    get_fallback_template,
+    validate_theme_for_wordpress_safety,
+)
 
 
 class TestFallbackTemplates:
@@ -184,3 +189,113 @@ class TestFallbackTemplates:
                 assert ".replace(" not in template_code, f"Python code in {template_name}"
                 assert "{theme_name" not in template_code or "'{theme_name}'" in template_code, \
                     f"Unevaluated variable in {template_name}"
+
+
+class TestWordPressSafetyValidation:
+    """Test suite for comprehensive WordPress safety validation."""
+
+    @pytest.fixture
+    def safe_theme(self, tmp_path):
+        """Create a safe, minimal WordPress theme."""
+        theme_dir = tmp_path / "safe-theme"
+        theme_dir.mkdir()
+
+        # Create required files
+        (theme_dir / "style.css").write_text("/* Theme Name: Test Theme */")
+        (theme_dir / "index.php").write_text("<?php\nget_header();\nget_footer();")
+        (theme_dir / "functions.php").write_text(get_fallback_functions_php("test-theme"))
+
+        return theme_dir
+
+    @pytest.fixture
+    def unsafe_theme_python_expr(self, tmp_path):
+        """Create an unsafe theme with unevaluated Python expressions."""
+        theme_dir = tmp_path / "unsafe-theme"
+        theme_dir.mkdir()
+
+        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
+        (theme_dir / "index.php").write_text("<?php\nget_header();\nget_footer();")
+        # This is the bug that was causing crashes!
+        (theme_dir / "functions.php").write_text(
+            "<?php\nfunction {theme_name.replace('-', '_')}_setup() {\n}\n"
+        )
+
+        return theme_dir
+
+    @pytest.fixture
+    def unsafe_theme_markdown(self, tmp_path):
+        """Create an unsafe theme with markdown code fences."""
+        theme_dir = tmp_path / "unsafe-theme-md"
+        theme_dir.mkdir()
+
+        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
+        (theme_dir / "index.php").write_text("```php\n<?php\nget_header();\n```")
+
+        return theme_dir
+
+    def test_validate_safe_theme(self, safe_theme):
+        """Test that a safe theme passes validation."""
+        is_safe, issues = validate_theme_for_wordpress_safety(safe_theme)
+
+        assert is_safe, f"Safe theme should pass validation. Issues: {issues}"
+        assert len(issues) == 0
+
+    def test_validate_unsafe_theme_python_expressions(self, unsafe_theme_python_expr):
+        """Test that themes with Python expressions are caught."""
+        is_safe, issues = validate_theme_for_wordpress_safety(unsafe_theme_python_expr)
+
+        assert not is_safe, "Theme with Python expressions should fail validation"
+        assert len(issues) > 0
+        assert any("Python expression" in issue for issue in issues)
+
+    def test_validate_unsafe_theme_markdown(self, unsafe_theme_markdown):
+        """Test that themes with markdown are caught."""
+        is_safe, issues = validate_theme_for_wordpress_safety(unsafe_theme_markdown)
+
+        assert not is_safe, "Theme with markdown should fail validation"
+        assert any("markdown" in issue.lower() for issue in issues)
+
+    def test_validate_theme_missing_required_files(self, tmp_path):
+        """Test that themes missing required files are caught."""
+        theme_dir = tmp_path / "incomplete-theme"
+        theme_dir.mkdir()
+
+        # Only create style.css, missing index.php
+        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
+
+        is_safe, issues = validate_theme_for_wordpress_safety(theme_dir)
+
+        assert not is_safe
+        assert any("index.php" in issue for issue in issues)
+
+    def test_clean_generated_code_removes_markdown(self):
+        """Test that clean_generated_code removes markdown fences."""
+        code_with_markdown = "```php\n<?php\necho 'test';\n```"
+        cleaned = clean_generated_code(code_with_markdown, "php")
+
+        assert "```" not in cleaned
+        assert "<?php" in cleaned
+        assert "echo 'test';" in cleaned
+
+    def test_clean_generated_code_detects_python_expressions(self):
+        """Test that clean_generated_code detects unevaluated Python expressions."""
+        code_with_python = "<?php\nfunction {theme_name.replace('-', '_')}_setup() {}"
+
+        with pytest.raises(ValueError, match="unevaluated Python expressions"):
+            clean_generated_code(code_with_python, "php")
+
+    def test_clean_generated_code_removes_explanatory_text(self):
+        """Test that explanatory text is removed."""
+        code_with_text = "Here's the code for your theme:\n<?php\necho 'test';"
+        cleaned = clean_generated_code(code_with_text, "php")
+
+        assert "Here's" not in cleaned
+        assert cleaned.startswith("<?php")
+
+    def test_clean_generated_code_handles_doctype(self):
+        """Test that <!DOCTYPE is preserved for header files."""
+        code_with_doctype = "Some text\n<!DOCTYPE html>\n<html>"
+        cleaned = clean_generated_code(code_with_doctype, "php")
+
+        assert cleaned.startswith("<!DOCTYPE")
+        assert "Some text" not in cleaned

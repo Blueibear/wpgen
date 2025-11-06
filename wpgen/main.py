@@ -11,17 +11,19 @@ from typing import Optional
 
 import click
 import yaml
-from dotenv import load_dotenv
+
+from wpgen.generators import WordPressGenerator
+from wpgen.github import GitHubIntegration
 
 # Import directly from submodules to avoid import-time SDK crashes
 from wpgen.parsers import PromptParser
-from wpgen.generators import WordPressGenerator
-from wpgen.github import GitHubIntegration
-from wpgen.utils import setup_logger, get_llm_provider
+from wpgen.utils import get_llm_provider, setup_logger
 
 
-# Load environment variables
-load_dotenv()
+def _ensure_env_loaded():
+    """Lazily load environment variables when needed."""
+    from dotenv import load_dotenv
+    load_dotenv()
 
 
 def load_config(config_path: str = "config.yaml") -> dict:
@@ -97,6 +99,9 @@ def generate(
         wpgen generate "Create a dark-themed photography portfolio with blog"
     """
     try:
+        # Load environment variables
+        _ensure_env_loaded()
+
         # Load configuration
         cfg = load_config(config_path)
 
@@ -208,6 +213,7 @@ def serve(config_path: str):
     Launch a Flask web server for the WPGen web interface.
     """
     try:
+        _ensure_env_loaded()
         cfg = load_config(config_path)
         web_config = cfg.get("web", {})
 
@@ -262,6 +268,7 @@ def gui(config_path: str, share: bool, server_name: str, server_port: int):
     support for image uploads and document processing.
     """
     try:
+        _ensure_env_loaded()
         cfg = load_config(config_path)
 
         # Env var overrides
@@ -300,7 +307,8 @@ def validate(theme_path: str):
         wpgen validate output/my-theme
     """
     try:
-        from wpgen.utils.theme_validator import validate_theme_directory, print_validation_report
+        _ensure_env_loaded()
+        from wpgen.utils.theme_validator import print_validation_report, validate_theme_directory
 
         click.echo(f"\n🔍 Validating theme: {theme_path}\n")
 
@@ -377,6 +385,7 @@ def wordpress():
 def test(config_path, site_url_arg, username_arg, password_arg):
     """Test WordPress REST API connection."""
     try:
+        _ensure_env_loaded()
         from wpgen.wordpress import WordPressAPI
 
         # Load config
@@ -435,8 +444,9 @@ def manage(command_text, config_path):
       wpgen wordpress manage "Create a blog post about AI"
     """
     try:
-        from wpgen.wordpress import WordPressAPI, WordPressManager
+        _ensure_env_loaded()
         from wpgen.utils import get_llm_provider
+        from wpgen.wordpress import WordPressAPI, WordPressManager
 
         # Load config
         config = load_config(config_path)

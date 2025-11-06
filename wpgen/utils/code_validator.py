@@ -8,9 +8,9 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
-from .logger import get_logger
+from typing import Any, Dict, Optional, Tuple
 
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -316,11 +316,26 @@ def clean_generated_code(code: str, file_type: str) -> str:
 
     # For PHP files, ensure proper opening tag
     if file_type == 'php':
-        # Remove any explanatory text before <?php
+        # Remove any explanatory text before <?php or <!DOCTYPE
         if '<?php' in code:
             # Find first occurrence of <?php
             php_start = code.find('<?php')
             code = code[php_start:]
+        elif '<!DOCTYPE' in code:
+            # HTML template with <!DOCTYPE (like header.php)
+            doctype_start = code.find('<!DOCTYPE')
+            code = code[doctype_start:]
+
+        # Check for Python-like placeholders that weren't evaluated
+        if '{theme_name.' in code or '.replace(' in code:
+            logger.error("CRITICAL: Found unevaluated Python expression in generated PHP code!")
+            logger.error(f"Code snippet: {code[:200]}")
+            raise ValueError("Generated code contains unevaluated Python expressions")
+
+        # Check for markdown remnants
+        if '```' in code:
+            logger.warning("Found markdown code fences in PHP, removing")
+            code = code.replace('```php', '').replace('```', '')
 
         # Remove any text after the last PHP closing tag (if it exists)
         if '?>' in code:
@@ -420,6 +435,57 @@ function {safe_function_name}_widgets_init() {{
 }}
 add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
 """
+
+
+def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str]]:
+    """Perform comprehensive validation to prevent WordPress crashes.
+
+    Args:
+        theme_dir: Path to theme directory
+
+    Returns:
+        Tuple of (is_safe, list_of_issues)
+    """
+    issues = []
+    theme_dir = Path(theme_dir)
+
+    # Check required files exist
+    required_files = ["style.css", "index.php"]
+    for required_file in required_files:
+        if not (theme_dir / required_file).exists():
+            issues.append(f"Missing required file: {required_file}")
+
+    # Validate all PHP files
+    php_files = list(theme_dir.rglob("*.php"))
+    for php_file in php_files:
+        try:
+            content = php_file.read_text(encoding='utf-8')
+
+            # Check for Python expressions that weren't evaluated
+            if '{theme_name.' in content or '{requirements[' in content:
+                issues.append(f"{php_file.name}: Contains unevaluated Python expression")
+                logger.error(f"Found Python expression in {php_file}: {content[:100]}")
+
+            # Check for markdown code fences
+            if '```' in content:
+                issues.append(f"{php_file.name}: Contains markdown code fences")
+
+            # Check for explanatory text
+            first_line = content.split('\n')[0].strip()
+            if first_line and not first_line.startswith('<?php') and not first_line.startswith('<!DOCTYPE'):
+                if any(phrase in first_line.lower() for phrase in ["here's", "here is", "below is", "this is"]):
+                    issues.append(f"{php_file.name}: Contains explanatory text before code")
+
+            # Basic PHP syntax check if PHP is available
+            is_valid, error_msg = validate_php_syntax(content)
+            if not is_valid and error_msg:
+                issues.append(f"{php_file.name}: PHP syntax error - {error_msg[:100]}")
+
+        except Exception as e:
+            issues.append(f"{php_file.name}: Could not read/validate - {str(e)}")
+
+    is_safe = len(issues) == 0
+    return is_safe, issues
 
 
 def get_fallback_template(template_name: str, theme_name: str) -> str:

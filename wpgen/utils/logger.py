@@ -10,12 +10,21 @@ import re
 import sys
 from pathlib import Path
 from typing import Optional
+
+from colorama import Fore, Style
+from colorama import init as colorama_init
 from pythonjsonlogger import jsonlogger
-from colorama import Fore, Style, init as colorama_init
+
+# Colorama initialization flag
+_colorama_initialized = False
 
 
-# Initialize colorama for cross-platform colored output
-colorama_init(autoreset=True)
+def _ensure_colorama_initialized():
+    """Lazily initialize colorama for cross-platform colored output."""
+    global _colorama_initialized
+    if not _colorama_initialized:
+        colorama_init(autoreset=True)
+        _colorama_initialized = True
 
 
 # Patterns for sensitive data that should be redacted
@@ -80,6 +89,7 @@ class ColoredFormatter(logging.Formatter):
 
     def format(self, record):
         """Format log record with colors."""
+        _ensure_colorama_initialized()
         levelname = record.levelname
         if levelname in self.COLORS:
             record.levelname = f"{self.COLORS[levelname]}{levelname}{Style.RESET_ALL}"

@@ -21,13 +21,13 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 
 ## Requirements
 
-- Python 3.8 or higher
+- Python 3.8 or higher (3.8, 3.9, 3.10, 3.11, 3.12 supported)
 - **One of the following AI providers:**
   - OpenAI API key, OR
   - Anthropic API key, OR
   - Local LLM via LM Studio or Ollama (free, no API key needed!)
 - GitHub personal access token (optional, for GitHub integration)
-- Git installed on your system
+- Git installed on your system (optional, for GitHub integration)
 
 ## Installation
 
@@ -52,11 +52,39 @@ source venv/bin/activate
 
 ### 3. Install dependencies
 
+WPGen supports optional dependency groups for different use cases:
+
+**Basic installation (CLI only):**
 ```bash
 pip install -e .
 ```
 
-This installs wpgen in editable mode with all dependencies.
+**For development (includes testing and linting tools):**
+```bash
+pip install -e .[dev]
+```
+
+**For web UI and Gradio GUI:**
+```bash
+pip install -e .[ui]
+```
+
+**For WordPress REST API integration:**
+```bash
+pip install -e .[wp]
+```
+
+**For GitHub integration:**
+```bash
+pip install -e .[git]
+```
+
+**Full installation (all features):**
+```bash
+pip install -e .[dev,ui,git,wp]
+```
+
+This flexible installation allows you to install only what you need. Contributors should use the full installation.
 
 ### 4. Initialize configuration
 

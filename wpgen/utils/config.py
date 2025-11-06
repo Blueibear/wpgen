@@ -4,7 +4,7 @@ Provides helper functions for loading configuration and initializing components.
 """
 
 import os
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from ..llm import BaseLLMProvider
@@ -23,7 +23,7 @@ def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
         ValueError: If provider is not configured correctly or API key is missing
     """
     # Import here to avoid circular imports
-    from ..llm import OpenAIProvider, AnthropicProvider
+    from ..llm import AnthropicProvider, OpenAIProvider
 
     provider_name = config.get("llm", {}).get("provider", "openai")
 
@@ -47,6 +47,7 @@ def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
         # Local providers use dual-model setup (brains + vision) via OpenAI-compatible API
         # Import dependencies
         from openai import OpenAI
+
         from ..llm import CompositeLLMProvider
 
         # Get provider-specific config

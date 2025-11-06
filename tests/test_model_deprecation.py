@@ -1,6 +1,7 @@
 """Tests for model deprecation warnings."""
 
 import pytest
+
 from wpgen.utils.model_deprecation import (
     check_model_deprecation,
     log_model_deprecation_warning,

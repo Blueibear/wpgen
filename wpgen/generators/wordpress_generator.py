@@ -7,19 +7,18 @@ It creates all necessary files including style.css, functions.php, templates, et
 import os
 import re
 import shutil
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from ..llm.base import BaseLLMProvider
-from ..utils.logger import get_logger
 from ..utils.code_validator import (
-    validate_php_syntax,
     get_fallback_functions_php,
     get_fallback_template,
     remove_nonexistent_requires,
+    validate_php_syntax,
 )
-
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -262,6 +261,26 @@ class WordPressGenerator:
             _ensure_style_header(str(theme_dir), requirements)
             _ensure_screenshot(str(theme_dir), requirements, images)
             logger.info("✓ Theme thumbnail prepared (screenshot.png)")
+
+            # Final WordPress safety validation
+            logger.info("Performing final WordPress safety validation...")
+            from ..utils.code_validator import validate_theme_for_wordpress_safety
+            is_safe, issues = validate_theme_for_wordpress_safety(theme_dir)
+
+            if not is_safe:
+                logger.error("⚠️  Theme validation found critical issues:")
+                for issue in issues:
+                    logger.error(f"  - {issue}")
+
+                if not self.safe_mode:
+                    logger.warning("Consider using safe_mode=True to use tested fallback templates")
+
+                raise ValueError(
+                    f"Generated theme has {len(issues)} critical issue(s) that would crash WordPress. "
+                    f"Issues: {'; '.join(issues[:3])}. Enable safe_mode for reliable themes."
+                )
+            else:
+                logger.info("✓ Theme passed WordPress safety validation")
 
             logger.info(f"Successfully generated theme: {theme_name}")
             return str(theme_dir)

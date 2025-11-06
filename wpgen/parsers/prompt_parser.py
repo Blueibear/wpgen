@@ -4,10 +4,10 @@ This module takes natural language descriptions and converts them into
 structured theme requirements using LLM providers.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
-
 
 logger = get_logger(__name__)
 

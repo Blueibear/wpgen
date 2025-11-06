@@ -40,18 +40,36 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev]
+          pip install -e .[dev,git,wp]
 
-      - name: Lint with flake8
+      - name: Diagnostics
         run: |
-          # Stop the build if there are Python syntax errors or undefined names
-          flake8 wpgen --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Exit-zero treats all errors as warnings
-          flake8 wpgen --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+          python -V
+          pip --version
+          python -c "import sys; print('Python paths:', sys.path[:3])"
+          python -c "import wpgen; print('wpgen version:', wpgen.__version__)"
+          python - <<'PY'
+          import importlib
+          modules = ['wpgen', 'wpgen.utils.logger', 'wpgen.llm', 'wpgen.parsers']
+          for m in modules:
+            try:
+              importlib.import_module(m)
+              print(f'✓ OK: {m}')
+            except Exception as e:
+              print(f'✗ FAIL: {m} - {e}')
+          PY
+
+      - name: Lint with ruff
+        run: |
+          ruff check wpgen tests
 
       - name: Run tests with pytest
+        env:
+          WPGEN_CHECK_MODELS: "0"
+          WPGEN_OFFLINE_TESTS: "1"
+          NO_COLOR: "1"
         run: |
-          pytest tests/ --cov=wpgen --cov-report=term-missing --cov-report=xml
+          pytest tests/ --maxfail=1 --disable-warnings -q --cov=wpgen --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -79,12 +97,25 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e .[dev]
+
+      - name: Test CLI help
+        run: |
+          python -m wpgen --help
 
       - name: Build package
         run: |
           pip install build
           python -m build
+
+      - name: Verify package can be imported
+        run: |
+          python - <<'PY'
+          import sys
+          print('Testing package build artifact')
+          import wpgen
+          print(f'✓ wpgen version: {wpgen.__version__}')
+          PY
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -114,3 +145,4 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+

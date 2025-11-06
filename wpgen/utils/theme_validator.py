@@ -6,9 +6,9 @@ and identify which files are causing WordPress to crash.
 
 import subprocess
 from pathlib import Path
-from typing import Tuple, Dict
-from .logger import get_logger
+from typing import Dict, Tuple
 
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
