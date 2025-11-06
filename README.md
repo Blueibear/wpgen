@@ -21,7 +21,7 @@ WPGen is a complete Python-based tool that generates WordPress themes from natur
 
 ## Requirements
 
-- Python 3.8 or higher (3.8, 3.9, 3.10, 3.11, 3.12 supported)
+- Python 3.10 or higher (3.10, 3.11, 3.12 supported)
 - **One of the following AI providers:**
   - OpenAI API key, OR
   - Anthropic API key, OR
@@ -1133,7 +1133,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Credits
 
-- Built with Python 3.8+
+- Built with Python 3.10+
 - Uses OpenAI GPT-4 or Anthropic Claude for AI generation
 - Flask for web interface
 - GitPython for Git operations
