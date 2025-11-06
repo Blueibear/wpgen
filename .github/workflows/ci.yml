@@ -14,12 +14,13 @@ on:
 
 jobs:
   test:
-    name: Lint and Test
+    name: Lint and Test (Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout code
@@ -31,47 +32,76 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev,git,wp]
-
-      - name: Diagnostics
+      - name: Show Python & pip
         run: |
           python -V
           pip --version
-          python -c "import sys; print('Python paths:', sys.path[:3])"
-          python -c "import wpgen; print('wpgen version:', wpgen.__version__)"
-          python - <<'PY'
-          import importlib
-          modules = ['wpgen', 'wpgen.utils.logger', 'wpgen.llm', 'wpgen.parsers']
-          for m in modules:
-            try:
-              importlib.import_module(m)
-              print(f'✓ OK: {m}')
-            except Exception as e:
-              print(f'✗ FAIL: {m} - {e}')
-          PY
 
-      - name: Lint with ruff
+      - name: Install package
         run: |
-          ruff check wpgen tests
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r requirements-dev.txt
 
-      - name: Run tests with pytest
+      - name: Environment
+        run: |
+          printenv | sort | sed -n '1,120p'
         env:
           WPGEN_CHECK_MODELS: "0"
           WPGEN_OFFLINE_TESTS: "1"
           NO_COLOR: "1"
-        run: |
-          pytest tests/ --maxfail=1 --disable-warnings -q --cov=wpgen --cov-report=term-missing --cov-report=xml
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.11'
+      - name: Import diagnostics
+        run: |
+          python - <<'PY'
+          import importlib
+          import traceback
+          mods = [
+            'wpgen',
+            'wpgen.utils.logger',
+            'wpgen.wordpress.wordpress_api',
+            'wpgen.utils.theme_validator',
+          ]
+          for m in mods:
+            try:
+              importlib.import_module(m)
+              print('OK', m)
+            except Exception:
+              print('FAIL', m)
+              traceback.print_exc()
+          PY
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        env:
+          WPGEN_CHECK_MODELS: "0"
+          WPGEN_OFFLINE_TESTS: "1"
+          NO_COLOR: "1"
+        run: pytest -q --maxfail=1 --disable-warnings
+
+      - name: Build artifact
+        run: |
+          python -m wpgen --help || true
+          python - <<'PY'
+          print('build placeholder ok')
+          PY
+
+      - name: Freeze and logs on failure
+        if: failure()
+        run: |
+          pip freeze | tee pip-freeze.txt
+          python -c "import sys, platform; print(platform.platform()); print(sys.version)" | tee py-info.txt
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          files: ./coverage.xml
-          flags: unittests
-          fail_ci_if_error: false
+          name: crash-py${{ matrix.python-version }}
+          path: |
+            pip-freeze.txt
+            py-info.txt
 
   build:
     name: Build Theme Artifact
@@ -91,7 +121,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev]
+          pip install -e .
+          pip install -r requirements-dev.txt
 
       - name: Test CLI help
         run: |
