@@ -1,9 +1,10 @@
-# Development tools (pinned versions for CI stability)
-# Install with: pip install -r requirements-dev.txt
+# Development tools with pinned versions for reproducible builds
+# Install these after `pip install -e .` with: pip install -r requirements-dev.txt
 
 ruff==0.6.9
 pytest==8.3.3
 pytest-mock==3.14.0
 freezegun==1.5.1
-coverage[toml]==7.6.4
+coverage[toml]==7.6.9
 codecov==2.1.13
+

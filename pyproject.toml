@@ -126,15 +126,10 @@ ignore_missing_imports = true
 target-version = "py310"
 line-length = 100
 exclude = [
-    ".git",
-    ".venv",
-    ".tox",
-    "build",
-    "dist",
-    "__pycache__",
-    "output",
-    "logs",
-    "web/static",
+    "output/",
+    "logs/",
+    "web/static/",
+    "**/__pycache__",
 ]
 
 [tool.ruff.lint]

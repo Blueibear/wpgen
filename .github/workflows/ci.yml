@@ -54,8 +54,7 @@ jobs:
       - name: Import diagnostics
         run: |
           python - <<'PY'
-          import importlib
-          import traceback
+          import importlib, traceback
           mods = [
             'wpgen',
             'wpgen.utils.logger',
@@ -170,3 +169,4 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
