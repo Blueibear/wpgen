@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 
 import git
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from ..utils.logger import get_logger
 from .credentials import SecureCredentialHelper
@@ -40,10 +41,36 @@ class GitHubIntegration:
         }
         logger.info("Initialized GitHubIntegration")
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((requests.exceptions.Timeout, requests.exceptions.ConnectionError)),
+        reraise=True
+    )
+    def _api_request_with_retry(self, method: str, url: str, **kwargs) -> requests.Response:
+        """Make an API request with automatic retry on transient errors.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            **kwargs: Additional arguments for requests
+
+        Returns:
+            Response object
+        """
+        response = requests.request(method, url, headers=self.headers, timeout=30, **kwargs)
+
+        # Retry on 429 (rate limit) and 5xx errors
+        if response.status_code == 429 or response.status_code >= 500:
+            logger.warning(f"GitHub API returned {response.status_code}, will retry")
+            response.raise_for_status()
+
+        return response
+
     def create_repository(
         self, name: str, description: str = "", private: bool = False
     ) -> Dict[str, Any]:
-        """Create a new GitHub repository.
+        """Create a new GitHub repository with retry on transient errors.
 
         Args:
             name: Repository name
@@ -62,7 +89,7 @@ class GitHubIntegration:
         data = {"name": name, "description": description, "private": private, "auto_init": False}
 
         try:
-            response = requests.post(url, headers=self.headers, json=data)
+            response = self._api_request_with_retry("POST", url, json=data)
 
             if response.status_code == 201:
                 repo_data = response.json()
