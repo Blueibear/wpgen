@@ -217,6 +217,8 @@ class WebConfig(BaseModel):
     port: int = Field(default=5000, ge=1, le=65535)
     debug: bool = Field(default=False)
     secret_key: Optional[str] = Field(default=None)
+    cors_enabled: bool = Field(default=False, description="Enable CORS for cross-origin requests")
+    cors_origins: str = Field(default="*", description="Allowed CORS origins (comma-separated or *)")
 
 
 class DeploymentMethod(str, Enum):
