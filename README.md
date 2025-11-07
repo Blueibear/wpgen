@@ -1133,7 +1133,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Credits
 
-- Built with Python 3.10+
+- Built with Python 3.8+
 - Uses OpenAI GPT-4 or Anthropic Claude for AI generation
 - Flask for web interface
 - GitPython for Git operations

@@ -5,16 +5,19 @@ Provides a web-based interface for generating WordPress themes.
 
 import os
 from pathlib import Path
-
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
 
 from wpgen import (
-    GitHubIntegration,
     PromptParser,
     WordPressGenerator,
-    get_llm_provider as get_provider,
+    GitHubIntegration,
     setup_logger,
+    get_llm_provider as get_provider,
 )
+
+
+load_dotenv()
 
 
 def create_app(config: dict = None):
