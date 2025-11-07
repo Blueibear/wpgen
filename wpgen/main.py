@@ -12,13 +12,6 @@ from typing import Optional
 import click
 import yaml
 
-from wpgen.generators import WordPressGenerator
-from wpgen.github import GitHubIntegration
-
-# Import directly from submodules to avoid import-time SDK crashes
-from wpgen.parsers import PromptParser
-from wpgen.utils import get_llm_provider, setup_logger
-
 
 def _ensure_env_loaded():
     """Lazily load environment variables when needed."""
@@ -99,6 +92,9 @@ def generate(
         wpgen generate "Create a dark-themed photography portfolio with blog"
     """
     try:
+        # Lazy imports to avoid import-time side effects
+        from wpgen.utils import get_llm_provider, setup_logger
+
         # Load environment variables
         _ensure_env_loaded()
 
@@ -146,6 +142,7 @@ def generate(
         logger.info(f"Initialized LLM provider: {provider_name}")
 
         # Parse prompt
+        from wpgen.parsers import PromptParser
         click.echo("🔍 Parsing requirements...")
         parser = PromptParser(llm_provider)
         requirements = parser.parse(prompt)
@@ -156,6 +153,7 @@ def generate(
         click.echo()
 
         # Generate theme
+        from wpgen.generators import WordPressGenerator
         click.echo("🏗️  Generating WordPress theme...")
         output_dir = output or cfg.get("output", {}).get("output_dir", "output")
         generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
@@ -170,6 +168,7 @@ def generate(
                 click.echo("⚠️  GITHUB_TOKEN not found, skipping GitHub push", err=True)
                 logger.warning("GITHUB_TOKEN not set, skipping push")
             else:
+                from wpgen.github import GitHubIntegration
                 click.echo("📤 Pushing to GitHub...")
                 github = GitHubIntegration(github_token, cfg.get("github", {}))
 
