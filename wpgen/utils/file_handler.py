@@ -1,11 +1,14 @@
 """File handler utilities for processing uploaded files.
 
 Handles image processing, text extraction from various file formats,
-and preparing files for LLM multi-modal context.
+and preparing files for LLM multi-modal context with security hardening.
 """
 
 import base64
 import mimetypes
+import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -15,18 +18,80 @@ logger = get_logger(__name__)
 
 
 class FileHandler:
-    """Handle file uploads and process them for LLM context."""
+    """Handle file uploads and process them for LLM context with security hardening."""
 
+    # Whitelisted file extensions
     SUPPORTED_IMAGE_FORMATS = [".png", ".jpg", ".jpeg", ".gif", ".webp"]
     SUPPORTED_TEXT_FORMATS = [".txt", ".md", ".markdown"]
     SUPPORTED_DOC_FORMATS = [".pdf"]
 
-    MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
-    MAX_TEXT_SIZE = 1 * 1024 * 1024  # 1MB
+    # Security limits (configurable via env vars)
+    DEFAULT_MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25MB default
+    DEFAULT_MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
+    DEFAULT_MAX_TEXT_SIZE = 1 * 1024 * 1024  # 1MB
+    DEFAULT_MAX_PDF_PAGES = 50  # Maximum PDF pages to process
 
-    def __init__(self):
-        """Initialize file handler."""
-        logger.info("Initialized FileHandler")
+    def __init__(
+        self,
+        max_upload_size: Optional[int] = None,
+        max_image_size: Optional[int] = None,
+        max_text_size: Optional[int] = None,
+        max_pdf_pages: Optional[int] = None,
+        temp_workspace: Optional[Path] = None,
+    ):
+        """Initialize file handler with security limits.
+
+        Args:
+            max_upload_size: Maximum upload size in bytes (default: 25MB)
+            max_image_size: Maximum image size in bytes (default: 5MB)
+            max_text_size: Maximum text file size in bytes (default: 1MB)
+            max_pdf_pages: Maximum PDF pages to process (default: 50)
+            temp_workspace: Temporary workspace directory (created if None)
+        """
+        # Load from env or use defaults
+        self.max_upload_size = max_upload_size or int(
+            os.getenv("WPGEN_MAX_UPLOAD_SIZE", self.DEFAULT_MAX_UPLOAD_SIZE)
+        )
+        self.max_image_size = max_image_size or int(
+            os.getenv("WPGEN_MAX_IMAGE_SIZE", self.DEFAULT_MAX_IMAGE_SIZE)
+        )
+        self.max_text_size = max_text_size or int(
+            os.getenv("WPGEN_MAX_TEXT_SIZE", self.DEFAULT_MAX_TEXT_SIZE)
+        )
+        self.max_pdf_pages = max_pdf_pages or int(
+            os.getenv("WPGEN_MAX_PDF_PAGES", self.DEFAULT_MAX_PDF_PAGES)
+        )
+
+        # Create secure temp workspace
+        if temp_workspace:
+            self.temp_workspace = Path(temp_workspace)
+            self.temp_workspace.mkdir(parents=True, exist_ok=True)
+            self._owns_workspace = False
+        else:
+            self.temp_workspace = Path(tempfile.mkdtemp(prefix="wpgen-upload-"))
+            self._owns_workspace = True
+
+        logger.info(
+            f"Initialized FileHandler with workspace: {self.temp_workspace} "
+            f"(max_upload: {self.max_upload_size // 1024 // 1024}MB)"
+        )
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - cleanup temp workspace."""
+        self.cleanup()
+
+    def cleanup(self):
+        """Clean up temporary workspace."""
+        if self._owns_workspace and self.temp_workspace.exists():
+            try:
+                shutil.rmtree(self.temp_workspace)
+                logger.info(f"Cleaned up temp workspace: {self.temp_workspace}")
+            except Exception as e:
+                logger.warning(f"Failed to cleanup temp workspace: {e}")
 
     def process_uploads(
         self, image_files: Optional[List[str]] = None, text_files: Optional[List[str]] = None
@@ -78,8 +143,40 @@ class FileHandler:
 
         return result
 
+    def _secure_copy_to_workspace(self, file_path: str) -> Optional[Path]:
+        """Securely copy file to temp workspace with path validation.
+
+        Args:
+            file_path: Original file path
+
+        Returns:
+            Path to copied file in workspace, or None if failed
+        """
+        try:
+            src = Path(file_path).resolve()
+            if not src.exists():
+                logger.warning(f"Source file not found: {file_path}")
+                return None
+
+            # Prevent path traversal attacks
+            safe_name = Path(src.name).name  # Strip any directory components
+            dest = (self.temp_workspace / safe_name).resolve()
+
+            # Ensure destination is within workspace
+            if not str(dest).startswith(str(self.temp_workspace.resolve())):
+                logger.error(f"Path traversal attempt detected: {file_path}")
+                return None
+
+            # Copy file
+            shutil.copy2(src, dest)
+            return dest
+
+        except Exception as e:
+            logger.error(f"Failed to copy file to workspace: {e}")
+            return None
+
     def process_image(self, image_path: str) -> Optional[Dict[str, Any]]:
-        """Process a single image file.
+        """Process a single image file with EXIF orientation fix.
 
         Args:
             image_path: Path to the image file
@@ -104,13 +201,47 @@ class FileHandler:
             return None
 
         file_size = path.stat().st_size
-        if file_size > self.MAX_IMAGE_SIZE:
-            logger.warning(f"Image file too large: {file_size} bytes (max {self.MAX_IMAGE_SIZE})")
+        if file_size > self.max_image_size:
+            logger.warning(
+                f"Image file too large: {file_size} bytes (max {self.max_image_size})"
+            )
             return None
 
         try:
-            with open(path, "rb") as f:
-                image_data = base64.b64encode(f.read()).decode("utf-8")
+            # Try to apply EXIF orientation fix if Pillow is available
+            image_data = None
+            try:
+                from PIL import Image, ImageOps
+
+                # Open and auto-orient image
+                with Image.open(path) as img:
+                    # Apply EXIF orientation
+                    img = ImageOps.exif_transpose(img)
+
+                    # Convert to RGB if necessary
+                    if img.mode not in ("RGB", "RGBA"):
+                        img = img.convert("RGB")
+
+                    # Save to temp workspace
+                    temp_path = self.temp_workspace / f"processed_{path.name}"
+                    img.save(temp_path, format=img.format or "JPEG")
+
+                    # Read back as base64
+                    with open(temp_path, "rb") as f:
+                        image_data = base64.b64encode(f.read()).decode("utf-8")
+
+                    logger.info(f"Applied EXIF orientation fix to {path.name}")
+
+            except ImportError:
+                logger.debug("Pillow not available, skipping EXIF orientation fix")
+                # Fallback: read raw file
+                with open(path, "rb") as f:
+                    image_data = base64.b64encode(f.read()).decode("utf-8")
+
+            except Exception as pil_error:
+                logger.warning(f"Image processing error, using raw file: {pil_error}")
+                with open(path, "rb") as f:
+                    image_data = base64.b64encode(f.read()).decode("utf-8")
 
             mime_type, _ = mimetypes.guess_type(str(path))
             if not mime_type:
@@ -146,8 +277,10 @@ class FileHandler:
             return None
 
         file_size = path.stat().st_size
-        if file_size > self.MAX_TEXT_SIZE:
-            logger.warning(f"Text file too large: {file_size} bytes (max {self.MAX_TEXT_SIZE})")
+        if file_size > self.max_text_size:
+            logger.warning(
+                f"Text file too large: {file_size} bytes (max {self.max_text_size})"
+            )
             return None
 
         try:
@@ -173,7 +306,7 @@ class FileHandler:
             return None
 
     def _extract_pdf_text(self, pdf_path: Path) -> Optional[str]:
-        """Extract text from a PDF file.
+        """Extract text from a PDF file with page limit.
 
         Args:
             pdf_path: Path to PDF file
@@ -188,10 +321,22 @@ class FileHandler:
 
                 with open(pdf_path, "rb") as f:
                     reader = PyPDF2.PdfReader(f)
+                    num_pages = len(reader.pages)
+
+                    # Enforce page limit
+                    if num_pages > self.max_pdf_pages:
+                        logger.warning(
+                            f"PDF has {num_pages} pages, limiting to {self.max_pdf_pages}"
+                        )
+                        num_pages = self.max_pdf_pages
+
                     text = ""
-                    for page in reader.pages:
-                        text += page.extract_text() + "\n"
-                return text.strip()
+                    for i in range(num_pages):
+                        page_text = reader.pages[i].extract_text()
+                        text += page_text + "\n"
+
+                    logger.info(f"Extracted text from {num_pages} pages of {pdf_path.name}")
+                    return text.strip()
 
             except ImportError:
                 logger.warning("PyPDF2 not installed, cannot extract PDF text")
@@ -231,11 +376,47 @@ class FileHandler:
         # Check file size
         file_size = path.stat().st_size
 
+        # Check overall upload size limit
+        if file_size > self.max_upload_size:
+            return False, f"File too large (max {self.max_upload_size // 1024 // 1024}MB)"
+
         if suffix in self.SUPPORTED_IMAGE_FORMATS:
-            if file_size > self.MAX_IMAGE_SIZE:
-                return False, f"Image too large (max {self.MAX_IMAGE_SIZE // 1024 // 1024}MB)"
+            if file_size > self.max_image_size:
+                return False, f"Image too large (max {self.max_image_size // 1024 // 1024}MB)"
         else:
-            if file_size > self.MAX_TEXT_SIZE:
-                return False, f"File too large (max {self.MAX_TEXT_SIZE // 1024 // 1024}MB)"
+            if file_size > self.max_text_size:
+                return False, f"File too large (max {self.max_text_size // 1024 // 1024}MB)"
 
         return True, ""
+
+    def create_zip(self, directory: str) -> Optional[str]:
+        """Create a ZIP archive of a directory.
+
+        Args:
+            directory: Path to directory to zip
+
+        Returns:
+            Path to created ZIP file, or None if failed
+        """
+        try:
+            dir_path = Path(directory)
+            if not dir_path.exists() or not dir_path.is_dir():
+                logger.error(f"Directory not found: {directory}")
+                return None
+
+            zip_path = self.temp_workspace / f"{dir_path.name}.zip"
+
+            import zipfile
+
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in dir_path.rglob("*"):
+                    if file_path.is_file():
+                        arcname = file_path.relative_to(dir_path)
+                        zipf.write(file_path, arcname)
+
+            logger.info(f"Created ZIP archive: {zip_path}")
+            return str(zip_path)
+
+        except Exception as e:
+            logger.error(f"Failed to create ZIP: {e}")
+            return None
