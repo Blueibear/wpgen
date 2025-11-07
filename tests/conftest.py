@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Set environment variables for offline testing
+# Set environment variables for offline testing (before any imports)
 os.environ.setdefault("WPGEN_CHECK_MODELS", "0")
 os.environ.setdefault("WPGEN_OFFLINE_TESTS", "1")
 os.environ.setdefault("NO_COLOR", "1")
