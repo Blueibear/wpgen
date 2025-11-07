@@ -11,9 +11,26 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from colorama import Fore, Style
-from colorama import init as colorama_init
 from pythonjsonlogger import jsonlogger
+
+# Try to import colorama for colored console output
+try:
+    from colorama import Fore, Style
+    from colorama import init as colorama_init
+    COLORAMA_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    # Create dummy color classes if colorama is not available
+    class _DummyColor:
+        def __getattr__(self, _):
+            return ""
+
+    Fore = _DummyColor()
+    Style = _DummyColor()
+    COLORAMA_AVAILABLE = False
+
+    def colorama_init(*args, **kwargs):
+        """Dummy colorama init when colorama is not available."""
+        pass
 
 # Colorama initialization flag
 _colorama_initialized = False
@@ -22,7 +39,7 @@ _colorama_initialized = False
 def _ensure_colorama_initialized():
     """Lazily initialize colorama for cross-platform colored output."""
     global _colorama_initialized
-    if not _colorama_initialized:
+    if COLORAMA_AVAILABLE and not _colorama_initialized:
         colorama_init(autoreset=True)
         _colorama_initialized = True
 
@@ -89,10 +106,11 @@ class ColoredFormatter(logging.Formatter):
 
     def format(self, record):
         """Format log record with colors."""
-        _ensure_colorama_initialized()
-        levelname = record.levelname
-        if levelname in self.COLORS:
-            record.levelname = f"{self.COLORS[levelname]}{levelname}{Style.RESET_ALL}"
+        if COLORAMA_AVAILABLE:
+            _ensure_colorama_initialized()
+            levelname = record.levelname
+            if levelname in self.COLORS:
+                record.levelname = f"{self.COLORS[levelname]}{levelname}{Style.RESET_ALL}"
         return super().format(record)
 
 
