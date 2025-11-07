@@ -7,3 +7,4 @@ pytest-mock==3.14.0
 freezegun==1.5.1
 coverage[toml]==7.6.9
 codecov==2.1.13
+
