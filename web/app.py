@@ -5,10 +5,12 @@ Provides a web-based interface for generating WordPress themes.
 
 import os
 import sys
+import traceback
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 from pydantic import ValidationError
+from werkzeug.exceptions import HTTPException
 
 from wpgen import (
     GitHubIntegration,
@@ -61,6 +63,17 @@ def create_app(config: dict = None, validate_config: bool = True):
     app.config["WPGEN_CONFIG"] = config
     app.config["SECRET_KEY"] = config.get("web", {}).get("secret_key", "dev-secret-key")
 
+    # Setup CORS if enabled
+    cors_enabled = config.get("web", {}).get("cors_enabled", False)
+    if cors_enabled:
+        try:
+            from flask_cors import CORS
+            cors_origins = config.get("web", {}).get("cors_origins", "*")
+            CORS(app, origins=cors_origins)
+            print(f"✓ CORS enabled for origins: {cors_origins}")
+        except ImportError:
+            print("⚠ flask-cors not installed, CORS disabled", file=sys.stderr)
+
     # Setup logging
     log_config = config.get("logging", {})
     logger = setup_logger(
@@ -76,6 +89,64 @@ def create_app(config: dict = None, validate_config: bool = True):
         """Get configured LLM provider from app config."""
         cfg = app.config["WPGEN_CONFIG"]
         return get_provider(cfg)
+
+    # Error handlers for structured error responses
+    @app.errorhandler(400)
+    def bad_request(error):
+        """Handle 400 Bad Request errors."""
+        return jsonify({
+            "code": 400,
+            "message": "Bad Request",
+            "details": str(error.description) if hasattr(error, "description") else str(error)
+        }), 400
+
+    @app.errorhandler(404)
+    def not_found(error):
+        """Handle 404 Not Found errors."""
+        return jsonify({
+            "code": 404,
+            "message": "Not Found",
+            "details": "The requested resource was not found"
+        }), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handle 500 Internal Server Error."""
+        logger.error(f"Internal server error: {error}", exc_info=True)
+        return jsonify({
+            "code": 500,
+            "message": "Internal Server Error",
+            "details": "An unexpected error occurred. Please check the logs."
+        }), 500
+
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        """Handle all unhandled exceptions with structured response."""
+        # Pass through HTTP errors
+        if isinstance(error, HTTPException):
+            return jsonify({
+                "code": error.code,
+                "message": error.name,
+                "details": error.description
+            }), error.code
+
+        # Log unexpected errors
+        logger.error(f"Unhandled exception: {error}", exc_info=True)
+
+        # Return generic error in production, detailed in development
+        if app.debug:
+            return jsonify({
+                "code": 500,
+                "message": "Internal Server Error",
+                "details": str(error),
+                "traceback": traceback.format_exc()
+            }), 500
+        else:
+            return jsonify({
+                "code": 500,
+                "message": "Internal Server Error",
+                "details": "An unexpected error occurred"
+            }), 500
 
     @app.route("/")
     def index():
