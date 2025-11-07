@@ -1176,3 +1176,81 @@ Future enhancements planned:
 ---
 
 Made with ❤️ by WPGen
+
+## Troubleshooting
+
+### Import Errors
+
+**Problem**: `ModuleNotFoundError` when importing wpgen
+
+**Solution**: Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### API Key Issues
+
+**Problem**: `OPENAI_API_KEY environment variable is required`
+
+**Solution**: Set your API key:
+```bash
+export OPENAI_API_KEY=sk-...
+# or
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Configuration Validation Errors
+
+**Problem**: `Configuration validation failed`
+
+**Solution**: Run validation endpoint to see detailed errors:
+```bash
+curl -X POST http://localhost:5000/api/config/validate
+```
+
+Fix the reported fields in `config.yaml`.
+
+### GitHub Push Fails with 403
+
+**Problem**: Cannot push to GitHub
+
+**Solution**: Verify token has `repo` scope and is set:
+```bash
+export GITHUB_TOKEN=ghp_...
+```
+
+### Timeout Errors
+
+**Problem**: LLM requests timeout
+
+**Solution**: Increase timeout in config.yaml:
+```yaml
+llm:
+  timeout: 120  # seconds
+```
+
+### File Upload Too Large
+
+**Problem**: `File too large` error
+
+**Solution**: Adjust limits via environment variables:
+```bash
+export WPGEN_MAX_UPLOAD_SIZE=52428800  # 50MB in bytes
+export WPGEN_MAX_IMAGE_SIZE=10485760   # 10MB
+```
+
+### Theme Validation Warnings
+
+**Problem**: Theme generates but has validation warnings
+
+**Solution**: Enable strict mode in config to see all issues:
+```yaml
+validation:
+  enabled: true
+  strict: true
+```
+
+For more help, see:
+- [Deployment Guide](DEPLOYMENT.md)
+- [GitHub Issues](https://github.com/Blueibear/wpgen/issues)
+
