@@ -3,6 +3,13 @@
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
 from .composite_provider import CompositeLLMProvider
+from .mock_provider import MockLLMProvider
 from .openai_provider import OpenAIProvider
 
-__all__ = ["BaseLLMProvider", "OpenAIProvider", "AnthropicProvider", "CompositeLLMProvider"]
+__all__ = [
+    "BaseLLMProvider",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "CompositeLLMProvider",
+    "MockLLMProvider",
+]

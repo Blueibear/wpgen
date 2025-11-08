@@ -1,0 +1,21 @@
+---
+# Test-only configuration for CI and unit tests
+# Forces use of mock provider to avoid network dependencies
+
+llm:
+  provider: mock
+  mock:
+    model: mock-model
+
+output:
+  output_dir: ./output
+  cleanup_on_error: false
+
+logging:
+  level: WARNING
+  format: text
+  file: null
+
+validation:
+  strict: true
+  check_php_syntax: false  # Disabled for CI without PHP installed

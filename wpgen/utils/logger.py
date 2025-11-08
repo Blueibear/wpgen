@@ -11,9 +11,31 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from colorama import Fore, Style
-from colorama import init as colorama_init
 from pythonjsonlogger import jsonlogger
+
+# Try to import colorama, but make it optional for environments without it
+try:
+    from colorama import Fore, Style
+    from colorama import init as colorama_init
+
+    COLORAMA_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    # Dummy classes when colorama is not available
+    COLORAMA_AVAILABLE = False
+
+    class _DummyColors:
+        """Dummy class that returns empty strings for all color attributes."""
+
+        def __getattr__(self, name):
+            return ""
+
+    Fore = _DummyColors()
+    Style = _DummyColors()
+
+    def colorama_init(*args, **kwargs):
+        """Dummy colorama init when colorama is not available."""
+        pass
+
 
 # Colorama initialization flag
 _colorama_initialized = False
