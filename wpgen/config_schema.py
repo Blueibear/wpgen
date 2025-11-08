@@ -58,7 +58,9 @@ class LocalLLMConfig(BaseModel):
     """Local LLM provider configuration (LM Studio or Ollama)."""
     brains_model: str = Field(..., description="Brains model name for text-only reasoning")
     brains_base_url: str = Field(..., description="Brains model base URL")
-    vision_model: Optional[str] = Field(default=None, description="Vision model name for image analysis")
+    vision_model: Optional[str] = Field(
+        default=None, description="Vision model name for image analysis"
+    )
     vision_base_url: Optional[str] = Field(default=None, description="Vision model base URL")
     max_tokens: int = Field(default=2048, ge=1, le=128000)
     temperature: float = Field(default=0.4, ge=0.0, le=2.0)
@@ -237,9 +239,15 @@ class DeploymentConfig(BaseModel):
 class WordPressAPIConfig(BaseModel):
     """WordPress REST API configuration."""
     enabled: bool = Field(default=False)
-    site_url: Optional[str] = Field(default=None, description="WordPress site URL (from env WP_SITE_URL)")
-    username: Optional[str] = Field(default=None, description="WordPress username (from env WP_USERNAME)")
-    app_password: Optional[str] = Field(default=None, description="WordPress app password (from env WP_APP_PASSWORD)")
+    site_url: Optional[str] = Field(
+        default=None, description="WordPress site URL (from env WP_SITE_URL)"
+    )
+    username: Optional[str] = Field(
+        default=None, description="WordPress username (from env WP_USERNAME)"
+    )
+    app_password: Optional[str] = Field(
+        default=None, description="WordPress app password (from env WP_APP_PASSWORD)"
+    )
     auto_deploy: bool = Field(default=False)
     auto_activate: bool = Field(default=False)
 
@@ -364,8 +372,14 @@ def get_redacted_config_summary(config: WPGenConfig) -> Dict[str, Any]:
         },
         "wordpress_api": {
             "enabled": config.wordpress_api.enabled,
-            "site_url": config.wordpress_api.site_url if config.wordpress_api.site_url else "not_set",
-            "credentials_set": bool(config.wordpress_api.username and config.wordpress_api.app_password),
+            "site_url": (
+                config.wordpress_api.site_url
+                if config.wordpress_api.site_url
+                else "not_set"
+            ),
+            "credentials_set": bool(
+                config.wordpress_api.username and config.wordpress_api.app_password
+            ),
         },
     }
 

@@ -139,7 +139,10 @@ def diagnose_theme(theme_path: str):
 
             # Check for closing PHP tags in functions.php (bad practice)
             if php_file.name == "functions.php" and "?>" in content:
-                issues_found.append(f"{rel_path}: functions.php contains closing ?> tag (not recommended)")
+                issues_found.append(
+                    f"{rel_path}: functions.php contains closing ?> tag "
+                    "(not recommended)"
+                )
 
             # Check for wp_head() in header
             if php_file.name == "header.php":

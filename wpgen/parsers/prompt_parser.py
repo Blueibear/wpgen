@@ -163,7 +163,9 @@ class PromptParser:
 
         if "theme_display_name" not in requirements:
             logger.warning("Missing theme_display_name, generating from theme_name")
-            requirements["theme_display_name"] = requirements["theme_name"].replace("-", " ").title()
+            requirements["theme_display_name"] = (
+                requirements["theme_name"].replace("-", " ").title()
+            )
 
         if "description" not in requirements:
             logger.warning("Missing description, using default")
@@ -209,7 +211,10 @@ class PromptParser:
                         requirements[field] = str(values[0]) if values else "default"
                 else:
                     requirements[field] = str(requirements[field])
-                logger.warning(f"Converted {field} from {type(requirements[field]).__name__} to string")
+                logger.warning(
+                    f"Converted {field} from {type(requirements[field]).__name__} "
+                    "to string"
+                )
 
         # Set defaults for optional fields
         if "color_scheme" not in requirements:

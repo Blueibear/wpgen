@@ -132,7 +132,8 @@ def setup_logger(
         format_type: Log format type ("json" or "text") for file output
         colored_console: Use colored output for console (ignored if json_logs=True)
         console_output: Enable console output
-        json_logs: Force JSON format to stdout (overrides colored_console and format_type for console)
+        json_logs: Force JSON format to stdout (overrides colored_console and
+            format_type for console)
 
     Returns:
         Configured logger instance

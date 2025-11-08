@@ -181,7 +181,10 @@ class TestFallbackTemplates:
         assert "function test-theme" not in functions_php, "Function names should not have hyphens"
 
         # Test all template files
-        templates = ["single.php", "page.php", "archive.php", "search.php", "404.php", "sidebar.php"]
+        templates = [
+            "single.php", "page.php", "archive.php",
+            "search.php", "404.php", "sidebar.php"
+        ]
         for template_name in templates:
             template_code = get_fallback_template(template_name, theme_name)
             if template_code:

@@ -41,7 +41,11 @@ def get_retry_decorator():
     return retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=0.2, max=8),
-        retry=retry_if_exception_type((requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)),
+        retry=retry_if_exception_type((
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+        )),
         reraise=True,
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
