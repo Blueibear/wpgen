@@ -432,8 +432,79 @@ function {safe_function_name}_widgets_init() {{
         'before_title'  => '<h2 class="widget-title">',
         'after_title'   => '</h2>',
     ) );
+
+    // Register footer widget areas
+    register_sidebar( array(
+        'name'          => __( 'Footer 1', '{theme_name}' ),
+        'id'            => 'footer-1',
+        'description'   => __( 'Footer widget area 1', '{theme_name}' ),
+        'before_widget' => '<section id="%1$s" class="widget %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ) );
+
+    register_sidebar( array(
+        'name'          => __( 'Footer 2', '{theme_name}' ),
+        'id'            => 'footer-2',
+        'description'   => __( 'Footer widget area 2', '{theme_name}' ),
+        'before_widget' => '<section id="%1$s" class="widget %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ) );
 }}
 add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
+
+/**
+ * Display post meta data (date and author).
+ */
+function {safe_function_name}_get_the_meta_data() {{
+    echo '<div class="entry-meta">';
+    echo '<span class="posted-on">' . esc_html( get_the_date() ) . '</span>';
+    echo '<span class="byline"> by ' . esc_html( get_the_author() ) . '</span>';
+    echo '</div>';
+}}
+
+/**
+ * Display the post thumbnail with fallback.
+ *
+ * @param string $size Thumbnail size. Default 'large'.
+ */
+function {safe_function_name}_get_the_image( $size = 'large' ) {{
+    if ( has_post_thumbnail() ) {{
+        the_post_thumbnail( $size );
+    }} else {{
+        // Optional: Display a placeholder image
+        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+    }}
+}}
+
+/**
+ * Display pagination with fallback for WP-PageNavi plugin.
+ */
+function {safe_function_name}_pagination() {{
+    if ( function_exists( 'wp_pagenavi' ) ) {{
+        wp_pagenavi();
+    }} else {{
+        the_posts_navigation();
+    }}
+}}
+
+/**
+ * Display posts pagination with fallback.
+ */
+function {safe_function_name}_posts_pagination() {{
+    if ( function_exists( 'wp_pagenavi' ) ) {{
+        wp_pagenavi();
+    }} else {{
+        the_posts_pagination( array(
+            'mid_size'  => 2,
+            'prev_text' => __( '&laquo; Previous', '{theme_name}' ),
+            'next_text' => __( 'Next &raquo;', '{theme_name}' ),
+        ) );
+    }}
+}}
 """
 
 
@@ -457,6 +528,9 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
 
     # Validate all PHP files
     php_files = list(theme_dir.rglob("*.php"))
+    templates_with_header = []
+    templates_with_footer = []
+
     for php_file in php_files:
         try:
             content = php_file.read_text(encoding='utf-8')
@@ -476,6 +550,45 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
                 if any(phrase in first_line.lower() for phrase in ["here's", "here is", "below is", "this is"]):
                     issues.append(f"{php_file.name}: Contains explanatory text before code")
 
+            # Check for invalid/undefined WordPress functions
+            if 'post_loop(' in content:
+                issues.append(f"{php_file.name}: Uses undefined function 'post_loop()' - should use 'have_posts()' and 'the_post()'")
+
+            # Check for get_template_part calls and verify referenced files exist
+            template_part_pattern = r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"](?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+            for match in re.finditer(template_part_pattern, content):
+                slug = match.group(1)
+                name = match.group(2) if match.group(2) else None
+
+                # Check if template-parts directory exists
+                template_parts_dir = theme_dir / 'template-parts'
+                if name:
+                    # Check for {slug}-{name}.php
+                    expected_file = theme_dir / f"{slug}-{name}.php"
+                    if not expected_file.exists():
+                        # Also check in template-parts directory
+                        alt_file = template_parts_dir / f"{slug.replace('template-parts/', '')}-{name}.php"
+                        if not alt_file.exists():
+                            issues.append(f"{php_file.name}: References template part '{slug}-{name}.php' which doesn't exist")
+                else:
+                    # Check for {slug}.php
+                    expected_file = theme_dir / f"{slug}.php"
+                    if not expected_file.exists():
+                        # Also check in template-parts directory
+                        alt_file = template_parts_dir / f"{slug.replace('template-parts/', '')}.php"
+                        if not alt_file.exists():
+                            issues.append(f"{php_file.name}: References template part '{slug}.php' which doesn't exist")
+
+            # Track templates with get_header() and get_footer()
+            if 'get_header(' in content and php_file.name not in ['header.php', 'functions.php']:
+                templates_with_header.append(php_file.name)
+            if 'get_footer(' in content and php_file.name not in ['footer.php', 'functions.php']:
+                templates_with_footer.append(php_file.name)
+
+            # Check for unchecked wp_pagenavi() calls
+            if 'wp_pagenavi(' in content and 'function_exists' not in content.split('wp_pagenavi(')[0].split('\n')[-1]:
+                issues.append(f"{php_file.name}: Calls wp_pagenavi() without function_exists() check - will crash if plugin not installed")
+
             # Basic PHP syntax check if PHP is available
             is_valid, error_msg = validate_php_syntax(content)
             if not is_valid and error_msg:
@@ -483,6 +596,11 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
 
         except Exception as e:
             issues.append(f"{php_file.name}: Could not read/validate - {str(e)}")
+
+    # Check for templates with get_header() but missing get_footer()
+    templates_missing_footer = set(templates_with_header) - set(templates_with_footer)
+    for template in templates_missing_footer:
+        issues.append(f"{template}: Calls get_header() but missing get_footer() - incomplete template")
 
     is_safe = len(issues) == 0
     return is_safe, issues

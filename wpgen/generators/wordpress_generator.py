@@ -243,6 +243,9 @@ class WordPressGenerator:
             # Generate template files
             self._generate_templates(theme_dir, requirements)
 
+            # Auto-generate missing template-parts files
+            self._generate_template_parts(theme_dir, requirements)
+
             # Generate always-on UI enhancements (smooth transitions, mobile nav)
             self._generate_wpgen_ui_assets(theme_dir)
 
@@ -304,6 +307,22 @@ class WordPressGenerator:
         version = "1.0.0"
         wp_version = self.config.get("wp_version", "6.4")
 
+        # Ensure tags are properly formatted as comma-separated strings
+        features = requirements.get('features', [])
+        if isinstance(features, list):
+            # Convert list to comma-separated string, limit to 5 tags
+            # Clean each tag to be WordPress-compatible (lowercase, no special chars)
+            clean_tags = []
+            for feature in features[:5]:
+                if isinstance(feature, str):
+                    # Convert to lowercase, replace spaces/underscores with hyphens
+                    clean_tag = re.sub(r'[^a-z0-9-]+', '-', feature.lower()).strip('-')
+                    if clean_tag:
+                        clean_tags.append(clean_tag)
+            tags_str = ', '.join(clean_tags)
+        else:
+            tags_str = str(features) if features else 'wordpress, theme'
+
         header = f"""/*
 Theme Name: {requirements['theme_display_name']}
 Theme URI: https://github.com/yourusername/{requirements['theme_name']}
@@ -317,7 +336,7 @@ Requires PHP: 7.4
 License: {license}
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: {requirements['theme_name']}
-Tags: {', '.join(requirements.get('features', [])[:5])}
+Tags: {tags_str}
 */
 
 """
@@ -385,16 +404,30 @@ Include:
             "integrations": requirements.get("integrations", []),
         }
 
-        description = f"""Create a complete functions.php file for a WordPress theme.
+        description = f"""Create a complete functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
+
+CRITICAL REQUIREMENTS:
+1. Use proper PHP function naming - replace hyphens with underscores in function names
+2. Include these EXACT helper functions (replace THEMESLUG with safe function name):
+   - THEMESLUG_get_the_meta_data() - displays post date and author
+   - THEMESLUG_get_the_image($size='large') - displays post thumbnail with fallback
+   - THEMESLUG_pagination() - pagination with wp_pagenavi fallback
+   - THEMESLUG_posts_pagination() - posts pagination with fallback
+
 Include:
-- Theme setup function with theme support declarations
+- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, etc.)
 - Enqueue scripts and styles (MUST enqueue assets/css/wpgen-ui.css and assets/js/wpgen-ui.js)
 - Register navigation menus: {', '.join(context['navigation'])}
-- Register widget areas
+- Register widget areas (sidebar-1, footer-1, footer-2 at minimum)
 - Custom post types: {', '.join(context['post_types'])}
 - Theme customizer settings
-- Helper functions
 - Security best practices (sanitization, escaping)
+
+HELPER FUNCTIONS - Include these exactly:
+- {requirements["theme_name"].replace('-', '_')}_get_the_meta_data() - echo date and author with escaping
+- {requirements["theme_name"].replace('-', '_')}_get_the_image($size='large') - the_post_thumbnail() with fallback
+- {requirements["theme_name"].replace('-', '_')}_pagination() - uses wp_pagenavi() if exists, else the_posts_navigation()
+- {requirements["theme_name"].replace('-', '_')}_posts_pagination() - uses wp_pagenavi() if exists, else the_posts_pagination()
 
 IMPORTANT: Always enqueue the wpgen-ui assets:
 wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
@@ -476,13 +509,28 @@ wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-u
         }
 
         description = """Create the main index.php template file for WordPress.
-This is the fallback template. Include:
-- get_header() call
-- The WordPress loop
-- Post title, content, meta
-- Pagination
+This is the fallback template.
+
+CRITICAL REQUIREMENTS:
+1. MUST start with get_header()
+2. MUST end with get_footer()
+3. Use ONLY the standard WordPress loop:
+   if ( have_posts() ) :
+       while ( have_posts() ) : the_post();
+           // Post markup here
+       endwhile;
+   endif;
+4. NEVER use undefined functions like post_loop()
+5. Use standard WordPress functions: the_title(), the_content(), the_excerpt(), the_permalink(), etc.
+
+Include:
+- get_header() call at the top
+- The WordPress loop with have_posts() and the_post()
+- Post title, content, meta (using standard WP functions)
+- Pagination using the_posts_pagination() or the_posts_navigation()
 - get_sidebar() if applicable
-- get_footer() call
+- get_footer() call at the bottom
+
 Use modern WordPress template tags and best practices."""
 
         try:
@@ -680,7 +728,23 @@ Include:
                 context = {"theme_name": requirements["theme_name"], "template_type": template_file}
 
                 full_description = f"""Create {template_file} for WordPress theme.
-{description}. Include appropriate WordPress loop and template tags.
+{description}.
+
+CRITICAL REQUIREMENTS:
+1. MUST start with get_header()
+2. MUST end with get_footer()
+3. Use ONLY the standard WordPress loop:
+   if ( have_posts() ) :
+       while ( have_posts() ) : the_post();
+           // Post markup
+       endwhile;
+   endif;
+4. NEVER use undefined functions like post_loop(), get_the_meta_data() without theme prefix
+5. Use standard WordPress functions: the_title(), the_content(), the_excerpt(), the_permalink(), the_date(), the_author()
+6. For pagination, use the_posts_pagination() or the_posts_navigation() (NOT wp_pagenavi directly)
+7. Properly escape all output with esc_html(), esc_url(), esc_attr()
+
+Include appropriate WordPress loop and template tags.
 Follow WordPress template hierarchy and coding standards."""
 
                 # Pass design images for all template files
@@ -704,6 +768,133 @@ Follow WordPress template hierarchy and coding standards."""
                 else:
                     logger.warning(f"No fallback available for {template_file}, skipping")
                     continue
+
+    def _generate_template_parts(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+        """Scan for get_template_part() calls and generate missing template files.
+
+        Args:
+            theme_dir: Theme directory path
+            requirements: Theme requirements
+        """
+        logger.info("Scanning for template-parts references and generating missing files")
+
+        # Create template-parts directory if it doesn't exist
+        template_parts_dir = theme_dir / "template-parts"
+        template_parts_dir.mkdir(exist_ok=True)
+
+        # Scan all PHP files for get_template_part() calls
+        template_parts_needed = set()
+        php_files = list(theme_dir.rglob("*.php"))
+
+        for php_file in php_files:
+            try:
+                content = php_file.read_text(encoding='utf-8')
+                # Match get_template_part( 'slug', 'name' ) or get_template_part( 'slug' )
+                pattern = r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"](?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+                for match in re.finditer(pattern, content):
+                    slug = match.group(1)
+                    name = match.group(2) if match.group(2) else None
+
+                    # Clean up slug (remove template-parts/ prefix if present)
+                    slug_clean = slug.replace('template-parts/', '')
+
+                    if name:
+                        template_parts_needed.add((slug_clean, name))
+                    else:
+                        template_parts_needed.add((slug_clean, None))
+            except Exception as e:
+                logger.warning(f"Could not scan {php_file.name} for template parts: {e}")
+
+        # Generate missing template parts
+        for slug, name in template_parts_needed:
+            if name:
+                filename = f"{slug}-{name}.php"
+            else:
+                filename = f"{slug}.php"
+
+            template_file = template_parts_dir / filename
+
+            if template_file.exists():
+                logger.debug(f"Template part already exists: {filename}")
+                continue
+
+            logger.info(f"Generating missing template part: {filename}")
+
+            # Generate content based on the template part type
+            if 'content' in slug:
+                # Content template part
+                content = f"""<?php
+/**
+ * Template part for displaying {name if name else 'content'}
+ *
+ * @package {requirements['theme_name']}
+ */
+?>
+
+<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+    <header class="entry-header">
+        <?php
+        if ( is_singular() ) :
+            the_title( '<h1 class="entry-title">', '</h1>' );
+        else :
+            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+        endif;
+        ?>
+        <div class="entry-meta">
+            <span class="posted-on"><?php echo esc_html( get_the_date() ); ?></span>
+            <span class="byline"> by <?php echo esc_html( get_the_author() ); ?></span>
+        </div>
+    </header>
+
+    <?php if ( has_post_thumbnail() ) : ?>
+        <div class="post-thumbnail">
+            <?php the_post_thumbnail( 'large' ); ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="entry-content">
+        <?php
+        if ( is_singular() ) :
+            the_content();
+        else :
+            the_excerpt();
+        endif;
+        ?>
+    </div>
+
+    <footer class="entry-footer">
+        <?php
+        if ( is_singular() ) :
+            // Tags, categories, etc.
+            the_tags( '<span class="tags-links">', ', ', '</span>' );
+        endif;
+        ?>
+    </footer>
+</article>
+"""
+            else:
+                # Generic template part
+                content = f"""<?php
+/**
+ * Template part for {slug} {name if name else ''}
+ *
+ * @package {requirements['theme_name']}
+ */
+?>
+
+<div class="template-part-{slug}">
+    <!-- Add your content here -->
+    <p><?php esc_html_e( 'Template part: {slug}', '{requirements['theme_name']}' ); ?></p>
+</div>
+"""
+
+            try:
+                template_file.write_text(content, encoding='utf-8')
+                logger.info(f"Generated template part: {filename}")
+            except Exception as e:
+                logger.error(f"Failed to generate template part {filename}: {e}")
+
+        logger.info(f"Template parts generation complete ({len(template_parts_needed)} files checked)")
 
     def _generate_wpgen_ui_assets(self, theme_dir: Path) -> None:
         """Generate always-on UI enhancement assets (CSS/JS for transitions and mobile nav).
