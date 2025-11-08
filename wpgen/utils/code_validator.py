@@ -586,8 +586,21 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
                 templates_with_footer.append(php_file.name)
 
             # Check for unchecked wp_pagenavi() calls
-            if 'wp_pagenavi(' in content and 'function_exists' not in content.split('wp_pagenavi(')[0].split('\n')[-1]:
-                issues.append(f"{php_file.name}: Calls wp_pagenavi() without function_exists() check - will crash if plugin not installed")
+            # Check each occurrence, not just the first
+            if 'wp_pagenavi(' in content:
+                lines = content.split('\n')
+                for i, line in enumerate(lines):
+                    if 'wp_pagenavi(' in line:
+                        # Check previous 3 lines for function_exists check
+                        context_start = max(0, i - 3)
+                        prev_lines = lines[context_start:i]
+
+                        has_check = any('function_exists' in pline and 'wp_pagenavi' in pline
+                                       for pline in prev_lines)
+
+                        if not has_check:
+                            issues.append(f"{php_file.name}: Line {i+1} calls wp_pagenavi() without function_exists() check - will crash if plugin not installed")
+                            break  # Only report first occurrence to avoid spam
 
             # Basic PHP syntax check if PHP is available
             is_valid, error_msg = validate_php_syntax(content)
@@ -802,11 +815,17 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
         # Check if this line contains wp_pagenavi()
         if 'wp_pagenavi(' in line and '<?php' not in line:
             # Check if previous few lines contain function_exists check for this call
-            context_start = max(0, i - 5)
-            context = '\n'.join(lines[context_start:i+1])
+            context_start = max(0, i - 3)
+            context_lines = lines[context_start:i]
 
-            # If not already wrapped in function_exists
-            if 'function_exists' not in context or 'wp_pagenavi' not in context.split('function_exists')[0]:
+            # Check if already wrapped: look for "function_exists" AND "wp_pagenavi" in preceding lines
+            already_wrapped = False
+            for prev_line in context_lines:
+                if 'function_exists' in prev_line and 'wp_pagenavi' in prev_line:
+                    already_wrapped = True
+                    break
+
+            if not already_wrapped:
                 # Get indentation
                 indent = len(line) - len(line.lstrip())
                 indent_str = ' ' * indent
