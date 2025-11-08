@@ -1,0 +1,13 @@
+# Optional dependencies for wpgen
+
+# Gradio web UI (alternative to Flask)
+gradio>=4.44,<5
+huggingface_hub<0.26
+
+# Local LLM provider support (Ollama)
+# Uncomment if using local-ollama provider
+# ollama>=0.3
+
+# Additional OCR engines (alternatives to pytesseract)
+# Uncomment if needed
+# easyocr>=1.7
