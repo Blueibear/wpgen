@@ -114,7 +114,13 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v"
+addopts = "-v -m 'not integration'"
+markers = [
+    "integration: tests that require network or external services (deselected by default)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
 
 [tool.mypy]
 python_version = "3.10"

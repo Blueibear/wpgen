@@ -1,20 +1,23 @@
-# Core dependencies
+# Core web framework
 Flask==3.0.0
 Werkzeug==3.0.6
 
-# LLM APIs
+# LLM APIs (optional - only needed for real API usage, not for mock/CI)
 anthropic>=0.34,<1
 openai>=1.30,<2
 
 # Git operations
 GitPython==3.1.41
 
-# Configuration
+# Configuration and utilities
 PyYAML==6.0.1
 python-dotenv==1.0.1
+python-dateutil==2.8.2
+pydantic>=2.0,<3
+typing-extensions>=4.9.0
 
 # HTTP requests
-requests==2.32.4
+requests==2.32.3
 
 # CLI tools
 click==8.1.7
@@ -23,25 +26,19 @@ colorama==0.4.6
 # Logging
 python-json-logger==2.0.7
 
-# Configuration validation
-pydantic>=2.0,<3
-
 # Retries and resilience
 tenacity>=8.0,<9
-
-# GUI interface
-gradio>=4.44,<5
-huggingface_hub<0.26
 
 # File handling
 PyPDF2==3.0.1
 
-# Image processing and analysis
-Pillow>=10.0,<12
+# Image processing
+Pillow==10.4.0
 
 # OCR capabilities (requires tesseract-ocr system package)
-# Install tesseract:
-#   Ubuntu/Debian: sudo apt-get install tesseract-ocr
-#   macOS: brew install tesseract
-#   Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+# Install tesseract-ocr: apt-get install tesseract-ocr (Ubuntu) or brew install tesseract (macOS)
 pytesseract==0.3.10
+
+# Optional UI dependencies (gradio) - install separately if needed
+# gradio>=4.44,<5
+# huggingface_hub<0.26
