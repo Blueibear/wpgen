@@ -775,3 +775,130 @@ if ( ! is_active_sidebar( 'sidebar-1' ) ) {
     }
 
     return templates.get(template_name, "")
+
+
+def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str]]:
+    """Automatically repair common WordPress code issues.
+
+    Args:
+        php_code: PHP code to repair
+        theme_name: Theme name for generating proper function names
+
+    Returns:
+        Tuple of (repaired_code, list_of_repairs_made)
+    """
+    repairs = []
+    original_code = php_code
+
+    # 1. Fix wp_pagenavi() calls without function_exists() wrapper
+    # Pattern: Find wp_pagenavi() not already wrapped in function_exists
+    lines = php_code.split('\n')
+    repaired_lines = []
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        # Check if this line contains wp_pagenavi()
+        if 'wp_pagenavi(' in line and '<?php' not in line:
+            # Check if previous few lines contain function_exists check for this call
+            context_start = max(0, i - 5)
+            context = '\n'.join(lines[context_start:i+1])
+
+            # If not already wrapped in function_exists
+            if 'function_exists' not in context or 'wp_pagenavi' not in context.split('function_exists')[0]:
+                # Get indentation
+                indent = len(line) - len(line.lstrip())
+                indent_str = ' ' * indent
+
+                # Replace with wrapped version
+                repaired_lines.append(f"{indent_str}if ( function_exists( 'wp_pagenavi' ) ) {{")
+                repaired_lines.append(line)
+                repaired_lines.append(f"{indent_str}}} else {{")
+                repaired_lines.append(f"{indent_str}    the_posts_pagination();")
+                repaired_lines.append(f"{indent_str}}}")
+
+                repairs.append("Wrapped wp_pagenavi() call with function_exists() check")
+                i += 1
+                continue
+
+        repaired_lines.append(line)
+        i += 1
+
+    php_code = '\n'.join(repaired_lines)
+
+    # 2. Replace post_loop() with proper WordPress loop
+    if 'post_loop(' in php_code:
+        php_code = re.sub(
+            r'post_loop\(\s*\)',
+            'the_post()',
+            php_code
+        )
+        repairs.append("Replaced post_loop() with the_post()")
+
+    # 3. Ensure theme helper functions exist if referenced
+    safe_function_name = theme_name.replace('-', '_')
+
+    # Check if helper functions are called but not defined
+    helpers_needed = []
+    if f'{safe_function_name}_get_the_meta_data(' in php_code and \
+       f'function {safe_function_name}_get_the_meta_data(' not in php_code:
+        helpers_needed.append('get_the_meta_data')
+
+    if f'{safe_function_name}_get_the_image(' in php_code and \
+       f'function {safe_function_name}_get_the_image(' not in php_code:
+        helpers_needed.append('get_the_image')
+
+    if f'{safe_function_name}_pagination(' in php_code and \
+       f'function {safe_function_name}_pagination(' not in php_code:
+        helpers_needed.append('pagination')
+
+    if helpers_needed:
+        # Add missing helper functions at the end
+        helper_code = "\n\n// Auto-generated helper functions\n"
+
+        if 'get_the_meta_data' in helpers_needed:
+            helper_code += f"""
+/**
+ * Display post meta data (date and author).
+ */
+function {safe_function_name}_get_the_meta_data() {{
+    echo '<div class="entry-meta">';
+    echo '<span class="posted-on">' . esc_html( get_the_date() ) . '</span>';
+    echo '<span class="byline"> by ' . esc_html( get_the_author() ) . '</span>';
+    echo '</div>';
+}}
+"""
+
+        if 'get_the_image' in helpers_needed:
+            helper_code += f"""
+/**
+ * Display the post thumbnail with fallback.
+ */
+function {safe_function_name}_get_the_image( $size = 'large' ) {{
+    if ( has_post_thumbnail() ) {{
+        the_post_thumbnail( $size );
+    }} else {{
+        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+    }}
+}}
+"""
+
+        if 'pagination' in helpers_needed:
+            helper_code += f"""
+/**
+ * Display pagination with fallback.
+ */
+function {safe_function_name}_pagination() {{
+    if ( function_exists( 'wp_pagenavi' ) ) {{
+        wp_pagenavi();
+    }} else {{
+        the_posts_pagination();
+    }}
+}}
+"""
+
+        php_code = php_code.rstrip() + helper_code
+        repairs.append(f"Added missing helper functions: {', '.join(helpers_needed)}")
+
+    return php_code, repairs
