@@ -11,7 +11,7 @@ from .base import BaseLLMProvider
 class MockLLMProvider(BaseLLMProvider):
     """Mock LLM provider that returns deterministic responses for testing."""
 
-    def __init__(self, *_, **__):
+    def __init__(self, *_, **kwargs):
         """Initialize mock provider accepting any args to bypass base class requirements."""
         # Bypass base class __init__ which requires api_key
         # Set minimal attributes expected by base class
@@ -22,7 +22,7 @@ class MockLLMProvider(BaseLLMProvider):
         self.temperature = 0.7
 
         # Mock-specific attributes
-        self.responses = {}
+        self.responses = kwargs.get('responses', {})
         self.call_count = 0
         self.last_prompt = None
 
@@ -98,21 +98,30 @@ class MockLLMProvider(BaseLLMProvider):
         Returns:
             Dictionary containing extracted requirements for deterministic testing
         """
-        self.call_count += 1
-        self.last_prompt = prompt
+        import json
 
-        return {
-            "theme_name": "wpgen-test-theme",
-            "theme_display_name": "WPGen Test Theme",
-            "description": "Deterministic analysis for CI",
-            "features": ["blog", "responsive"],
-            "color_scheme": "#007cba",
-            "layout": "standard",
-            "pages": ["home", "about", "contact"],
-            "post_types": [],
-            "navigation": ["header-menu"],
-            "integrations": [],
-        }
+        # Use generate method to get response (which respects custom responses)
+        response = self.generate(prompt)
+
+        # Try to parse as JSON
+        try:
+            # Remove leading/trailing whitespace and newlines
+            response = response.strip()
+            return json.loads(response)
+        except (json.JSONDecodeError, ValueError):
+            # If not valid JSON, return default structure
+            return {
+                "theme_name": "wpgen-test-theme",
+                "theme_display_name": "WPGen Test Theme",
+                "description": "Deterministic analysis for CI",
+                "features": ["blog", "responsive"],
+                "color_scheme": "#007cba",
+                "layout": "standard",
+                "pages": ["home", "about", "contact"],
+                "post_types": [],
+                "navigation": ["header-menu"],
+                "integrations": [],
+            }
 
     def _mock_parse_response(self) -> str:
         """Return a mock theme requirements response."""
