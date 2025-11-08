@@ -115,3 +115,56 @@ class MockLLMProvider(BaseLLMProvider):
         """Reset mock state for testing."""
         self.call_count = 0
         self.last_prompt = None
+
+    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+        """Analyze prompt and return deterministic requirements.
+
+        Args:
+            prompt: Natural language description
+
+        Returns:
+            Dictionary with theme requirements
+        """
+        import json
+
+        # Use generate() to get the response
+        response = self.generate(prompt)
+
+        # Try to parse as JSON, otherwise return default structure
+        try:
+            return json.loads(response)
+        except (json.JSONDecodeError, ValueError):
+            # Return default structure
+            return {
+                "theme_name": "test-theme",
+                "theme_display_name": "Test Theme",
+                "description": "A minimal test theme for automated testing",
+                "features": ["responsive"],
+                "color_scheme": {
+                    "primary": "#007cba",
+                    "secondary": "#23282d",
+                },
+                "pages": ["home"],
+            }
+
+    def generate_code(
+        self,
+        description: str,
+        file_type: str,
+        context: Optional[Dict[str, Any]] = None,
+        images: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        """Generate mock code based on file type.
+
+        Args:
+            description: Description of what the code should do
+            file_type: Type of file (e.g., 'php', 'css', 'js')
+            context: Additional context
+            images: Optional image data
+
+        Returns:
+            Mock code appropriate for the file type
+        """
+        # Use generate() with a context-aware prompt
+        prompt = f"Generate {file_type} code for: {description}"
+        return self.generate(prompt)
