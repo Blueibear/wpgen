@@ -9,10 +9,12 @@ from typing import Dict, Type
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
 from .composite_provider import CompositeLLMProvider
+from .mock_provider import MockLLMProvider
 from .openai_provider import OpenAIProvider
 
 # Provider registry mapping provider names to classes
 _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
+    "mock": MockLLMProvider,
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
     "local-lmstudio": CompositeLLMProvider,
