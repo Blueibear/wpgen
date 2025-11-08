@@ -9,10 +9,12 @@ from typing import Dict, Type
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
 from .composite_provider import CompositeLLMProvider
+from .mock_provider import MockLLMProvider
 from .openai_provider import OpenAIProvider
 
 # Provider registry mapping provider names to classes
 _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
+    "mock": MockLLMProvider,
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
     "local-lmstudio": CompositeLLMProvider,
@@ -24,21 +26,23 @@ def get_provider_class(name: str) -> Type[BaseLLMProvider]:
     """Get LLM provider class by name.
 
     Args:
-        name: Provider name (openai, anthropic, local-lmstudio, local-ollama)
+        name: Provider name (mock, openai, anthropic, local-lmstudio, local-ollama)
 
     Returns:
         Provider class
 
     Raises:
-        ValueError: If provider name is not supported
+        ValueError: If provider name is not supported or not set
     """
+    if not name:
+        raise ValueError("WPGEN_PROVIDER is not set. Expected 'mock' in CI.")
     try:
         return _PROVIDER_MAP[name]
     except KeyError as e:
-        supported = ", ".join(_PROVIDER_MAP.keys())
+        supported = ", ".join(sorted(_PROVIDER_MAP.keys()))
         raise ValueError(
             f"Unsupported LLM provider: {name!r}. "
-            f"Supported providers: {supported}"
+            f"Allowed providers: {supported}"
         ) from e
 
 

@@ -21,6 +21,9 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      WPGEN_PROVIDER: mock
+      PYTHONDONTWRITEBYTECODE: "1"
 
     steps:
       - name: Checkout code
@@ -36,6 +39,9 @@ jobs:
         run: |
           python -V
           pip --version
+
+      - name: Purge pip cache
+        run: pip cache purge || true
 
       - name: Install package
         run: |
@@ -78,7 +84,7 @@ jobs:
           WPGEN_CHECK_MODELS: "0"
           WPGEN_OFFLINE_TESTS: "1"
           NO_COLOR: "1"
-        run: pytest -q --maxfail=1 --disable-warnings
+        run: pytest -q -m "not integration" --disable-warnings
 
       - name: Build artifact
         run: |

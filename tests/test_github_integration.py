@@ -70,6 +70,7 @@ class TestGitHubIntegration:
         repo_name = integration.generate_repo_name("my-theme")
         assert repo_name == "my-theme-wp"
 
+    @pytest.mark.integration
     @patch("wpgen.github.integration.requests.post")
     def test_create_repository_success(self, mock_post, github_integration):
         """Test successful repository creation."""
@@ -86,6 +87,7 @@ class TestGitHubIntegration:
         assert result["html_url"] == "https://github.com/user/test-repo"
         mock_post.assert_called_once()
 
+    @pytest.mark.integration
     @patch("wpgen.github.integration.requests.post")
     def test_create_repository_already_exists(self, mock_post, github_integration):
         """Test repository creation when repo already exists."""

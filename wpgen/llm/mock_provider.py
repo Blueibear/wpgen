@@ -11,31 +11,32 @@ from .base import BaseLLMProvider
 class MockLLMProvider(BaseLLMProvider):
     """Mock LLM provider that returns deterministic responses for testing."""
 
-    def __init__(self, responses: Optional[Dict[str, str]] = None):
-        """Initialize mock provider.
+    def __init__(self, *_, **kwargs):
+        """Initialize mock provider accepting any args to bypass base class requirements."""
+        # Bypass base class __init__ which requires api_key
+        # Set minimal attributes expected by base class
+        self.api_key = "mock-key"
+        self.config = {}
+        self.model = "mock-model"
+        self.max_tokens = 4096
+        self.temperature = 0.7
 
-        Args:
-            responses: Optional dict mapping prompt keywords to responses
-        """
-        self.responses = responses or {}
+        # Mock-specific attributes
+        self.responses = kwargs.get('responses', {})
         self.call_count = 0
         self.last_prompt = None
 
     def generate(
         self,
         prompt: str,
-        images: Optional[List[Dict[str, Any]]] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        system_prompt: Optional[str] = None,
         **kwargs
     ) -> str:
         """Generate a mocked response based on prompt keywords.
 
         Args:
             prompt: The prompt text
-            images: Optional list of images (ignored in mock)
-            max_tokens: Maximum tokens (ignored in mock)
-            temperature: Temperature setting (ignored in mock)
+            system_prompt: Optional system prompt (ignored in mock)
             **kwargs: Additional arguments (ignored in mock)
 
         Returns:
@@ -52,14 +53,75 @@ class MockLLMProvider(BaseLLMProvider):
                 return response
 
         # Default responses based on common patterns
-        if "parse" in prompt_lower or "requirements" in prompt_lower:
+        if "parse" in prompt_lower or "requirements" in prompt_lower or "analyze" in prompt_lower:
             return self._mock_parse_response()
         elif "generate" in prompt_lower or "create" in prompt_lower:
             return self._mock_generate_response()
-        elif "analyze" in prompt_lower or "describe" in prompt_lower:
-            return self._mock_analyze_response()
         else:
             return "Mock LLM response"
+
+    def generate_code(
+        self,
+        description: str,
+        file_type: str,
+        context: Optional[Dict[str, Any]] = None,
+        images: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        """Generate mock code for WordPress theme files.
+
+        Args:
+            description: Description of what the code should do
+            file_type: Type of file to generate (e.g., 'php', 'css', 'js')
+            context: Additional context for code generation
+            images: Optional list of images (ignored in mock)
+
+        Returns:
+            Mock code appropriate for the file type
+        """
+        self.call_count += 1
+
+        if file_type == "css":
+            return self._mock_css_code()
+        elif file_type == "php":
+            return self._mock_php_code()
+        elif file_type == "js":
+            return self._mock_js_code()
+        else:
+            return f"/* Mock {file_type} code */\n"
+
+    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+        """Analyze user prompt to extract requirements.
+
+        Args:
+            prompt: Natural language description of the website
+
+        Returns:
+            Dictionary containing extracted requirements for deterministic testing
+        """
+        import json
+
+        # Use generate method to get response (which respects custom responses)
+        response = self.generate(prompt)
+
+        # Try to parse as JSON
+        try:
+            # Remove leading/trailing whitespace and newlines
+            response = response.strip()
+            return json.loads(response)
+        except (json.JSONDecodeError, ValueError):
+            # If not valid JSON, return default structure
+            return {
+                "theme_name": "wpgen-test-theme",
+                "theme_display_name": "WPGen Test Theme",
+                "description": "Deterministic analysis for CI",
+                "features": ["blog", "responsive"],
+                "color_scheme": "#007cba",
+                "layout": "standard",
+                "pages": ["home", "about", "contact"],
+                "post_types": [],
+                "navigation": ["header-menu"],
+                "integrations": [],
+            }
 
     def _mock_parse_response(self) -> str:
         """Return a mock theme requirements response."""
@@ -69,11 +131,7 @@ class MockLLMProvider(BaseLLMProvider):
             "theme_display_name": "Test Theme",
             "description": "A minimal test theme for automated testing",
             "features": ["responsive", "accessibility", "custom-colors"],
-            "color_scheme": {
-                "primary": "#007cba",
-                "secondary": "#23282d",
-                "accent": "#00a0d2"
-            },
+            "color_scheme": "#007cba",
             "layout": "standard",
             "pages": ["home", "about", "contact"]
         }
@@ -81,35 +139,44 @@ class MockLLMProvider(BaseLLMProvider):
 
     def _mock_generate_response(self) -> str:
         """Return mock PHP/CSS code."""
+        return self._mock_php_code()
+
+    def _mock_css_code(self) -> str:
+        """Return mock CSS code."""
         return """
-        <?php
-        // Mock generated code
-        function test_theme_setup() {
-            add_theme_support('title-tag');
-            add_theme_support('post-thumbnails');
-        }
-        add_action('after_setup_theme', 'test_theme_setup');
-        ?>
-        """
+/*
+Theme Name: WPGen Test Theme
+Author: WPGen
+Version: 0.0.0
+Description: Minimal theme for CI
+*/
 
-    def _mock_analyze_response(self) -> str:
-        """Return mock analysis response."""
-        return """
-        Analysis: This is a mock analysis of the provided content.
-        The design appears to be clean and modern with good use of whitespace.
-        """
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+"""
 
-    def get_model_name(self) -> str:
-        """Get the model name."""
-        return "mock-llm-v1"
+    def _mock_php_code(self) -> str:
+        """Return mock PHP code."""
+        return """<?php
+// Mock generated code
+function test_theme_setup() {
+    add_theme_support('title-tag');
+    add_theme_support('post-thumbnails');
+}
+add_action('after_setup_theme', 'test_theme_setup');
+?>"""
 
-    def get_provider_name(self) -> str:
-        """Get the provider name."""
-        return "mock"
-
-    def count_tokens(self, text: str) -> int:
-        """Estimate token count (mock implementation)."""
-        return len(text.split())
+    def _mock_js_code(self) -> str:
+        """Return mock JavaScript code."""
+        return """// Mock JavaScript code
+(function() {
+    'use strict';
+    console.log('Mock theme JS loaded');
+})();
+"""
 
     def reset(self):
         """Reset mock state for testing."""
