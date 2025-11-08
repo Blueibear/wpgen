@@ -54,6 +54,7 @@ dependencies = [
     "PyPDF2==3.0.1",
     "Pillow>=10.0,<12",
     "pytesseract==0.3.10",
+    "GitPython>=3.1.41",
 ]
 
 [project.optional-dependencies]

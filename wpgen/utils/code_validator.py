@@ -270,7 +270,10 @@ def remove_nonexistent_requires(php_code: str, theme_dir: Optional[Path] = None)
 
     for line in lines:
         # Check for require/include statements
-        if re.search(r'\b(require|include|require_once|include_once)\s*\(?\s*get_template_directory', line):
+        if re.search(
+            r'\b(require|include|require_once|include_once)\s*\(?\s*get_template_directory',
+            line,
+        ):
             # Extract the file path
             match = re.search(r"['\"]([^'\"]+\.php)['\"]", line)
             if match:
@@ -414,8 +417,10 @@ function {safe_function_name}_scripts() {{
     wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array(), '1.0.0' );
 
     // Enqueue wpgen-ui assets
-    wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
-    wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
+    wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() .
+        '/assets/css/wpgen-ui.css', array(), '1.0.0' );
+    wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() .
+        '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
 }}
 add_action( 'wp_enqueue_scripts', '{safe_function_name}_scripts' );
 
@@ -472,8 +477,15 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
 
             # Check for explanatory text
             first_line = content.split('\n')[0].strip()
-            if first_line and not first_line.startswith('<?php') and not first_line.startswith('<!DOCTYPE'):
-                if any(phrase in first_line.lower() for phrase in ["here's", "here is", "below is", "this is"]):
+            if (
+                first_line
+                and not first_line.startswith('<?php')
+                and not first_line.startswith('<!DOCTYPE')
+            ):
+                if any(
+                    phrase in first_line.lower()
+                    for phrase in ["here's", "here is", "below is", "this is"]
+                ):
                     issues.append(f"{php_file.name}: Contains explanatory text before code")
 
             # Basic PHP syntax check if PHP is available
@@ -596,7 +608,12 @@ get_header();
 
 <header class="page-header">
     <h1 class="page-title">
-        <?php printf( esc_html__( 'Search Results for: %s', '{theme_name}' ), '<span>' . get_search_query() . '</span>' ); ?>
+        <?php
+        printf(
+            esc_html__( 'Search Results for: %s', '{theme_name}' ),
+            '<span>' . get_search_query() . '</span>'
+        );
+        ?>
     </h1>
 </header>
 

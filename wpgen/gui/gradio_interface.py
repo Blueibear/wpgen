@@ -103,9 +103,12 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     "❌ Error: Vision model required for image analysis\n\n"
                     "You have uploaded images but no vision model is configured.\n\n"
                     "**To fix this:**\n"
-                    "1. Set a vision model in the 'LLM Provider' section (e.g., 'Llama-3.2-Vision-11B-Instruct' for LM Studio or 'llama3.2-vision:11b-instruct' for Ollama), OR\n"
+                    "1. Set a vision model in the 'LLM Provider' section (e.g., "
+                    "'Llama-3.2-Vision-11B-Instruct' for LM Studio or "
+                    "'llama3.2-vision:11b-instruct' for Ollama), OR\n"
                     "2. Remove the uploaded images to use text-only generation\n\n"
-                    "Vision models are required for analyzing design references and mockups."
+                    "Vision models are required for analyzing design references "
+                    "and mockups."
                 )
                 yield error_msg, "", ""
                 return
@@ -131,9 +134,15 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             status += f"🤖 Initializing AI provider ({llm_provider_choice})...\n"
             if is_local:
                 if llm_vision_model:
-                    status += f"   ✓ Dual-model: Brains ({llm_brains_model or 'default'}) + Vision ({llm_vision_model})\n"
+                    status += (
+                        f"   ✓ Dual-model: Brains ({llm_brains_model or 'default'}) + "
+                        f"Vision ({llm_vision_model})\n"
+                    )
                 else:
-                    status += f"   ✓ Brains model: {llm_brains_model or 'default'} (vision disabled)\n"
+                    status += (
+                        f"   ✓ Brains model: {llm_brains_model or 'default'} "
+                        "(vision disabled)\n"
+                    )
             yield status, "", ""
 
             llm_provider = get_llm_provider(config_copy)
@@ -154,8 +163,14 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
             # Check if images were uploaded but failed to process
             if image_paths and not processed_files["images"]:
-                logger.warning(f"User uploaded {len(image_paths)} image(s) but none were successfully processed!")
-                status += f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be processed. Generation will continue without image analysis.\n"
+                logger.warning(
+                    f"User uploaded {len(image_paths)} image(s) but none were "
+                    "successfully processed!"
+                )
+                status += (
+                    f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be "
+                    "processed. Generation will continue without image analysis.\n"
+                )
                 yield status, "", ""
 
             image_summaries = None
@@ -172,10 +187,16 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         processed_files["images"], use_llm=True
                     )
                     image_summaries = image_analyzer.generate_image_summary(image_analyses)
-                    status += "  ✓ Extracted design insights: layout, colors, typography, components\n"
+                    status += (
+                        "  ✓ Extracted design insights: layout, colors, typography, "
+                        "components\n"
+                    )
                 except Exception as e:
                     logger.warning(f"Image analysis failed: {e}")
-                    status += f"  ⚠️  Could not analyze images (will use for screenshot only): {str(e)}\n"
+                    status += (
+                        f"  ⚠️  Could not analyze images "
+                        f"(will use for screenshot only): {str(e)}\n"
+                    )
                     image_summaries = None
 
                 yield status, "", ""
@@ -274,7 +295,9 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 options_brief_md = "## Build Options\n"
                 options_brief_md += f"- WooCommerce: {woo_enabled}\n"
-                options_brief_md += f"- Blocks: {', '.join(blocks_enabled) if blocks_enabled else 'none'}\n"
+                options_brief_md += (
+                    f"- Blocks: {', '.join(blocks_enabled) if blocks_enabled else 'none'}\n"
+                )
                 options_brief_md += f"- Dark/Light Toggle: {darkmode_enabled}\n"
                 options_brief_md += f"- Animated Preloader: {preloader_enabled}\n"
                 options_brief_md += "- Smooth Transitions: True (always on)\n"
@@ -533,50 +556,73 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 prompt_input = gr.Textbox(
                     label="Website Description",
                     placeholder=(
-                        "Example: Create a dark-themed photography portfolio site with a blog "
-                        "and contact form..."
+                        "Example: Create a dark-themed photography portfolio site "
+                        "with a blog and contact form..."
                     ),
                     lines=5,
-                    info="Natural language brief describing your brand, pages, layout, colors, and tone. More detail = better results."
+                    info=(
+                        "Natural language brief describing your brand, pages, layout, "
+                        "colors, and tone. More detail = better results."
+                    ),
                 )
 
                 # LLM Provider Selection (optional configuration)
                 with gr.Accordion("🤖 LLM Provider (optional)", open=False):
-                    gr.Markdown("*Configure which AI provider to use. Defaults to config.yaml settings.*")
+                    gr.Markdown(
+                        "*Configure which AI provider to use. Defaults to config.yaml "
+                        "settings.*"
+                    )
 
                     llm_provider_dropdown = gr.Dropdown(
                         label="Provider",
                         choices=["openai", "anthropic", "local-lmstudio", "local-ollama"],
                         value=config.get("llm", {}).get("provider", "openai"),
-                        info="Choose cloud (OpenAI/Anthropic) or local (LM Studio/Ollama). Local options require running local servers."
+                        info=(
+                            "Choose cloud (OpenAI/Anthropic) or local (LM Studio/Ollama). "
+                            "Local options require running local servers."
+                        ),
                     )
 
                     # Dual-model fields for local providers (brains + vision)
                     with gr.Group(visible=False) as local_models_group:
-                        gr.Markdown("**Dual-Model Configuration: Brains (text) + Vision (images)**")
+                        gr.Markdown(
+                            "**Dual-Model Configuration: Brains (text) + Vision (images)**"
+                        )
 
                         with gr.Row():
                             llm_brains_model = gr.Textbox(
                                 label="Brains Model",
                                 placeholder="Meta-Llama-3.1-8B-Instruct",
-                                info="Text-only reasoning model for prompt analysis and code generation without images."
+                                info=(
+                                    "Text-only reasoning model for prompt analysis and "
+                                    "code generation without images."
+                                ),
                             )
                             llm_brains_base_url = gr.Textbox(
                                 label="Brains Base URL",
                                 placeholder="http://localhost:1234/v1",
-                                info="OpenAI-compatible endpoint for the brains model (LM Studio: 1234, Ollama: 11434)."
+                                info=(
+                                    "OpenAI-compatible endpoint for the brains model "
+                                    "(LM Studio: 1234, Ollama: 11434)."
+                                ),
                             )
 
                         with gr.Row():
                             llm_vision_model = gr.Textbox(
                                 label="Vision Model (optional)",
                                 placeholder="Llama-3.2-Vision-11B-Instruct",
-                                info="Image-capable model for design analysis. REQUIRED if uploading images. Leave empty to disable vision."
+                                info=(
+                                    "Image-capable model for design analysis. REQUIRED if "
+                                    "uploading images. Leave empty to disable vision."
+                                ),
                             )
                             llm_vision_base_url = gr.Textbox(
                                 label="Vision Base URL",
                                 placeholder="http://localhost:1234/v1",
-                                info="OpenAI-compatible endpoint for vision model. Can be same server as brains."
+                                info=(
+                                    "OpenAI-compatible endpoint for vision model. "
+                                    "Can be same server as brains."
+                                ),
                             )
 
                     # Show/hide dual-model fields based on provider selection
@@ -622,31 +668,54 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
                 # Guided Mode (optional structured inputs)
                 with gr.Accordion("🎯 Guided Mode (optional)", open=False):
-                    gr.Markdown("*Provide structured details for more consistent theme output*")
+                    gr.Markdown(
+                        "*Provide structured details for more consistent theme output*"
+                    )
 
                     with gr.Row():
                         gm_site_name = gr.Textbox(
                             label="Site name",
                             placeholder="e.g., Finch Studio",
-                            info="Your brand or site name. Used in theme metadata and templates."
+                            info=(
+                                "Your brand or site name. Used in theme metadata "
+                                "and templates."
+                            ),
                         )
                         gm_tagline = gr.Textbox(
                             label="Tagline",
                             placeholder="Short tagline",
-                            info="One-line description or slogan. Appears in header/hero sections."
+                            info=(
+                                "One-line description or slogan. Appears in header/hero "
+                                "sections."
+                            ),
                         )
 
                     gm_goal = gr.Dropdown(
                         label="Primary goal",
                         choices=["inform", "convert", "sell"],
                         value="inform",
-                        info="Site purpose: inform (blog/magazine), convert (lead gen/services), sell (e-commerce)."
+                        info=(
+                            "Site purpose: inform (blog/magazine), convert "
+                            "(lead gen/services), sell (e-commerce)."
+                        ),
                     )
 
                     gm_pages = gr.CheckboxGroup(
                         label="Top-level pages",
-                        choices=["Home", "About", "Blog", "Contact", "Services", "Shop", "Portfolio", "FAQ"],
-                        info="Select which top-level page templates to generate. Creates navigation structure."
+                        choices=[
+                            "Home",
+                            "About",
+                            "Blog",
+                            "Contact",
+                            "Services",
+                            "Shop",
+                            "Portfolio",
+                            "FAQ",
+                        ],
+                        info=(
+                            "Select which top-level page templates to generate. "
+                            "Creates navigation structure."
+                        ),
                     )
 
                     with gr.Row():
@@ -654,19 +723,28 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                             label="Mood",
                             choices=["modern-minimal", "playful", "brutalist", "elegant"],
                             value="modern-minimal",
-                            info="Visual style: modern-minimal (clean), playful (fun), brutalist (bold), elegant (refined)."
+                            info=(
+                                "Visual style: modern-minimal (clean), playful (fun), "
+                                "brutalist (bold), elegant (refined)."
+                            ),
                         )
                         gm_typography = gr.Dropdown(
                             label="Typography",
                             choices=["sans", "serif", "mono"],
                             value="sans",
-                            info="Font style: sans (clean, modern), serif (traditional, readable), mono (tech, code)."
+                            info=(
+                                "Font style: sans (clean, modern), serif "
+                                "(traditional, readable), mono (tech, code)."
+                            ),
                         )
 
                     gm_palette = gr.Textbox(
                         label="Primary colors (hex, comma-separated)",
                         placeholder="#0f172a, #f59e0b",
-                        info="Brand colors as hex codes (e.g., #0f172a, #f59e0b). Generates CSS custom properties."
+                        info=(
+                            "Brand colors as hex codes (e.g., #0f172a, #f59e0b). "
+                            "Generates CSS custom properties."
+                        ),
                     )
 
                     with gr.Row():
@@ -674,13 +752,19 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                             label="Header",
                             choices=["centered", "split", "stacked"],
                             value="split",
-                            info="Header layout: centered (logo+nav center), split (logo left/nav right), stacked (vertical)."
+                            info=(
+                                "Header layout: centered (logo+nav center), "
+                                "split (logo left/nav right), stacked (vertical)."
+                            ),
                         )
                         gm_layout_hero = gr.Dropdown(
                             label="Hero",
                             choices=["image", "video", "text"],
                             value="image",
-                            info="Hero section style: image (background image), video (background video), text (text-only)."
+                            info=(
+                                "Hero section style: image (background image), "
+                                "video (background video), text (text-only)."
+                            ),
                         )
 
                     with gr.Row():
@@ -688,31 +772,58 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                             label="Sidebar",
                             choices=["none", "left", "right"],
                             value="none",
-                            info="Sidebar position: none (full-width), left (sidebar left), right (sidebar right)."
+                            info=(
+                                "Sidebar position: none (full-width), left (sidebar left), "
+                                "right (sidebar right)."
+                            ),
                         )
                         gm_container = gr.Dropdown(
                             label="Container width",
                             choices=["boxed", "full"],
                             value="full",
-                            info="Content width: boxed (max-width container), full (edge-to-edge)."
+                            info=(
+                                "Content width: boxed (max-width container), "
+                                "full (edge-to-edge)."
+                            ),
                         )
 
                     gm_components = gr.CheckboxGroup(
                         label="Components",
-                        choices=["blog", "cards", "gallery", "testimonials", "pricing", "faq", "contact_form", "newsletter", "cta", "breadcrumbs"],
-                        info="UI components to include: blog posts, card grids, image galleries, testimonials, pricing tables, etc."
+                        choices=[
+                            "blog",
+                            "cards",
+                            "gallery",
+                            "testimonials",
+                            "pricing",
+                            "faq",
+                            "contact_form",
+                            "newsletter",
+                            "cta",
+                            "breadcrumbs",
+                        ],
+                        info=(
+                            "UI components to include: blog posts, card grids, "
+                            "image galleries, testimonials, pricing tables, etc."
+                        ),
                     )
 
                     gm_accessibility = gr.CheckboxGroup(
                         label="Accessibility",
                         choices=["keyboard", "high-contrast", "reduced-motion"],
-                        info="A11y features: keyboard nav (focus states), high-contrast (WCAG AA), reduced-motion (respects prefers-reduced-motion)."
+                        info=(
+                            "A11y features: keyboard nav (focus states), "
+                            "high-contrast (WCAG AA), reduced-motion "
+                            "(respects prefers-reduced-motion)."
+                        ),
                     )
 
                     gm_integrations = gr.CheckboxGroup(
                         label="Integrations",
                         choices=["woocommerce", "seo", "analytics", "newsletter"],
-                        info="Third-party integrations: WooCommerce, SEO meta tags, analytics scripts, newsletter signup forms."
+                        info=(
+                            "Third-party integrations: WooCommerce, SEO meta tags, "
+                            "analytics scripts, newsletter signup forms."
+                        ),
                     )
 
                     gm_perf_lcp = gr.Slider(
@@ -721,7 +832,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                         maximum=5000,
                         step=100,
                         value=2500,
-                        info="Largest Contentful Paint target in milliseconds. Lower = faster perceived load. Affects asset loading strategy."
+                        info=(
+                            "Largest Contentful Paint target in milliseconds. "
+                            "Lower = faster perceived load. Affects asset loading strategy."
+                        ),
                     )
 
                 with gr.Accordion("✨ Optional Features", open=False):
@@ -730,29 +844,44 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     woo_checkbox = gr.Checkbox(
                         label="WooCommerce support & styling",
                         value=False,
-                        info="Adds WooCommerce templates, product loop styles, and shop page support. Safe even if WooCommerce isn't installed."
+                        info=(
+                            "Adds WooCommerce templates, product loop styles, and shop "
+                            "page support. Safe even if WooCommerce isn't installed."
+                        ),
                     )
 
                     blocks_checkboxgroup = gr.CheckboxGroup(
                         label="Custom Gutenberg blocks",
                         choices=["featured_products", "lifestyle_image", "promo_banner"],
                         value=[],
-                        info="Custom Gutenberg blocks: featured_products (product showcase), lifestyle_image (image+overlay), promo_banner (CTA banner)."
+                        info=(
+                            "Custom Gutenberg blocks: featured_products (product showcase), "
+                            "lifestyle_image (image+overlay), promo_banner (CTA banner)."
+                        ),
                     )
 
                     darkmode_checkbox = gr.Checkbox(
                         label="Light/Dark mode toggle",
                         value=False,
-                        info="Floating toggle button with localStorage persistence and prefers-color-scheme support. Switches between light/dark themes."
+                        info=(
+                            "Floating toggle button with localStorage persistence and "
+                            "prefers-color-scheme support. Switches between light/dark themes."
+                        ),
                     )
 
                     preloader_checkbox = gr.Checkbox(
                         label="Animated loading logo (preloader)",
                         value=False,
-                        info="Smooth page preloader with spinner. Auto-hides after load with 3-second max timeout."
+                        info=(
+                            "Smooth page preloader with spinner. Auto-hides after load "
+                            "with 3-second max timeout."
+                        ),
                     )
 
-                    gr.Markdown("*Note: Smooth page transitions and mobile-friendly navigation are always included.*")
+                    gr.Markdown(
+                        "*Note: Smooth page transitions and mobile-friendly navigation "
+                        "are always included.*"
+                    )
 
                 gr.Markdown("### 🖼️ Upload Design References (Optional)")
                 gr.Markdown(
@@ -785,19 +914,28 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     push_checkbox = gr.Checkbox(
                         label="Push to GitHub",
                         value=True,
-                        info="Automatically create GitHub repository and push generated theme. Requires GITHUB_TOKEN in .env."
+                        info=(
+                            "Automatically create GitHub repository and push generated "
+                            "theme. Requires GITHUB_TOKEN in .env."
+                        ),
                     )
 
                     deploy_wp_checkbox = gr.Checkbox(
                         label="Deploy to WordPress",
                         value=False,
-                        info="Package and prepare theme for WordPress deployment. Requires WordPress credentials in .env."
+                        info=(
+                            "Package and prepare theme for WordPress deployment. "
+                            "Requires WordPress credentials in .env."
+                        ),
                     )
 
                 repo_input = gr.Textbox(
                     label="Repository Name (Optional)",
                     placeholder="Leave empty for auto-generated name",
-                    info="Custom GitHub repository name. Leave blank for auto-generated (e.g., wp-theme-name-20250103)."
+                    info=(
+                        "Custom GitHub repository name. Leave blank for auto-generated "
+                        "(e.g., wp-theme-name-20250103)."
+                    ),
                 )
                 gr.Markdown(
                     "Enter a custom repository name or leave blank for an automatic choice."

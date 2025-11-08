@@ -20,7 +20,8 @@ def create_minimal_theme(output_dir="output"):
 Theme Name: WPGen Minimal Safe Theme
 Theme URI: https://wpgen.local/
 Author: WPGen
-Description: Absolute minimal theme for testing. If this doesn't work, the issue is with WordPress itself.
+Description: Absolute minimal theme for testing. If this doesn't work,
+  the issue is with WordPress itself.
 Version: 1.0.0
 License: GPL-2.0-or-later
 Text Domain: wpgen-minimal-safe
@@ -141,7 +142,7 @@ add_action( 'wp_enqueue_scripts', 'wpgen_minimal_scripts' );
         # Draw simple text
         try:
             font = ImageFont.truetype("arial.ttf", 60)
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
         text = "WPGen Minimal Safe Theme"

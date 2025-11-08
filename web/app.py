@@ -12,8 +12,10 @@ from wpgen import (
     GitHubIntegration,
     PromptParser,
     WordPressGenerator,
-    get_llm_provider as get_provider,
     setup_logger,
+)
+from wpgen import (
+    get_llm_provider as get_provider,
 )
 
 

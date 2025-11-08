@@ -85,14 +85,21 @@ def _first_hex(color_scheme: Optional[str], fallback: str = "#0f172a") -> str:
 
     # Ensure color_scheme is a string (defensive check)
     if not isinstance(color_scheme, str):
-        logger.warning(f"color_scheme is not a string: {type(color_scheme).__name__}, using fallback")
+        logger.warning(
+            f"color_scheme is not a string: {type(color_scheme).__name__}, "
+            "using fallback"
+        )
         return fallback
 
     m = re.search(r"#([0-9a-fA-F]{6})", color_scheme)
     return f"#{m.group(1)}" if m else fallback
 
 
-def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List[Dict[str, Any]]]) -> None:
+def _ensure_screenshot(
+    theme_dir: str,
+    requirements: dict,
+    images: Optional[List[Dict[str, Any]]],
+) -> None:
     """Ensure theme has a screenshot.png file.
 
     Creates a screenshot from the first user image or generates a placeholder.
@@ -143,7 +150,10 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List
                 logger.info(f"Generated screenshot from uploaded image: {os.path.basename(src)}")
                 return
         except Exception as e:
-            logger.warning(f"Could not use uploaded image for screenshot: {e}. Generating placeholder instead.")
+            logger.warning(
+                f"Could not use uploaded image for screenshot: {e}. "
+                "Generating placeholder instead."
+            )
 
     # Generate placeholder screenshot
     title = (requirements.get("theme_display_name")
@@ -276,8 +286,10 @@ class WordPressGenerator:
                     logger.warning("Consider using safe_mode=True to use tested fallback templates")
 
                 raise ValueError(
-                    f"Generated theme has {len(issues)} critical issue(s) that would crash WordPress. "
-                    f"Issues: {'; '.join(issues[:3])}. Enable safe_mode for reliable themes."
+                    f"Generated theme has {len(issues)} critical issue(s) "
+                    f"that would crash WordPress. "
+                    f"Issues: {'; '.join(issues[:3])}. "
+                    "Enable safe_mode for reliable themes."
                 )
             else:
                 logger.info("✓ Theme passed WordPress safety validation")
@@ -397,8 +409,10 @@ Include:
 - Security best practices (sanitization, escaping)
 
 IMPORTANT: Always enqueue the wpgen-ui assets:
-wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
-wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true);"""
+wp_enqueue_style('wpgen-ui', get_template_directory_uri() .
+    '/assets/css/wpgen-ui.css', array(), '1.0.0');
+wp_enqueue_script('wpgen-ui', get_template_directory_uri() .
+    '/assets/js/wpgen-ui.js', array(), '1.0.0', true);"""
 
         try:
             # Pass design images for visual reference
@@ -691,7 +705,12 @@ Follow WordPress template hierarchy and coding standards."""
                 # Get fallback template if available
                 fallback = get_fallback_template(template_file, requirements["theme_name"])
 
-                self._validate_and_write_php(theme_dir, template_file, php_code, fallback if fallback else None)
+                self._validate_and_write_php(
+                    theme_dir,
+                    template_file,
+                    php_code,
+                    fallback if fallback else None,
+                )
                 logger.info(f"Generated {template_file} successfully")
 
             except Exception as e:
@@ -887,7 +906,11 @@ a {
             self._generate_dark_mode(theme_dir, requirements)
 
         # Animated preloader
-        if "preloader" in description or "loading logo" in description or "animated loading" in description:
+        if (
+            "preloader" in description
+            or "loading logo" in description
+            or "animated loading" in description
+        ):
             logger.info("Adding animated preloader")
             self._generate_preloader(theme_dir, requirements)
 
@@ -985,8 +1008,12 @@ registerBlockType('wpgen/{block_name}', {{
             (block_dir / "index.js").write_text(index_js, encoding="utf-8")
 
             # Create empty CSS files
-            (block_dir / "style.css").write_text(f"/* {config['title']} block styles */\n", encoding="utf-8")
-            (block_dir / "editor.css").write_text(f"/* {config['title']} editor styles */\n", encoding="utf-8")
+            (block_dir / "style.css").write_text(
+                f"/* {config['title']} block styles */\n", encoding="utf-8"
+            )
+            (block_dir / "editor.css").write_text(
+                f"/* {config['title']} editor styles */\n", encoding="utf-8"
+            )
 
             logger.info(f"Created Gutenberg block: {block_name}")
 
