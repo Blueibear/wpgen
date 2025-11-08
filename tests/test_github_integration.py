@@ -122,7 +122,7 @@ class TestGitHubIntegration:
     def test_push_excludes_git_directory(self, github_integration, theme_directory):
         """Test that .git directory is excluded when collecting files to commit."""
         # Initialize git repo (creates .git directory)
-        repo = git.Repo.init(theme_directory)
+        git.Repo.init(theme_directory)
 
         # Collect files using the same logic as push_to_github
         all_files = [

@@ -60,7 +60,12 @@ class SecureCredentialHelper:
                 script_path.write_text(script_content, encoding="utf-8")
 
                 # Make script executable (chmod +x)
-                script_path.chmod(script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                script_path.chmod(
+                    script_path.stat().st_mode
+                    | stat.S_IXUSR
+                    | stat.S_IXGRP
+                    | stat.S_IXOTH
+                )
 
             self._askpass_script = script_path
             logger.debug(f"Created askpass script at: {script_path}")

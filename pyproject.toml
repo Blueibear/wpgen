@@ -54,6 +54,7 @@ dependencies = [
     "PyPDF2==3.0.1",
     "Pillow>=10.0,<12",
     "pytesseract==0.3.10",
+    "GitPython>=3.1.41",
 ]
 
 [project.optional-dependencies]
@@ -113,7 +114,13 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v"
+addopts = "-v -m 'not integration'"
+markers = [
+    "integration: tests that require network or external services (deselected by default)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
 
 [tool.mypy]
 python_version = "3.10"

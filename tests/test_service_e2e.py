@@ -80,7 +80,9 @@ Version: 1.0.0
     return theme_dir
 
 
-def test_service_generate_theme_success(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path):
+def test_service_generate_theme_success(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path
+):
     """Test successful theme generation through service."""
     # Update config to use temp directory
     mock_config["output"]["output_dir"] = str(tmp_path)
@@ -139,7 +141,9 @@ def test_service_generate_theme_success(mock_config, mock_llm_provider, minimal_
         assert len(result.validation_warnings) == 0
 
 
-def test_service_generate_theme_validation_error_strict_mode(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path):
+def test_service_generate_theme_validation_error_strict_mode(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path
+):
     """Test theme generation fails in strict mode with validation warnings."""
     mock_config["output"]["output_dir"] = str(tmp_path)
 
@@ -192,7 +196,9 @@ def test_service_generate_theme_validation_error_strict_mode(mock_config, mock_l
         assert len(result.validation_warnings) > 0
 
 
-def test_service_generate_theme_with_github_push(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path, monkeypatch):
+def test_service_generate_theme_with_github_push(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path, monkeypatch
+):
     """Test theme generation with GitHub push."""
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_test123")
     mock_config["output"]["output_dir"] = str(tmp_path)

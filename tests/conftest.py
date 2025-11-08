@@ -15,3 +15,4 @@ if str(PROJECT_ROOT) not in sys.path:
 os.environ.setdefault("WPGEN_CHECK_MODELS", "0")
 os.environ.setdefault("WPGEN_OFFLINE_TESTS", "1")
 os.environ.setdefault("NO_COLOR", "1")
+os.environ.setdefault("WPGEN_PROVIDER", "mock")  # Force mock provider for all tests

@@ -288,7 +288,10 @@ class TestThemeValidator:
         # Mock PHP syntax validation to fail
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=1, stderr="Parse error: syntax error, unexpected end of file in /path/to/file"),
+            Mock(
+                returncode=1,
+                stderr="Parse error: syntax error, unexpected end of file in /path/to/file"
+            ),
         ]
 
         validator = ThemeValidator()

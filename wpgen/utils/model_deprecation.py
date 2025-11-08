@@ -32,7 +32,9 @@ DEPRECATED_PATTERNS = [
 ]
 
 
-def check_model_deprecation(model_name: str, provider: str = "unknown") -> Tuple[bool, Optional[str], Optional[str]]:
+def check_model_deprecation(
+    model_name: str, provider: str = "unknown"
+) -> Tuple[bool, Optional[str], Optional[str]]:
     """Check if a model name appears deprecated and suggest replacement.
 
     Args:
@@ -113,4 +115,7 @@ def log_model_deprecation_warning(model_name: str, provider: str = "unknown") ->
         logger.warning(f"⚠️  {warning}")
         if suggested:
             logger.info(f"💡 Suggested model: {suggested}")
-            logger.info(f"   You can override the model using the WPGEN_{provider.upper()}_MODEL environment variable")
+            logger.info(
+                f"   You can override the model using the "
+                f"WPGEN_{provider.upper()}_MODEL environment variable"
+            )

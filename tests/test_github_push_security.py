@@ -105,7 +105,7 @@ def test_build_askpass_env_convenience_function():
     script_path.unlink(missing_ok=True)
     try:
         script_path.parent.rmdir()
-    except:
+    except Exception:
         pass
 
 

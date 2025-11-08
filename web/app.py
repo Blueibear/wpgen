@@ -16,10 +16,10 @@ from wpgen import (
     GitHubIntegration,
     PromptParser,
     WordPressGenerator,
-    get_llm_provider as get_provider,
+    get_llm_provider,
     setup_logger,
 )
-from wpgen.config_schema import load_and_validate_config, get_redacted_config_summary
+from wpgen.config_schema import get_redacted_config_summary, load_and_validate_config
 
 
 def create_app(config: dict = None, validate_config: bool = True):

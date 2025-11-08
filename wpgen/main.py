@@ -71,7 +71,10 @@ def cli():
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["openai", "anthropic", "local-lmstudio", "local-ollama"], case_sensitive=False),
+    type=click.Choice(
+        ["openai", "anthropic", "local-lmstudio", "local-ollama"],
+        case_sensitive=False,
+    ),
     default=None,
     help="LLM provider (overrides config file)",
 )

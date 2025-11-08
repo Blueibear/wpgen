@@ -23,9 +23,10 @@ def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
         ValueError: If provider is not configured correctly or API key is missing
     """
     # Import here to avoid circular imports
-    from ..llm import AnthropicProvider, OpenAIProvider
+    from ..llm import AnthropicProvider, MockLLMProvider, OpenAIProvider
 
-    provider_name = config.get("llm", {}).get("provider", "openai")
+    # Check for WPGEN_PROVIDER env var to override config (useful for testing)
+    provider_name = os.getenv("WPGEN_PROVIDER") or config.get("llm", {}).get("provider", "openai")
 
     if provider_name == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
@@ -115,6 +116,10 @@ def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
             max_tokens=max_tokens,
             timeout=timeout,
         )
+
+    elif provider_name == "mock":
+        # Mock provider for testing - no API key required
+        return MockLLMProvider()
 
     else:
         raise ValueError(f"Unknown LLM provider: {provider_name}")

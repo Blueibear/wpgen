@@ -124,7 +124,10 @@ class ThemeValidator:
         # In strict mode, warnings make the overall result invalid
         if self.strict and results["warnings"]:
             results["valid"] = False
-            logger.warning(f"STRICT MODE: Validation failed due to {len(results['warnings'])} warnings")
+            logger.warning(
+                f"STRICT MODE: Validation failed due to {len(results['warnings'])} "
+                "warnings"
+            )
 
         return results
 
@@ -155,7 +158,10 @@ class ThemeValidator:
 
         # Check for common issues
         # Issue 1: Missing PHP opening tag
-        if not content.strip().startswith("<?php") and not content.strip().startswith("<!DOCTYPE"):
+        if (
+            not content.strip().startswith("<?php")
+            and not content.strip().startswith("<!DOCTYPE")
+        ):
             result["warnings"].append(f"{relative_path}: Missing <?php opening tag")
 
         # Issue 2: Markdown code blocks
@@ -165,9 +171,19 @@ class ThemeValidator:
 
         # Issue 3: Explanatory text at the start (common LLM mistake)
         first_line = content.split("\n")[0].strip()
-        if first_line and not first_line.startswith("<?php") and not first_line.startswith("<!DOCTYPE") and not first_line.startswith("/**"):
-            if any(phrase in first_line.lower() for phrase in ["here's", "here is", "this is", "below is", "sure", "certainly"]):
-                result["errors"].append(f"{relative_path}: Contains explanatory text before PHP code")
+        if (
+            first_line
+            and not first_line.startswith("<?php")
+            and not first_line.startswith("<!DOCTYPE")
+            and not first_line.startswith("/**")
+        ):
+            if any(
+                phrase in first_line.lower()
+                for phrase in ["here's", "here is", "this is", "below is", "sure", "certainly"]
+            ):
+                result["errors"].append(
+                    f"{relative_path}: Contains explanatory text before PHP code"
+                )
                 return result
 
         # Issue 4: PHP syntax validation
@@ -273,7 +289,10 @@ def validate_theme_directory(theme_path: str) -> Dict[str, any]:
         relative_path = php_file.relative_to(theme_dir)
 
         # Issue 1: Missing PHP opening tag
-        if not content.strip().startswith("<?php") and not content.strip().startswith("<!DOCTYPE"):
+        if (
+            not content.strip().startswith("<?php")
+            and not content.strip().startswith("<!DOCTYPE")
+        ):
             results["warnings"].append(f"{relative_path}: Missing <?php opening tag")
 
         # Issue 2: Markdown code blocks
@@ -284,9 +303,19 @@ def validate_theme_directory(theme_path: str) -> Dict[str, any]:
 
         # Issue 3: Explanatory text at the start (common LLM mistake)
         first_line = content.split("\n")[0].strip()
-        if first_line and not first_line.startswith("<?php") and not first_line.startswith("<!DOCTYPE") and not first_line.startswith("/**"):
-            if any(phrase in first_line.lower() for phrase in ["here's", "here is", "this is", "below is", "sure", "certainly"]):
-                results["errors"].append(f"{relative_path}: Contains explanatory text before PHP code")
+        if (
+            first_line
+            and not first_line.startswith("<?php")
+            and not first_line.startswith("<!DOCTYPE")
+            and not first_line.startswith("/**")
+        ):
+            if any(
+                phrase in first_line.lower()
+                for phrase in ["here's", "here is", "this is", "below is", "sure", "certainly"]
+            ):
+                results["errors"].append(
+                    f"{relative_path}: Contains explanatory text before PHP code"
+                )
                 results["invalid_files"] += 1
                 continue
 

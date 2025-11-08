@@ -35,11 +35,19 @@ class GenerationRequest(BaseModel):
     """Request model for theme generation."""
 
     # Core input
-    prompt: str = Field(..., min_length=10, description="Natural language description of the WordPress site")
+    prompt: str = Field(
+        ...,
+        min_length=10,
+        description="Natural language description of the WordPress site",
+    )
 
     # File inputs
-    image_files: Optional[List[str]] = Field(default=None, description="Paths to design mockup images")
-    text_files: Optional[List[str]] = Field(default=None, description="Paths to content documents (PDF, MD, TXT)")
+    image_files: Optional[List[str]] = Field(
+        default=None, description="Paths to design mockup images"
+    )
+    text_files: Optional[List[str]] = Field(
+        default=None, description="Paths to content documents (PDF, MD, TXT)"
+    )
 
     # LLM configuration
     llm_provider: Optional[LLMProvider] = Field(default=None, description="LLM provider to use")
@@ -50,13 +58,19 @@ class GenerationRequest(BaseModel):
     llm_vision_base_url: Optional[str] = Field(default=None, description="Vision model base URL")
 
     # Guided mode parameters
-    guided_mode: Optional[Dict[str, Any]] = Field(default=None, description="Structured theme configuration")
+    guided_mode: Optional[Dict[str, Any]] = Field(
+        default=None, description="Structured theme configuration"
+    )
 
     # Optional features
-    optional_features: Optional[Dict[str, Any]] = Field(default=None, description="Optional theme features")
+    optional_features: Optional[Dict[str, Any]] = Field(
+        default=None, description="Optional theme features"
+    )
 
     # Output configuration
-    output_dir: Optional[str] = Field(default=None, description="Output directory for generated theme")
+    output_dir: Optional[str] = Field(
+        default=None, description="Output directory for generated theme"
+    )
 
     # GitHub integration
     push_to_github: bool = Field(default=False, description="Push theme to GitHub")
@@ -92,9 +106,15 @@ class GenerationResult(BaseModel):
     github_url: Optional[str] = Field(default=None, description="GitHub repository URL")
 
     # WordPress information
-    wordpress_deployed: bool = Field(default=False, description="Whether theme was deployed to WordPress")
-    wordpress_activated: bool = Field(default=False, description="Whether theme was activated")
-    wordpress_theme_id: Optional[str] = Field(default=None, description="WordPress theme ID")
+    wordpress_deployed: bool = Field(
+        default=False, description="Whether theme was deployed to WordPress"
+    )
+    wordpress_activated: bool = Field(
+        default=False, description="Whether theme was activated"
+    )
+    wordpress_theme_id: Optional[str] = Field(
+        default=None, description="WordPress theme ID"
+    )
 
     # Validation results
     validation_errors: List[str] = Field(default_factory=list, description="Validation errors")
@@ -155,12 +175,18 @@ class ThemeGenerationService:
 
             # Apply optional features if provided
             if request.optional_features:
-                requirements = self._apply_optional_features(requirements, request.optional_features)
+                requirements = self._apply_optional_features(
+                    requirements, request.optional_features
+                )
 
             # Generate theme
             self.logger.info("Generating WordPress theme files")
-            output_dir = request.output_dir or cfg.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
+            output_dir = request.output_dir or cfg.get("output", {}).get(
+                "output_dir", "output"
+            )
+            generator = WordPressGenerator(
+                llm_provider, output_dir, cfg.get("wordpress", {})
+            )
             theme_dir = generator.generate(requirements)
 
             self.logger.info(f"Theme generated: {theme_dir}")
@@ -181,10 +207,15 @@ class ThemeGenerationService:
             result.validation_warnings = validation_result.get("warnings", [])
 
             # Check if validation should fail the build
-            if request.strict_validation and (result.validation_errors or result.validation_warnings):
+            if request.strict_validation and (
+                result.validation_errors or result.validation_warnings
+            ):
                 result.success = False
                 result.error = "Theme validation failed in strict mode"
-                result.error_details = f"Errors: {len(result.validation_errors)}, Warnings: {len(result.validation_warnings)}"
+                result.error_details = (
+                    f"Errors: {len(result.validation_errors)}, "
+                    f"Warnings: {len(result.validation_warnings)}"
+                )
                 return result
 
             # Push to GitHub if requested
@@ -196,12 +227,16 @@ class ThemeGenerationService:
 
             # Deploy to WordPress if requested
             if request.deploy_to_wordpress:
-                wp_result = self._deploy_to_wordpress(theme_dir, request, requirements, cfg)
+                wp_result = self._deploy_to_wordpress(
+                    theme_dir, request, requirements, cfg
+                )
                 result.wordpress_deployed = wp_result.get("deployed", False)
                 result.wordpress_activated = wp_result.get("activated", False)
                 result.wordpress_theme_id = wp_result.get("theme_id")
                 if not wp_result.get("success"):
-                    self.logger.warning(f"WordPress deployment failed: {wp_result.get('error')}")
+                    self.logger.warning(
+                        f"WordPress deployment failed: {wp_result.get('error')}"
+                    )
 
             self.logger.info("Theme generation completed successfully")
             return result
@@ -295,13 +330,16 @@ class ThemeGenerationService:
                 for text_path in request.text_files:
                     if Path(text_path).exists():
                         content = processor.extract_text(text_path)
-                        prompt += f"\n\nDocument Content:\n{content[:2000]}"  # Limit to 2000 chars
+                        # Limit to 2000 chars
+                        prompt += f"\n\nDocument Content:\n{content[:2000]}"
             except Exception as e:
                 self.logger.warning(f"Document processing failed: {e}")
 
         return prompt
 
-    def _apply_guided_mode(self, requirements: Dict[str, Any], guided_mode: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_guided_mode(
+        self, requirements: Dict[str, Any], guided_mode: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Apply guided mode parameters to requirements.
 
         Args:
@@ -316,7 +354,9 @@ class ThemeGenerationService:
         requirements["guided_mode"] = guided_mode
         return requirements
 
-    def _apply_optional_features(self, requirements: Dict[str, Any], optional_features: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_optional_features(
+        self, requirements: Dict[str, Any], optional_features: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Apply optional features to requirements.
 
         Args:
@@ -369,7 +409,13 @@ class ThemeGenerationService:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _push_to_github(self, theme_dir: str, request: GenerationRequest, requirements: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    def _push_to_github(
+        self,
+        theme_dir: str,
+        request: GenerationRequest,
+        requirements: Dict[str, Any],
+        cfg: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Push theme to GitHub.
 
         Args:
@@ -402,7 +448,13 @@ class ThemeGenerationService:
             self.logger.error(f"GitHub push failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _deploy_to_wordpress(self, theme_dir: str, request: GenerationRequest, requirements: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    def _deploy_to_wordpress(
+        self,
+        theme_dir: str,
+        request: GenerationRequest,
+        requirements: Dict[str, Any],
+        cfg: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Deploy theme to WordPress site.
 
         Args:

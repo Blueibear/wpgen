@@ -39,7 +39,10 @@ def print_validation_summary_table(results: Dict[str, Any], strict: bool = False
     if warning_count > 0:
         color = Fore.RED if strict else Fore.YELLOW
         status = "ERROR" if strict else "WARNING"
-        print(f"{color}{'Files with warnings':<50} {status:<10} {warning_count:<10}{Style.RESET_ALL}")
+        print(
+            f"{color}{'Files with warnings':<50} {status:<10} "
+            f"{warning_count:<10}{Style.RESET_ALL}"
+        )
 
     # Errors
     errors = results.get("errors", [])
