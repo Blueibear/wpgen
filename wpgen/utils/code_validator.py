@@ -477,6 +477,14 @@ function {safe_function_name}_setup() {{
         'caption',
     ) );
 
+    // Add custom logo support
+    add_theme_support( 'custom-logo', array(
+        'height'      => 80,
+        'width'       => 240,
+        'flex-height' => true,
+        'flex-width'  => true,
+    ) );
+
     // Register navigation menus
     register_nav_menus( array(
         'primary' => __( 'Primary Menu', '{theme_name}' ),
@@ -488,8 +496,11 @@ add_action( 'after_setup_theme', '{safe_function_name}_setup' );
  * Enqueue scripts and styles.
  */
 function {safe_function_name}_scripts() {{
-    // Enqueue styles
-    wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array(), '1.0.0' );
+    // Enqueue base layout stylesheet (structural styles)
+    wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+
+    // Enqueue main theme stylesheet
+    wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array( 'theme-base-layout' ), wp_get_theme()->get( 'Version' ) );
 
     // Enqueue wpgen-ui assets
     wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
@@ -612,6 +623,76 @@ def check_plugin_compatibility(php_code: str, theme_name: str) -> list[str]:
     return warnings
 
 
+def validate_layout_structure(theme_dir: Path) -> list[str]:
+    """Validate theme has proper layout structure and styling.
+
+    Args:
+        theme_dir: Path to theme directory
+
+    Returns:
+        List of layout validation issues
+    """
+    issues = []
+    theme_dir = Path(theme_dir)
+
+    # Check for header.php with proper structure
+    header_file = theme_dir / "header.php"
+    if header_file.exists():
+        try:
+            content = header_file.read_text(encoding='utf-8')
+            if '.site-header' not in content:
+                issues.append("header.php missing '.site-header' class - layout structure incomplete")
+            if '.site-branding' not in content:
+                issues.append("header.php missing '.site-branding' wrapper - logo may not be constrained")
+            if 'the_custom_logo()' not in content:
+                issues.append("header.php missing 'the_custom_logo()' call - custom logo support incomplete")
+            if '.main-navigation' not in content:
+                issues.append("header.php missing '.main-navigation' class - navigation structure incomplete")
+        except Exception as e:
+            logger.warning(f"Could not validate header.php structure: {e}")
+    else:
+        issues.append("Missing header.php - theme will not display properly")
+
+    # Check for footer.php with proper structure
+    footer_file = theme_dir / "footer.php"
+    if footer_file.exists():
+        try:
+            content = footer_file.read_text(encoding='utf-8')
+            if '.site-footer' not in content:
+                issues.append("footer.php missing '.site-footer' class - layout structure incomplete")
+        except Exception as e:
+            logger.warning(f"Could not validate footer.php structure: {e}")
+    else:
+        issues.append("Missing footer.php - theme will not display properly")
+
+    # Check for base layout CSS
+    base_css = theme_dir / "assets" / "css" / "style.css"
+    if not base_css.exists():
+        issues.append("Missing assets/css/style.css - base layout styles not present")
+    else:
+        try:
+            content = base_css.read_text(encoding='utf-8')
+            # Check for essential layout rules
+            if '.site-header' not in content:
+                issues.append("Base layout CSS missing '.site-header' styles")
+            if '.site-branding img' not in content and '.custom-logo-link img' not in content:
+                issues.append("Base layout CSS missing logo constraint styles - logos may be full-width")
+        except Exception as e:
+            logger.warning(f"Could not validate base layout CSS: {e}")
+
+    # Check functions.php for proper stylesheet enqueue
+    functions_file = theme_dir / "functions.php"
+    if functions_file.exists():
+        try:
+            content = functions_file.read_text(encoding='utf-8')
+            if 'theme-base-layout' not in content and 'assets/css/style.css' not in content:
+                issues.append("functions.php not enqueuing base layout CSS - styles will not load")
+        except Exception as e:
+            logger.warning(f"Could not validate functions.php enqueue: {e}")
+
+    return issues
+
+
 def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str]]:
     """Perform comprehensive validation to prevent WordPress crashes.
 
@@ -630,6 +711,11 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
     for required_file in required_files:
         if not (theme_dir / required_file).exists():
             issues.append(f"Missing required file: {required_file}")
+
+    # Validate layout structure
+    layout_issues = validate_layout_structure(theme_dir)
+    if layout_issues:
+        issues.extend(layout_issues)
 
     # Validate all PHP files
     php_files = list(theme_dir.rglob("*.php"))
