@@ -700,6 +700,19 @@ Follow WordPress coding standards."""
             ):
                 php_code = "<?php\n" + php_code
 
+            # Validate that generated code has required semantic structure
+            has_site_header = '.site-header' in php_code or 'class="site-header"' in php_code
+            has_site_branding = '.site-branding' in php_code or 'class="site-branding"' in php_code
+            has_custom_logo = 'the_custom_logo()' in php_code
+            has_main_nav = '.main-navigation' in php_code or 'class="main-navigation"' in php_code
+
+            if not (has_site_header and has_site_branding and has_custom_logo and has_main_nav):
+                logger.warning("Generated header.php missing required semantic structure - using fallback")
+                logger.warning(f"  .site-header: {has_site_header}, .site-branding: {has_site_branding}, "
+                             f"the_custom_logo(): {has_custom_logo}, .main-navigation: {has_main_nav}")
+                # Use fallback template
+                raise ValueError("Generated header missing required structure")
+
             self._validate_and_write_php(theme_dir, "header.php", php_code)
 
         except Exception as e:
@@ -777,6 +790,16 @@ Follow WordPress coding standards."""
             php_code = self.llm_provider.generate_code(
                 description, "php", context, images=self.design_images
             )
+
+            # Validate that generated code has required semantic structure
+            has_site_footer = '.site-footer' in php_code or 'class="site-footer"' in php_code
+            has_closing_main = '</main>' in php_code
+
+            if not (has_site_footer and has_closing_main):
+                logger.warning("Generated footer.php missing required semantic structure - using fallback")
+                logger.warning(f"  .site-footer: {has_site_footer}, </main>: {has_closing_main}")
+                # Use fallback template
+                raise ValueError("Generated footer missing required structure")
 
             self._validate_and_write_php(theme_dir, "footer.php", php_code)
 
