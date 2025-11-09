@@ -255,6 +255,9 @@ class WordPressGenerator:
             # Generate always-on UI enhancements (smooth transitions, mobile nav)
             self._generate_wpgen_ui_assets(theme_dir)
 
+            # Generate base layout CSS for proper structural presentation
+            self._generate_base_layout_css(theme_dir)
+
             # Generate optional features (if specified in requirements/context)
             self._generate_optional_features(theme_dir, requirements)
 
@@ -421,8 +424,9 @@ CRITICAL REQUIREMENTS:
    - THEMESLUG_posts_pagination() - posts pagination with fallback
 
 Include:
-- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, etc.)
-- Enqueue scripts and styles (MUST enqueue assets/css/wpgen-ui.css and assets/js/wpgen-ui.js)
+- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, custom-logo, etc.)
+- Custom logo support with max height of 80px
+- Enqueue scripts and styles (MUST enqueue base layout CSS and wpgen-ui assets)
 - Register navigation menus: {', '.join(context['navigation'])}
 - Register widget areas (sidebar-1, footer-1, footer-2 at minimum)
 - Custom post types: {', '.join(context['post_types'])}
@@ -435,9 +439,16 @@ HELPER FUNCTIONS - Include these exactly:
 - {requirements["theme_name"].replace('-', '_')}_pagination() - uses wp_pagenavi() if exists, else the_posts_navigation()
 - {requirements["theme_name"].replace('-', '_')}_posts_pagination() - uses wp_pagenavi() if exists, else the_posts_pagination()
 
-IMPORTANT: Always enqueue the wpgen-ui assets:
-wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
-wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true);"""
+IMPORTANT: Always enqueue these assets in the correct order:
+1. Base layout stylesheet (required for proper structure):
+   wp_enqueue_style('theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0');
+2. Main theme stylesheet:
+   wp_enqueue_style('theme-style', get_stylesheet_uri(), array('theme-base-layout'), wp_get_theme()->get('Version'));
+3. WPGen UI enhancements:
+   wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
+   wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true);
+
+Note: theme-base-layout provides structural CSS and must load first."""
 
         try:
             # Pass design images for visual reference
@@ -645,12 +656,36 @@ get_footer();
         }
 
         description = """Create header.php template for WordPress theme.
+
+CRITICAL REQUIREMENTS - Semantic HTML Structure:
+- Use semantic <header class="site-header"> container
+- Wrap logo and title in <div class="site-branding">
+- Include the_custom_logo() for logo display
+- Use conditional h1/p for site title (h1 on front page, p on others)
+- Wrap navigation in <nav class="main-navigation">
+- Include proper flexbox layout classes
+
+Required structure:
+<header class="site-header">
+    <div class="site-branding">
+        <?php the_custom_logo(); ?>
+        <?php if ( is_front_page() && is_home() ) : ?>
+            <h1 class="site-title"><a href="home"><?php bloginfo( 'name' ); ?></a></h1>
+        <?php else : ?>
+            <p class="site-title"><a href="home"><?php bloginfo( 'name' ); ?></a></p>
+        <?php endif; ?>
+    </div>
+    <nav class="main-navigation">
+        <?php wp_nav_menu( array( 'theme_location' => 'primary' ) ); ?>
+    </nav>
+</header>
+<main id="main" class="site-main">
+
 Include:
 - DOCTYPE and opening HTML tags
-- wp_head() call
-- Site title/logo
-- Primary navigation menu
-- Mobile-responsive header
+- wp_head() call before </head>
+- body_class() and wp_body_open()
+- Mobile-responsive header structure
 Follow WordPress coding standards."""
 
         try:
@@ -679,8 +714,15 @@ Follow WordPress coding standards."""
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <header class="site-header">
-    <h1><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
-    <nav>
+    <div class="site-branding">
+        <?php the_custom_logo(); ?>
+        <?php if ( is_front_page() && is_home() ) : ?>
+            <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+        <?php else : ?>
+            <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+        <?php endif; ?>
+    </div>
+    <nav class="main-navigation">
         <?php
         wp_nav_menu( array(
             'theme_location' => 'primary',
@@ -705,11 +747,29 @@ Follow WordPress coding standards."""
         context = {"theme_name": requirements["theme_name"]}
 
         description = """Create footer.php template for WordPress theme.
-Include:
-- Footer widget areas
-- Copyright notice
-- wp_footer() call
-- Closing body and html tags
+
+CRITICAL REQUIREMENTS - Semantic HTML Structure:
+- Close the main content area: </main>
+- Use semantic <footer class="site-footer"> container
+- Include footer widget areas with proper structure
+- Add copyright notice with current year
+- Include wp_footer() call before </body>
+- Close body and html tags properly
+
+Required structure:
+</main>
+<footer class="site-footer">
+    <div class="footer-widgets">
+        <!-- Footer widget areas -->
+    </div>
+    <div class="site-info">
+        <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+    </div>
+</footer>
+<?php wp_footer(); ?>
+</body>
+</html>
+
 Follow WordPress coding standards."""
 
         try:
@@ -724,7 +784,21 @@ Follow WordPress coding standards."""
             logger.error(f"Failed to generate footer.php: {str(e)}")
             fallback = """</main>
 <footer class="site-footer">
-    <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+    <div class="footer-widgets">
+        <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+            <div class="footer-widget-area">
+                <?php dynamic_sidebar( 'footer-1' ); ?>
+            </div>
+        <?php endif; ?>
+        <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
+            <div class="footer-widget-area">
+                <?php dynamic_sidebar( 'footer-2' ); ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <div class="site-info">
+        <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+    </div>
 </footer>
 <?php wp_footer(); ?>
 </body>
@@ -1106,6 +1180,265 @@ a {
         js_file.write_text(js_content, encoding="utf-8")
 
         logger.info("Generated wpgen-ui assets successfully")
+
+    def _generate_base_layout_css(self, theme_dir: Path) -> None:
+        """Generate base layout CSS file with structural styles for proper theme presentation.
+
+        Args:
+            theme_dir: Theme directory path
+        """
+        logger.info("Generating base layout CSS (assets/css/style.css)")
+
+        # Create assets/css directory if it doesn't exist
+        css_dir = theme_dir / "assets" / "css"
+        css_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate base layout styles
+        css_content = """/* Base Layout Styles
+ * Core structural and layout styles for proper theme presentation
+ * Ensures clean, modern baseline layout across all generated themes
+ */
+
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #222;
+    background: #fff;
+}
+
+/* Container and Layout */
+.site-header,
+.site-main,
+.site-footer {
+    max-width: 100%;
+}
+
+/* Header Styles */
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    flex-wrap: wrap;
+}
+
+/* Site Branding */
+.site-branding {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.site-branding img,
+.custom-logo-link img {
+    max-height: 80px;
+    height: auto;
+    width: auto;
+    display: block;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.site-title a {
+    color: #222;
+    text-decoration: none;
+}
+
+.site-title a:hover {
+    color: #0073aa;
+}
+
+/* Navigation */
+.main-navigation {
+    display: flex;
+    align-items: center;
+}
+
+.main-navigation ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.main-navigation li {
+    margin: 0;
+}
+
+.main-navigation a {
+    color: #222;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    display: block;
+    transition: color 0.2s ease;
+}
+
+.main-navigation a:hover,
+.main-navigation a:focus {
+    color: #0073aa;
+}
+
+/* Main Content */
+.site-main,
+main {
+    padding: 2rem;
+    min-height: 60vh;
+}
+
+/* Posts and Articles */
+article {
+    margin-bottom: 2rem;
+}
+
+.entry-header {
+    margin-bottom: 1rem;
+}
+
+.entry-title {
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
+    line-height: 1.2;
+}
+
+.entry-title a {
+    color: #222;
+    text-decoration: none;
+}
+
+.entry-title a:hover {
+    color: #0073aa;
+}
+
+.entry-meta {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.entry-content {
+    margin-top: 1rem;
+    line-height: 1.6;
+}
+
+/* Footer */
+.site-footer {
+    background: #f8f8f8;
+    border-top: 1px solid #ddd;
+    padding: 2rem;
+    margin-top: 3rem;
+}
+
+.footer-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.footer-widget-area {
+    color: #555;
+}
+
+.site-info {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid #ddd;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.site-info p {
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .site-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .main-navigation {
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .main-navigation ul {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .site-main,
+    main {
+        padding: 1rem;
+    }
+
+    .entry-title {
+        font-size: 1.5rem;
+    }
+
+    .footer-widgets {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Accessibility */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+/* WordPress Core Classes */
+.alignleft {
+    float: left;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.alignright {
+    float: right;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.aligncenter {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.wp-caption {
+    max-width: 100%;
+}
+
+.wp-caption-text {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+"""
+
+        css_file = css_dir / "style.css"
+        css_file.write_text(css_content, encoding="utf-8")
+        logger.info("Generated base layout CSS successfully")
 
     def _generate_optional_features(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate optional feature assets based on requirements.
