@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from ..llm.base import BaseLLMProvider
 from ..utils.code_validator import (
+    generate_plugin_compatibility_layer,
     get_fallback_functions_php,
     get_fallback_template,
     remove_nonexistent_requires,
@@ -443,6 +444,28 @@ wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-u
             # Ensure PHP opening tag
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
+
+            # Generate and prepend plugin compatibility layer
+            compatibility_layer, injected_items = generate_plugin_compatibility_layer(
+                requirements["theme_name"]
+            )
+
+            # Remove the <?php tag from compatibility layer since we'll merge it with the generated code
+            compatibility_layer_without_php_tag = compatibility_layer.replace("<?php\n", "").strip()
+
+            # Insert compatibility layer right after the opening <?php tag
+            if php_code.strip().startswith("<?php"):
+                # Split at first line break after <?php
+                parts = php_code.split("\n", 1)
+                if len(parts) > 1:
+                    php_code = parts[0] + "\n" + compatibility_layer_without_php_tag + "\n\n" + parts[1]
+                else:
+                    php_code = parts[0] + "\n" + compatibility_layer_without_php_tag + "\n"
+            else:
+                # Fallback: just prepend it
+                php_code = "<?php\n" + compatibility_layer_without_php_tag + "\n\n" + php_code
+
+            logger.info(f"Injected plugin compatibility layer: {', '.join(injected_items)}")
 
             # Automatically repair common WordPress code issues
             php_code, repairs = repair_wordpress_code(php_code, requirements["theme_name"])
