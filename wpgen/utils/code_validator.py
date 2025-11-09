@@ -15,6 +15,86 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 
+# Plugin compatibility layer configuration
+# Dictionary of known plugin constants and functions that themes should define as fallbacks
+PLUGIN_COMPATIBILITY_CONSTANTS = {
+    'RESPONSIVE_THEME_DIR': {
+        'value': 'get_template_directory()',
+        'description': 'Responsive theme directory path (for Responsive Add-Ons plugin)',
+    },
+    'RESPONSIVE_THEME_URL': {
+        'value': 'get_template_directory_uri()',
+        'description': 'Responsive theme URL (for Responsive Add-Ons plugin)',
+    },
+}
+
+PLUGIN_COMPATIBILITY_FUNCTIONS = {
+    'responsive_theme_dir': {
+        'return': 'get_template_directory()',
+        'description': 'Returns theme directory (for Responsive Add-Ons plugin)',
+    },
+}
+
+
+def generate_plugin_compatibility_layer(theme_name: str) -> tuple[str, list[str]]:
+    """Generate plugin compatibility layer code to prevent fatal errors.
+
+    This creates safe fallback constants and functions for plugins that assume
+    a specific theme environment (e.g., Responsive Add-Ons expecting RESPONSIVE_THEME_DIR).
+
+    Args:
+        theme_name: Theme name for logging
+
+    Returns:
+        Tuple of (compatibility_code, list_of_injected_items)
+    """
+    injected_items = []
+    code_lines = []
+
+    code_lines.append("<?php")
+    code_lines.append("/**")
+    code_lines.append(" * Auto-generated Plugin Compatibility Layer")
+    code_lines.append(" *")
+    code_lines.append(" * This block defines safe fallback constants and functions to prevent")
+    code_lines.append(" * fatal PHP errors when plugins depend on theme-specific definitions.")
+    code_lines.append(" *")
+    code_lines.append(f" * @package {theme_name}")
+    code_lines.append(" */")
+    code_lines.append("")
+
+    # Add constants
+    if PLUGIN_COMPATIBILITY_CONSTANTS:
+        code_lines.append("// Plugin compatibility constants")
+        for const_name, const_config in PLUGIN_COMPATIBILITY_CONSTANTS.items():
+            code_lines.append(f"if ( ! defined( '{const_name}' ) ) {{")
+            code_lines.append(f"    define( '{const_name}', {const_config['value']} );")
+            code_lines.append("}")
+            injected_items.append(const_name)
+        code_lines.append("")
+
+    # Add functions
+    if PLUGIN_COMPATIBILITY_FUNCTIONS:
+        code_lines.append("// Plugin compatibility functions")
+        for func_name, func_config in PLUGIN_COMPATIBILITY_FUNCTIONS.items():
+            code_lines.append(f"if ( ! function_exists( '{func_name}' ) ) {{")
+            code_lines.append(f"    function {func_name}() {{")
+            code_lines.append(f"        return {func_config['return']};")
+            code_lines.append("    }")
+            code_lines.append("}")
+            injected_items.append(f"{func_name}()")
+        code_lines.append("")
+
+    # Add comment listing injected items
+    if injected_items:
+        code_lines.append(f"// Injected compatibility layer: {', '.join(injected_items)}")
+        code_lines.append("")
+
+    compatibility_code = '\n'.join(code_lines)
+
+    logger.info(f"Generated plugin compatibility layer with {len(injected_items)} items")
+    return compatibility_code, injected_items
+
+
 class CodeValidator:
     """Code validator with strict mode support."""
 
@@ -372,12 +452,10 @@ def get_fallback_functions_php(theme_name: str) -> str:
     # Convert theme name to valid PHP function name (replace hyphens with underscores)
     safe_function_name = theme_name.replace('-', '_')
 
-    return f"""<?php
-/**
- * Theme functions and definitions
- *
- * @package {theme_name}
- */
+    # Generate compatibility layer
+    compatibility_layer, injected_items = generate_plugin_compatibility_layer(theme_name)
+
+    return f"""{compatibility_layer}
 
 if ( ! defined( 'ABSPATH' ) ) {{
     exit; // Exit if accessed directly
@@ -508,6 +586,32 @@ function {safe_function_name}_posts_pagination() {{
 """
 
 
+def check_plugin_compatibility(php_code: str, theme_name: str) -> list[str]:
+    """Check for plugin-related constants/functions that may be missing.
+
+    Args:
+        php_code: PHP code to check
+        theme_name: Theme name for logging
+
+    Returns:
+        List of warnings about potentially missing plugin constants
+    """
+    warnings = []
+
+    # Check for references to known plugin constants that should be in compatibility layer
+    for const_name in PLUGIN_COMPATIBILITY_CONSTANTS.keys():
+        # Look for constant usage (not definition)
+        if const_name in php_code:
+            # Check if it's being defined (not just used)
+            if f"define( '{const_name}'" not in php_code and f"defined( '{const_name}'" not in php_code:
+                warnings.append(
+                    f"References constant {const_name} but doesn't define it. "
+                    f"Ensure plugin compatibility layer is present."
+                )
+
+    return warnings
+
+
 def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str]]:
     """Perform comprehensive validation to prevent WordPress crashes.
 
@@ -518,6 +622,7 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
         Tuple of (is_safe, list_of_issues)
     """
     issues = []
+    warnings = []
     theme_dir = Path(theme_dir)
 
     # Check required files exist
@@ -534,6 +639,13 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
     for php_file in php_files:
         try:
             content = php_file.read_text(encoding='utf-8')
+
+            # Check for plugin compatibility issues (only in functions.php)
+            if php_file.name == 'functions.php':
+                compat_warnings = check_plugin_compatibility(content, theme_dir.name)
+                for warning in compat_warnings:
+                    logger.warning(f"Plugin compatibility: {warning}")
+                    warnings.append(f"{php_file.name}: {warning}")
 
             # Check for Python expressions that weren't evaluated
             if '{theme_name.' in content or '{requirements[' in content:
@@ -614,6 +726,12 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
     templates_missing_footer = set(templates_with_header) - set(templates_with_footer)
     for template in templates_missing_footer:
         issues.append(f"{template}: Calls get_header() but missing get_footer() - incomplete template")
+
+    # Log warnings (these don't fail validation, but are useful info)
+    if warnings:
+        logger.info(f"Theme validation warnings ({len(warnings)} total):")
+        for warning in warnings:
+            logger.info(f"  ⚠ {warning}")
 
     is_safe = len(issues) == 0
     return is_safe, issues
