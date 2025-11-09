@@ -237,6 +237,10 @@ class WordPressGenerator:
             # Generate core files
             self._generate_style_css(theme_dir, requirements)
             self._generate_functions_php(theme_dir, requirements)
+
+            # Generate plugin compatibility directory structure
+            self._generate_plugin_compatibility_structure(theme_dir)
+
             self._generate_index_php(theme_dir, requirements)
             self._generate_header_php(theme_dir, requirements)
             self._generate_footer_php(theme_dir, requirements)
@@ -493,6 +497,30 @@ wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-u
             functions_file = theme_dir / "functions.php"
             functions_file.write_text(php_code, encoding="utf-8")
             logger.info("Created fallback functions.php")
+
+    def _generate_plugin_compatibility_structure(self, theme_dir: Path) -> None:
+        """Generate plugin compatibility directory structure with placeholder files.
+
+        Creates the directory structure needed for plugin compatibility to prevent
+        fatal PHP errors when plugins expect certain files to exist.
+
+        Args:
+            theme_dir: Theme directory path
+        """
+        logger.info("Generating plugin compatibility directory structure")
+
+        # Create the directory structure: includes/customizer/controls/selectbtn/
+        compat_dir = theme_dir / "includes" / "customizer" / "controls" / "selectbtn"
+        compat_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create the placeholder file
+        placeholder_file = compat_dir / "class-responsive-customizer-responsive-selectbtn-control.php"
+        placeholder_content = """<?php
+// Placeholder file added by generator to prevent plugin compatibility errors.
+?>"""
+
+        placeholder_file.write_text(placeholder_content, encoding="utf-8")
+        logger.info("Created plugin compatibility structure: includes/customizer/controls/selectbtn/")
 
     def _validate_and_write_php(
         self, theme_dir: Path, filename: str, php_code: str, fallback_code: Optional[str] = None
