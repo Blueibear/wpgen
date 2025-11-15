@@ -19,6 +19,7 @@ from .utils import get_llm_provider, get_logger
 from .utils.image_analysis import ImageAnalyzer
 from .utils.text_utils import TextProcessor
 from .wordpress import WordPressAPI
+from .design_profiles import get_design_profile, get_profile_names
 
 logger = get_logger(__name__)
 
@@ -51,6 +52,9 @@ class GenerationRequest(BaseModel):
 
     # Guided mode parameters
     guided_mode: Optional[Dict[str, Any]] = Field(default=None, description="Structured theme configuration")
+
+    # Design profile
+    design_profile: Optional[str] = Field(default=None, description="Design profile (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)")
 
     # Optional features
     optional_features: Optional[Dict[str, Any]] = Field(default=None, description="Optional theme features")
@@ -148,6 +152,10 @@ class ThemeGenerationService:
 
             self.logger.info(f"Theme: {requirements['theme_display_name']}")
             self.logger.info(f"Features: {', '.join(requirements.get('features', []))}")
+
+            # Apply design profile if provided
+            if request.design_profile:
+                requirements = self._apply_design_profile(requirements, request.design_profile)
 
             # Apply guided mode overrides if provided
             if request.guided_mode:
@@ -300,6 +308,21 @@ class ThemeGenerationService:
                 self.logger.warning(f"Document processing failed: {e}")
 
         return prompt
+
+    def _apply_design_profile(self, requirements: Dict[str, Any], profile_name: str) -> Dict[str, Any]:
+        """Apply design profile to requirements.
+
+        Args:
+            requirements: Base requirements from parser
+            profile_name: Name of the design profile to apply
+
+        Returns:
+            Modified requirements dictionary
+        """
+        self.logger.info(f"Applying design profile: {profile_name}")
+        profile = get_design_profile(profile_name)
+        requirements["design_profile"] = profile.to_dict()
+        return requirements
 
     def _apply_guided_mode(self, requirements: Dict[str, Any], guided_mode: Dict[str, Any]) -> Dict[str, Any]:
         """Apply guided mode parameters to requirements.
