@@ -640,13 +640,14 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     if header_file.exists():
         try:
             content = header_file.read_text(encoding='utf-8')
-            if '.site-header' not in content:
+            # Check for HTML class attributes (not CSS selectors)
+            if 'site-header' not in content:
                 issues.append("header.php missing '.site-header' class - layout structure incomplete")
-            if '.site-branding' not in content:
+            if 'site-branding' not in content:
                 issues.append("header.php missing '.site-branding' wrapper - logo may not be constrained")
             if 'the_custom_logo()' not in content:
                 issues.append("header.php missing 'the_custom_logo()' call - custom logo support incomplete")
-            if '.main-navigation' not in content:
+            if 'main-navigation' not in content:
                 issues.append("header.php missing '.main-navigation' class - navigation structure incomplete")
         except Exception as e:
             logger.warning(f"Could not validate header.php structure: {e}")
@@ -658,7 +659,8 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     if footer_file.exists():
         try:
             content = footer_file.read_text(encoding='utf-8')
-            if '.site-footer' not in content:
+            # Check for HTML class attribute (not CSS selector)
+            if 'site-footer' not in content:
                 issues.append("footer.php missing '.site-footer' class - layout structure incomplete")
         except Exception as e:
             logger.warning(f"Could not validate footer.php structure: {e}")
