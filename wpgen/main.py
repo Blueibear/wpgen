@@ -81,6 +81,13 @@ def cli():
     default=None,
     help="Model name (overrides config file)",
 )
+@click.option(
+    "--design-profile",
+    "-d",
+    type=click.Choice(["modern_streetwear", "minimalist", "corporate", "vibrant_bold", "earthy_natural"], case_sensitive=False),
+    default=None,
+    help="Design profile for theme styling (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)",
+)
 def generate(
     prompt: Optional[str],
     config_path: str,
@@ -90,6 +97,7 @@ def generate(
     interactive: bool,
     provider: Optional[str],
     model: Optional[str],
+    design_profile: Optional[str],
 ):
     """Generate a WordPress theme from a description.
 
@@ -153,6 +161,14 @@ def generate(
         click.echo(f"✅ Theme: {requirements['theme_display_name']}")
         click.echo(f"   Description: {requirements['description']}")
         click.echo(f"   Features: {', '.join(requirements['features'])}")
+
+        # Apply design profile if specified
+        if design_profile:
+            from wpgen.design_profiles import get_design_profile
+            profile = get_design_profile(design_profile)
+            requirements["design_profile"] = profile.to_dict()
+            click.echo(f"   Design Profile: {design_profile}")
+
         click.echo()
 
         # Generate theme

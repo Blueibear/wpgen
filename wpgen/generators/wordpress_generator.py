@@ -358,17 +358,174 @@ Tags: {tags_str}
             "features": requirements.get("features", []),
         }
 
-        description = f"""Create a complete CSS stylesheet for a WordPress theme.
-The theme should have a {context['color_scheme']} color scheme with {context['layout']} layout.
-Include:
-- Reset/normalize styles
-- Typography (headings, paragraphs, links)
-- Layout structure (header, main, sidebar, footer)
-- Navigation menu styles
-- Post/page content styles
-- Widget styles
-- Responsive design (mobile-first)
-- Utility classes"""
+        # Add design profile context if available
+        design_profile = requirements.get("design_profile")
+        if design_profile:
+            context["design_profile"] = design_profile
+
+        description = f"""Create a modern, visually attractive, production-ready CSS stylesheet for a WordPress theme.
+This should be a COMPLETE, FULLY-STYLED theme - not a minimal boilerplate.
+
+DESIGN SYSTEM:
+"""
+
+        # Add design profile details if available
+        if design_profile:
+            from ..design_profiles import profile_to_prompt_context, DesignProfile
+            # Convert dict back to DesignProfile if needed
+            if isinstance(design_profile, dict):
+                temp_profile = DesignProfile(design_profile['name'], design_profile['description'])
+                temp_profile.colors = design_profile['colors']
+                temp_profile.fonts = design_profile['fonts']
+                temp_profile.spacing = design_profile['spacing']
+                temp_profile.layout = design_profile['layout']
+                temp_profile.components = design_profile['components']
+                description += profile_to_prompt_context(temp_profile)
+            description += "\n\nUse these exact colors, fonts, spacing, and component styles in the CSS.\n"
+        else:
+            description += f"""Color Scheme: {context['color_scheme']}
+Layout Type: {context['layout']}
+Use a cohesive, professional color palette with primary, secondary, and accent colors.
+"""
+
+        description += """
+REQUIRED CSS STRUCTURE:
+
+1. CSS CUSTOM PROPERTIES (CSS Variables)
+   - Define all colors as CSS variables
+   - Define spacing scale (4px, 8px, 16px, 24px, 32px, 48px, 64px, 96px, 128px)
+   - Define typography scale using modular scale
+   - Define layout breakpoints
+   - Define transition/animation values
+
+2. MODERN CSS RESET
+   - Box-sizing: border-box
+   - Remove default margins/padding
+   - Set modern font stack
+   - Smooth scrolling
+   - Better image defaults
+
+3. TYPOGRAPHY SYSTEM
+   - Strong hierarchy: h1 (3rem+), h2 (2.5rem), h3 (2rem), h4 (1.5rem), h5 (1.25rem), h6 (1rem)
+   - Proper line heights (headings: 1.2, body: 1.6)
+   - Font weights (headings: 700, body: 400)
+   - Letter spacing for headings
+   - Responsive font sizes using clamp()
+
+4. LAYOUT & GRID SYSTEM
+   - Semantic HTML5 structure (.site-header, .site-main, .site-footer)
+   - Container with max-width and centered
+   - Flexible grid system (.grid, .grid-2, .grid-3, .grid-4)
+   - Flexbox utilities (.flex, .flex-center, .flex-between)
+   - Proper spacing between sections
+
+5. HERO SECTION STYLES
+   - Full-width hero banner (.hero-section)
+   - Background image support with overlay
+   - Centered content with strong typography
+   - Call-to-action button styling
+   - Minimum height: 500px
+   - Responsive padding
+
+6. MODERN HEADER
+   - Fixed or sticky header option
+   - Flexbox layout for logo and navigation
+   - Mobile hamburger menu styles
+   - Smooth transitions
+   - Shadow on scroll effect
+   - Logo sizing and spacing
+
+7. NAVIGATION
+   - Horizontal desktop navigation
+   - Proper spacing and hover states
+   - Active page indicator
+   - Mobile menu (off-canvas or dropdown)
+   - Smooth transitions and animations
+   - Touch-friendly tap targets (44px minimum)
+
+8. BUTTON STYLES
+   - Primary button (.btn, .btn-primary)
+   - Secondary button (.btn-secondary)
+   - Outline button (.btn-outline)
+   - Large size (.btn-lg)
+   - Consistent padding (1em 2em)
+   - Hover effects (transform, color change, shadow)
+   - Focus states for accessibility
+
+9. CARD COMPONENTS
+   - Product cards (.product-card)
+   - Blog post cards (.post-card)
+   - Promo cards (.promo-card)
+   - Card shadows and borders
+   - Image aspect ratios
+   - Hover lift effects
+   - Proper spacing inside cards
+
+10. CONTENT SECTIONS
+    - Section spacing (.section)
+    - Content width constraints
+    - Background variations (.bg-light, .bg-dark)
+    - Padding responsive to screen size
+
+11. WOOCOMMERCE PRODUCT GRIDS
+    - Product grid layout (.products.columns-3)
+    - Product card styles
+    - Product image sizing
+    - Price typography
+    - Add to cart button styles
+    - Sale badges
+    - Product hover effects
+
+12. FOOTER
+    - Multi-column footer layout
+    - Widget area styling
+    - Footer menus
+    - Social icons
+    - Copyright section
+    - Proper spacing and typography
+
+13. ANIMATIONS & TRANSITIONS
+    - Smooth transitions on interactive elements (0.3s ease)
+    - Hover effects (transform: translateY, scale)
+    - Fade-in animations for content
+    - Loading states
+    - Focus indicators
+
+14. RESPONSIVE DESIGN
+    - Mobile-first approach
+    - Breakpoints: 640px (sm), 768px (md), 1024px (lg), 1280px (xl)
+    - Stack grid columns on mobile
+    - Adjust typography scale
+    - Mobile navigation
+    - Touch-friendly spacing
+
+15. WORDPRESS CORE CLASSES
+    - Alignment classes (.alignleft, .alignright, .aligncenter, .alignwide, .alignfull)
+    - Image captions (.wp-caption)
+    - Galleries (.gallery)
+    - Sticky posts
+    - Comment styles
+    - Gutenberg block styles
+
+16. UTILITY CLASSES
+    - Spacing utilities (.mt-*, .mb-*, .py-*, .px-*)
+    - Text utilities (.text-center, .text-uppercase, .font-bold)
+    - Display utilities (.hidden, .block, .flex)
+    - Color utilities (.text-primary, .bg-primary)
+
+CRITICAL REQUIREMENTS:
+- Use real, specific color values (not placeholders)
+- Include complete styling - this should look professional immediately
+- Add smooth transitions and hover effects everywhere
+- Use modern CSS features (Grid, Flexbox, CSS Variables, clamp())
+- Make it mobile-first and fully responsive
+- Include visual hierarchy and whitespace
+- Add shadows, borders, and visual depth
+- Style all WordPress elements (posts, comments, widgets)
+- Include sample content styling (blockquotes, lists, code, tables)
+
+DO NOT create minimal or placeholder styles. Every element should be fully styled and production-ready.
+The theme should look modern, professional, and visually impressive when activated."""
 
         try:
             # Pass design images for visual reference (especially important for CSS styling)
@@ -413,7 +570,7 @@ Include:
             "integrations": requirements.get("integrations", []),
         }
 
-        description = f"""Create a complete functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
+        description = f"""Create a complete, modern functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
 
 CRITICAL REQUIREMENTS:
 1. Use proper PHP function naming - replace hyphens with underscores in function names
@@ -424,14 +581,31 @@ CRITICAL REQUIREMENTS:
    - THEMESLUG_posts_pagination() - posts pagination with fallback
 
 Include:
-- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, custom-logo, etc.)
+- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, custom-logo, responsive-embeds, etc.)
 - Custom logo support with max height of 80px
 - Enqueue scripts and styles (MUST enqueue base layout CSS and wpgen-ui assets)
-- Register navigation menus: {', '.join(context['navigation'])}
-- Register widget areas (sidebar-1, footer-1, footer-2 at minimum)
+- Register navigation menus: primary and footer locations
+- Register widget areas (sidebar-1, footer-1, footer-2, footer-3 minimum)
 - Custom post types: {', '.join(context['post_types'])}
 - Theme customizer settings
 - Security best practices (sanitization, escaping)
+
+SHORTCODES - Include these modern shortcodes:
+1. Product Grid Shortcode [product_grid]:
+   - Displays a grid of recent posts or products
+   - Attributes: count (default 6), columns (default 3), category
+   - Uses the .grid and .post-card classes
+   - Includes post thumbnail, title, excerpt, and read more link
+
+2. Hero Banner Shortcode [hero_banner]:
+   - Displays a hero section with title, text, and buttons
+   - Attributes: title, text, button_text, button_url
+   - Uses .hero-section class
+
+3. Call-to-Action Shortcode [cta_box]:
+   - Displays a CTA section
+   - Attributes: title, text, button_text, button_url, background (primary/secondary)
+   - Uses .cta-section class
 
 HELPER FUNCTIONS - Include these exactly:
 - {requirements["theme_name"].replace('-', '_')}_get_the_meta_data() - echo date and author with escaping
@@ -655,38 +829,94 @@ get_footer();
             "navigation": requirements.get("navigation", []),
         }
 
-        description = """Create header.php template for WordPress theme.
+        description = """Create a modern, fully-featured header.php template for WordPress theme.
 
-CRITICAL REQUIREMENTS - Semantic HTML Structure:
-- Use semantic <header class="site-header"> container
-- Wrap logo and title in <div class="site-branding">
-- Include the_custom_logo() for logo display
-- Use conditional h1/p for site title (h1 on front page, p on others)
-- Wrap navigation in <nav class="main-navigation">
-- Include proper flexbox layout classes
+CRITICAL REQUIREMENTS - Modern Header Structure:
 
-Required structure:
+1. DOCUMENT HEAD:
+   - Full DOCTYPE html with language attributes
+   - Meta charset and viewport
+   - wp_head() hook before </head>
+   - Proper HTML5 document structure
+
+2. SEMANTIC HEADER STRUCTURE:
+   - Use <header class="site-header"> as main container
+   - Add <div class="header-inner container"> for width constraint
+   - Wrap logo and title in <div class="site-branding">
+   - Include the_custom_logo() for logo display
+   - Use conditional h1/p for site title (h1 on front page, p on others)
+   - Wrap navigation in <nav class="main-navigation">
+   - Use flexbox layout classes (.flex, .flex-between, .flex-center)
+
+3. MOBILE NAVIGATION:
+   - Add mobile menu toggle button with hamburger icon (☰)
+   - Button should have class "mobile-menu-toggle" and aria-label
+   - Add data attribute or JS hook for mobile menu
+   - Include proper accessibility attributes (aria-expanded, aria-controls)
+
+4. NAVIGATION STRUCTURE:
+   - Desktop navigation with wp_nav_menu()
+   - Menu should have class "primary-menu"
+   - Include proper container and menu classes
+   - Add support for dropdown/submenu styling
+
+5. SAMPLE STRUCTURE:
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="profile" href="https://gmpg.org/xfn/11">
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
 <header class="site-header">
-    <div class="site-branding">
-        <?php the_custom_logo(); ?>
-        <?php if ( is_front_page() && is_home() ) : ?>
-            <h1 class="site-title"><a href="home"><?php bloginfo( 'name' ); ?></a></h1>
-        <?php else : ?>
-            <p class="site-title"><a href="home"><?php bloginfo( 'name' ); ?></a></p>
-        <?php endif; ?>
+    <div class="header-inner container">
+        <div class="site-branding">
+            <?php the_custom_logo(); ?>
+            <div class="site-title-group">
+                <?php if ( is_front_page() && is_home() ) : ?>
+                    <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+                <?php else : ?>
+                    <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+                <?php endif; ?>
+                <p class="site-description"><?php bloginfo( 'description' ); ?></p>
+            </div>
+        </div>
+
+        <button class="mobile-menu-toggle" aria-label="Toggle mobile menu" aria-expanded="false">
+            <span class="menu-icon"></span>
+        </button>
+
+        <nav class="main-navigation" aria-label="Primary Navigation">
+            <?php
+            wp_nav_menu( array(
+                'theme_location' => 'primary',
+                'menu_class'     => 'primary-menu',
+                'container'      => false,
+            ) );
+            ?>
+        </nav>
     </div>
-    <nav class="main-navigation">
-        <?php wp_nav_menu( array( 'theme_location' => 'primary' ) ); ?>
-    </nav>
 </header>
 <main id="main" class="site-main">
 
-Include:
-- DOCTYPE and opening HTML tags
-- wp_head() call before </head>
-- body_class() and wp_body_open()
-- Mobile-responsive header structure
-Follow WordPress coding standards."""
+6. STYLING CONSIDERATIONS:
+   - Header should support sticky/fixed positioning via CSS
+   - Logo should be properly sized
+   - Mobile menu toggle should only show on mobile
+   - Desktop navigation should be horizontal
+   - Include proper spacing and alignment
+   - Support for search icon or CTA button (optional)
+
+7. WORDPRESS STANDARDS:
+   - Use proper escaping (esc_url, esc_html, etc.)
+   - Follow WordPress coding standards
+   - Include proper indentation
+   - Add inline comments for complex sections
+
+IMPORTANT: Create a complete, production-ready header with modern navigation, mobile menu support, and clean semantic HTML."""
 
         try:
             # Pass design images for header layout/navigation reference
@@ -759,31 +989,103 @@ Follow WordPress coding standards."""
 
         context = {"theme_name": requirements["theme_name"]}
 
-        description = """Create footer.php template for WordPress theme.
+        description = """Create a modern, fully-featured footer.php template for WordPress theme.
 
-CRITICAL REQUIREMENTS - Semantic HTML Structure:
-- Close the main content area: </main>
-- Use semantic <footer class="site-footer"> container
-- Include footer widget areas with proper structure
-- Add copyright notice with current year
-- Include wp_footer() call before </body>
-- Close body and html tags properly
+CRITICAL REQUIREMENTS - Modern Footer Structure:
 
-Required structure:
-</main>
+1. CLOSE MAIN CONTENT AREA:
+   - Properly close </main> tag
+   - Add spacing/padding as needed
+
+2. FOOTER WIDGET AREAS:
+   - Create multi-column footer widget layout (3-4 columns)
+   - Use proper widget area structure
+   - Each widget area should have unique ID (footer-1, footer-2, etc.)
+   - Wrap in container for width constraint
+   - Use CSS Grid or Flexbox classes for layout
+
+3. FOOTER BOTTOM/COPYRIGHT:
+   - Separate section for site info/copyright
+   - Include current year with date('Y')
+   - Add site name with bloginfo('name')
+   - Optional: Add "Powered by WordPress" or theme credit
+   - Optional: Add footer menu or social links
+
+4. WORDPRESS HOOKS:
+   - Include wp_footer() call before </body>
+   - Properly close </body> and </html> tags
+
+5. SAMPLE STRUCTURE:
+</main><!-- .site-main -->
+
 <footer class="site-footer">
-    <div class="footer-widgets">
-        <!-- Footer widget areas -->
+    <div class="footer-widgets container">
+        <div class="footer-widgets-inner grid grid-3">
+            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                <div class="footer-widget-area footer-widget-1">
+                    <?php dynamic_sidebar( 'footer-1' ); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
+                <div class="footer-widget-area footer-widget-2">
+                    <?php dynamic_sidebar( 'footer-2' ); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( is_active_sidebar( 'footer-3' ) ) : ?>
+                <div class="footer-widget-area footer-widget-3">
+                    <?php dynamic_sidebar( 'footer-3' ); ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
+
     <div class="site-info">
-        <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+        <div class="container">
+            <div class="site-info-inner">
+                <p class="copyright">
+                    &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
+                </p>
+                <?php if ( has_nav_menu( 'footer' ) ) : ?>
+                    <nav class="footer-navigation" aria-label="Footer Navigation">
+                        <?php
+                        wp_nav_menu( array(
+                            'theme_location' => 'footer',
+                            'menu_class'     => 'footer-menu',
+                            'depth'          => 1,
+                        ) );
+                        ?>
+                    </nav>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </footer>
+
 <?php wp_footer(); ?>
 </body>
 </html>
 
-Follow WordPress coding standards."""
+6. STYLING CONSIDERATIONS:
+   - Footer should have distinct background color
+   - Widget areas should stack on mobile (responsive)
+   - Proper spacing and typography
+   - Copyright section should be visually separated
+   - Support for footer menu (horizontal links)
+
+7. ACCESSIBILITY:
+   - Proper landmark roles (footer role is implicit)
+   - Navigation aria-labels if menu present
+   - Proper heading hierarchy in widgets
+
+8. WORDPRESS STANDARDS:
+   - Use proper escaping (esc_html, esc_url, etc.)
+   - Follow WordPress coding standards
+   - Include proper indentation
+   - Add inline comments for sections
+
+IMPORTANT: Create a complete, production-ready footer with widget areas, copyright, and modern layout."""
 
         try:
             # Pass design images for footer layout reference
@@ -870,9 +1172,10 @@ Include:
         logger.info("Generating template files")
 
         templates_to_generate = {
+            "front-page.php": "Homepage template with hero section",
             "single.php": "Single post template",
             "page.php": "Static page template",
-            "archive.php": "Archive listing template",
+            "archive.php": "Archive listing template with card grid",
             "search.php": "Search results template",
             "404.php": "404 error page template",
         }
@@ -889,7 +1192,163 @@ Include:
 
                 context = {"theme_name": requirements["theme_name"], "template_type": template_file}
 
-                full_description = f"""Create {template_file} for WordPress theme.
+                # Special prompts for modern templates
+                if template_file == "front-page.php":
+                    full_description = f"""Create a modern, visually impressive front-page.php (homepage) template for WordPress.
+This should be a COMPLETE, PRODUCTION-READY homepage with hero section, featured content grid, and call-to-action sections.
+
+REQUIRED STRUCTURE:
+
+1. START WITH get_header()
+
+2. HERO SECTION:
+<section class="hero-section">
+    <div class="hero-content container">
+        <h1 class="hero-title"><?php bloginfo( 'name' ); ?></h1>
+        <p class="hero-description"><?php bloginfo( 'description' ); ?></p>
+        <div class="hero-buttons">
+            <a href="#featured" class="btn btn-primary">Explore</a>
+            <a href="<?php echo esc_url( home_url( '/about' ) ); ?>" class="btn btn-secondary">Learn More</a>
+        </div>
+    </div>
+</section>
+
+3. FEATURED CONTENT GRID:
+<section class="featured-section section">
+    <div class="container">
+        <h2 class="section-title">Featured Content</h2>
+        <div class="grid grid-3">
+            <?php
+            $featured_query = new WP_Query( array(
+                'posts_per_page' => 6,
+                'post_status' => 'publish',
+            ) );
+            if ( $featured_query->have_posts() ) :
+                while ( $featured_query->have_posts() ) : $featured_query->the_post();
+                    ?>
+                    <article class="post-card">
+                        <?php if ( has_post_thumbnail() ) : ?>
+                            <div class="post-thumbnail">
+                                <a href="<?php the_permalink(); ?>">
+                                    <?php the_post_thumbnail( 'medium' ); ?>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                        <div class="post-content">
+                            <h3 class="post-title">
+                                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                            </h3>
+                            <div class="post-excerpt">
+                                <?php the_excerpt(); ?>
+                            </div>
+                            <a href="<?php the_permalink(); ?>" class="read-more">Read More</a>
+                        </div>
+                    </article>
+                    <?php
+                endwhile;
+                wp_reset_postdata();
+            endif;
+            ?>
+        </div>
+    </div>
+</section>
+
+4. CALL-TO-ACTION SECTION (OPTIONAL):
+<section class="cta-section section bg-primary">
+    <div class="container text-center">
+        <h2>Ready to Get Started?</h2>
+        <p>Join thousands of satisfied users today.</p>
+        <a href="<?php echo esc_url( home_url( '/contact' ) ); ?>" class="btn btn-large">Get Started</a>
+    </div>
+</section>
+
+5. END WITH get_footer()
+
+CRITICAL REQUIREMENTS:
+- Use semantic HTML5 (section, article, nav)
+- Add proper CSS classes for styling (.hero-section, .grid, .post-card, .btn)
+- Include real, sample content (not placeholders)
+- Use container class for width constraint
+- Add WP_Query for featured posts
+- Properly escape all output (esc_url, esc_html, esc_attr)
+- Include post thumbnails, titles, excerpts
+- Add call-to-action buttons
+- Use WordPress functions properly
+- wp_reset_postdata() after custom query
+
+This should look professional and impressive when activated - NOT minimal or empty."""
+
+                elif template_file == "archive.php":
+                    full_description = f"""Create a modern archive.php template with styled card grid layout.
+
+REQUIRED STRUCTURE:
+
+1. START WITH get_header()
+
+2. ARCHIVE HEADER:
+<header class="page-header">
+    <div class="container">
+        <?php
+        the_archive_title( '<h1 class="page-title">', '</h1>' );
+        the_archive_description( '<div class="archive-description">', '</div>' );
+        ?>
+    </div>
+</header>
+
+3. POSTS GRID:
+<div class="archive-content section">
+    <div class="container">
+        <?php if ( have_posts() ) : ?>
+            <div class="grid grid-3 posts-grid">
+                <?php while ( have_posts() ) : the_post(); ?>
+                    <article id="post-<?php the_ID(); ?>" <?php post_class( 'post-card' ); ?>>
+                        <?php if ( has_post_thumbnail() ) : ?>
+                            <div class="post-thumbnail">
+                                <a href="<?php the_permalink(); ?>">
+                                    <?php the_post_thumbnail( 'medium' ); ?>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                        <div class="post-content">
+                            <h2 class="post-title">
+                                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                            </h2>
+                            <div class="post-meta">
+                                <span class="post-date"><?php echo esc_html( get_the_date() ); ?></span>
+                                <span class="post-author">by <?php echo esc_html( get_the_author() ); ?></span>
+                            </div>
+                            <div class="post-excerpt">
+                                <?php the_excerpt(); ?>
+                            </div>
+                            <a href="<?php the_permalink(); ?>" class="read-more btn btn-outline">Read More</a>
+                        </div>
+                    </article>
+                <?php endwhile; ?>
+            </div>
+
+            <div class="pagination">
+                <?php the_posts_pagination(); ?>
+            </div>
+        <?php else : ?>
+            <p>No posts found.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+4. END WITH get_footer()
+
+CRITICAL REQUIREMENTS:
+- Use semantic HTML and post_class()
+- Card-based grid layout (.grid, .grid-3, .post-card)
+- Include post thumbnails, titles, excerpts, meta
+- Add pagination
+- Properly escape all output
+- Use the_archive_title() and the_archive_description()
+- Include read more links styled as buttons
+- Professional card design with hover effects"""
+
+                else:
+                    full_description = f"""Create {template_file} for WordPress theme.
 {description}.
 
 CRITICAL REQUIREMENTS:
@@ -1178,21 +1637,31 @@ a {
 
     // Mobile menu toggle
     var toggleBtn = document.querySelector('.mobile-menu-toggle');
-    var mobileMenu = document.querySelector('.mobile-menu');
+    var mobileNav = document.querySelector('.main-navigation');
 
-    if (toggleBtn && mobileMenu) {
-        toggleBtn.addEventListener('click', function() {
-            mobileMenu.classList.toggle('active');
+    if (toggleBtn && mobileNav) {
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileNav.classList.toggle('active');
             this.setAttribute('aria-expanded',
-                mobileMenu.classList.contains('active') ? 'true' : 'false'
+                mobileNav.classList.contains('active') ? 'true' : 'false'
             );
         });
 
         // Close menu when clicking outside
         document.addEventListener('click', function(e) {
-            if (!toggleBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
-                mobileMenu.classList.remove('active');
+            if (!toggleBtn.contains(e.target) && !mobileNav.contains(e.target)) {
+                mobileNav.classList.remove('active');
                 toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Close menu on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && mobileNav.classList.contains('active')) {
+                mobileNav.classList.remove('active');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                toggleBtn.focus();
             }
         });
     }
@@ -1216,229 +1685,571 @@ a {
         css_dir = theme_dir / "assets" / "css"
         css_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate base layout styles
-        css_content = """/* Base Layout Styles
- * Core structural and layout styles for proper theme presentation
- * Ensures clean, modern baseline layout across all generated themes
+        # Generate base layout styles with modern CSS
+        css_content = """/* Modern Base Layout Styles
+ * Production-ready structural and layout styles with modern CSS features
+ * Includes: CSS Variables, Grid System, Button Styles, Card Components, Animations
  */
 
-/* Reset and Base Styles */
-* {
+/* ===========================
+   CSS CUSTOM PROPERTIES
+   =========================== */
+:root {
+    /* Colors */
+    --color-primary: #2563eb;
+    --color-secondary: #7c3aed;
+    --color-accent: #06b6d4;
+    --color-background: #ffffff;
+    --color-surface: #f8fafc;
+    --color-text: #1e293b;
+    --color-text-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-hover: #1e40af;
+
+    /* Spacing Scale */
+    --spacing-xs: 0.25rem;    /* 4px */
+    --spacing-sm: 0.5rem;     /* 8px */
+    --spacing-md: 1rem;       /* 16px */
+    --spacing-lg: 1.5rem;     /* 24px */
+    --spacing-xl: 2rem;       /* 32px */
+    --spacing-2xl: 3rem;      /* 48px */
+    --spacing-3xl: 4rem;      /* 64px */
+    --spacing-4xl: 6rem;      /* 96px */
+
+    /* Typography */
+    --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-headings: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+    /* Layout */
+    --container-max: 1200px;
+    --content-max: 800px;
+    --header-height: 80px;
+    --border-radius: 0.5rem;
+    --border-radius-sm: 0.25rem;
+    --border-radius-lg: 1rem;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-base: 300ms ease;
+    --transition-slow: 500ms ease;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* ===========================
+   MODERN CSS RESET
+   =========================== */
+*, *::before, *::after {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
     margin: 0;
-    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--font-primary);
+    font-size: 1rem;
     line-height: 1.6;
-    color: #222;
-    background: #fff;
+    color: var(--color-text);
+    background: var(--color-background);
 }
 
-/* Container and Layout */
-.site-header,
-.site-main,
-.site-footer {
+img, picture, video, canvas, svg {
+    display: block;
     max-width: 100%;
+    height: auto;
 }
 
-/* Header Styles */
-.site-header {
+input, button, textarea, select {
+    font: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--color-hover);
+}
+
+/* ===========================
+   TYPOGRAPHY
+   =========================== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: var(--spacing-md);
+}
+
+h1 { font-size: clamp(2rem, 5vw, 3rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+h3 { font-size: clamp(1.5rem, 3vw, 2rem); }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+p {
+    margin-bottom: var(--spacing-md);
+}
+
+/* ===========================
+   CONTAINER & LAYOUT
+   =========================== */
+.container {
+    max-width: var(--container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+.content {
+    max-width: var(--content-max);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.section {
+    padding: var(--spacing-3xl) 0;
+}
+
+/* ===========================
+   GRID SYSTEM
+   =========================== */
+.grid {
+    display: grid;
+    gap: var(--spacing-xl);
+}
+
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.grid-4 {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
+/* ===========================
+   FLEXBOX UTILITIES
+   =========================== */
+.flex {
+    display: flex;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===========================
+   BUTTON STYLES
+   =========================== */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--color-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+    background: var(--color-secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: transparent;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-outline:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn-large {
     padding: 1rem 2rem;
-    background: #fff;
-    border-bottom: 1px solid #ddd;
+    font-size: 1.125rem;
+}
+
+/* ===========================
+   CARD COMPONENTS
+   =========================== */
+.post-card,
+.product-card,
+.promo-card {
+    background: var(--color-background);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-base);
+    transition: all var(--transition-base);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.post-card:hover,
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.post-thumbnail,
+.product-thumbnail {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-surface);
+}
+
+.post-thumbnail img,
+.product-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.post-card:hover .post-thumbnail img,
+.product-card:hover .product-thumbnail img {
+    transform: scale(1.05);
+}
+
+.post-content,
+.product-content {
+    padding: var(--spacing-lg);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.post-title,
+.product-title {
+    margin: 0 0 var(--spacing-sm);
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.post-title a,
+.product-title a {
+    color: var(--color-text);
+}
+
+.post-title a:hover,
+.product-title a:hover {
+    color: var(--color-primary);
+}
+
+.post-meta {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-md);
+}
+
+.post-excerpt {
+    color: var(--color-text);
+    margin-bottom: var(--spacing-md);
+    flex-grow: 1;
+}
+
+.read-more {
+    margin-top: auto;
+}
+
+/* ===========================
+   HERO SECTION
+   =========================== */
+.hero-section {
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    color: white;
+    text-align: center;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    margin-bottom: var(--spacing-lg);
+    color: white;
+}
+
+.hero-description {
+    font-size: clamp(1.125rem, 2vw, 1.5rem);
+    margin-bottom: var(--spacing-2xl);
+    opacity: 0.95;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
     flex-wrap: wrap;
 }
 
-/* Site Branding */
+/* ===========================
+   HEADER
+   =========================== */
+.site-header {
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
 .site-branding {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--spacing-md);
 }
 
-.site-branding img,
 .custom-logo-link img {
-    max-height: 80px;
-    height: auto;
+    max-height: 60px;
     width: auto;
-    display: block;
 }
 
 .site-title {
     margin: 0;
     font-size: 1.5rem;
-    font-weight: 700;
 }
 
 .site-title a {
-    color: #222;
-    text-decoration: none;
+    color: var(--color-text);
 }
 
 .site-title a:hover {
-    color: #0073aa;
+    color: var(--color-primary);
 }
 
-/* Navigation */
-.main-navigation {
-    display: flex;
-    align-items: center;
+.site-description {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--spacing-sm);
 }
 
 .main-navigation ul {
     list-style: none;
+    display: flex;
+    gap: var(--spacing-xl);
     margin: 0;
     padding: 0;
-    display: flex;
-    gap: 1.5rem;
-}
-
-.main-navigation li {
-    margin: 0;
 }
 
 .main-navigation a {
-    color: #222;
-    text-decoration: none;
-    padding: 0.5rem 0;
-    display: block;
-    transition: color 0.2s ease;
+    color: var(--color-text);
+    font-weight: 500;
+    padding: var(--spacing-sm) 0;
 }
 
-.main-navigation a:hover,
-.main-navigation a:focus {
-    color: #0073aa;
+.main-navigation a:hover {
+    color: var(--color-primary);
 }
 
-/* Main Content */
-.site-main,
-main {
-    padding: 2rem;
+/* ===========================
+   MAIN CONTENT
+   =========================== */
+.site-main {
     min-height: 60vh;
 }
 
-/* Posts and Articles */
 article {
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-3xl);
 }
 
 .entry-header {
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-xl);
 }
 
 .entry-title {
-    margin: 0 0 0.5rem;
-    font-size: 2rem;
-    line-height: 1.2;
-}
-
-.entry-title a {
-    color: #222;
-    text-decoration: none;
-}
-
-.entry-title a:hover {
-    color: #0073aa;
-}
-
-.entry-meta {
-    font-size: 0.9rem;
-    color: #666;
+    margin-bottom: var(--spacing-md);
 }
 
 .entry-content {
-    margin-top: 1rem;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
-/* Footer */
+.entry-content > * + * {
+    margin-top: var(--spacing-md);
+}
+
+/* ===========================
+   FOOTER
+   =========================== */
 .site-footer {
-    background: #f8f8f8;
-    border-top: 1px solid #ddd;
-    padding: 2rem;
-    margin-top: 3rem;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--spacing-4xl);
 }
 
 .footer-widgets {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-bottom: 2rem;
+    padding: var(--spacing-3xl) 0;
 }
 
-.footer-widget-area {
-    color: #555;
+.footer-widgets-inner {
+    display: grid;
+    gap: var(--spacing-2xl);
+}
+
+.footer-widget-area h2,
+.footer-widget-area h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--spacing-md);
 }
 
 .site-info {
-    text-align: center;
-    padding-top: 1rem;
-    border-top: 1px solid #ddd;
-    color: #666;
-    font-size: 0.9rem;
+    background: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    padding: var(--spacing-xl) 0;
 }
 
-.site-info p {
+.site-info-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.copyright {
     margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .site-header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 1rem;
-    }
+/* ===========================
+   UTILITY CLASSES
+   =========================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
 
-    .main-navigation {
-        width: 100%;
-        margin-top: 1rem;
-    }
+.text-uppercase { text-transform: uppercase; }
+.font-bold { font-weight: 700; }
+.font-medium { font-weight: 500; }
 
-    .main-navigation ul {
-        flex-direction: column;
-        gap: 0.5rem;
-        width: 100%;
-    }
+.bg-primary { background: var(--color-primary); color: white; }
+.bg-secondary { background: var(--color-secondary); color: white; }
+.bg-light { background: var(--color-surface); }
+.bg-dark { background: var(--color-text); color: white; }
 
-    .site-main,
-    main {
-        padding: 1rem;
-    }
+.hidden { display: none; }
+.block { display: block; }
 
-    .entry-title {
-        font-size: 1.5rem;
-    }
+/* Spacing utilities */
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
 
-    .footer-widgets {
-        grid-template-columns: 1fr;
-    }
-}
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
 
-/* Accessibility */
-a:focus,
-button:focus,
-input:focus,
-textarea:focus {
-    outline: 2px solid #0073aa;
-    outline-offset: 2px;
-}
+.py-1 { padding-top: var(--spacing-sm); padding-bottom: var(--spacing-sm); }
+.py-2 { padding-top: var(--spacing-md); padding-bottom: var(--spacing-md); }
+.py-3 { padding-top: var(--spacing-lg); padding-bottom: var(--spacing-lg); }
+.py-4 { padding-top: var(--spacing-xl); padding-bottom: var(--spacing-xl); }
 
-/* WordPress Core Classes */
+.px-1 { padding-left: var(--spacing-sm); padding-right: var(--spacing-sm); }
+.px-2 { padding-left: var(--spacing-md); padding-right: var(--spacing-md); }
+.px-3 { padding-left: var(--spacing-lg); padding-right: var(--spacing-lg); }
+.px-4 { padding-left: var(--spacing-xl); padding-right: var(--spacing-xl); }
+
+/* ===========================
+   WORDPRESS CORE CLASSES
+   =========================== */
 .alignleft {
     float: left;
-    margin-right: 1rem;
-    margin-bottom: 1rem;
+    margin-right: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .alignright {
     float: right;
-    margin-left: 1rem;
-    margin-bottom: 1rem;
+    margin-left: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .aligncenter {
@@ -1447,15 +2258,224 @@ textarea:focus {
     margin-right: auto;
 }
 
+.alignwide {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.alignfull {
+    max-width: 100%;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+}
+
 .wp-caption {
     max-width: 100%;
 }
 
 .wp-caption-text {
-    font-size: 0.9rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+}
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.sticky {
+    border-left: 4px solid var(--color-primary);
+    padding-left: var(--spacing-md);
+}
+
+/* ===========================
+   ACCESSIBILITY
+   =========================== */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    word-wrap: normal !important;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+   =========================== */
+@media (max-width: 1024px) {
+    .container {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+
+    .main-navigation {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        right: 0;
+        background: var(--color-background);
+        padding: var(--spacing-lg);
+        transform: translateX(-100%);
+        transition: transform var(--transition-base);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .main-navigation.active {
+        transform: translateX(0);
+    }
+
+    .main-navigation ul {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-section {
+        min-height: 400px;
+        padding: var(--spacing-2xl) var(--spacing-md);
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .hero-buttons .btn {
+        width: 100%;
+    }
+
+    .footer-widgets-inner.grid-3,
+    .footer-widgets-inner.grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .site-info-inner {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===========================
+   ANIMATIONS
+   =========================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn var(--transition-base) ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft var(--transition-base) ease-out;
+}
+
+/* ===========================
+   WOOCOMMERCE SUPPORT
+   =========================== */
+.woocommerce ul.products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-xl);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.woocommerce ul.products li.product {
+    background: var(--color-background);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-base);
+    transition: all var(--transition-base);
+}
+
+.woocommerce ul.products li.product:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.woocommerce ul.products li.product img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.woocommerce ul.products li.product .price {
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.woocommerce .button,
+.woocommerce button.button {
+    background: var(--color-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.woocommerce .button:hover,
+.woocommerce button.button:hover {
+    background: var(--color-hover);
+    transform: translateY(-2px);
 }
 """
 
