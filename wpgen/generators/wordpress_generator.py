@@ -994,28 +994,34 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
 CRITICAL REQUIREMENTS - Modern Footer Structure:
 
 1. CLOSE MAIN CONTENT AREA:
-   - Properly close </main> tag
-   - Add spacing/padding as needed
+   - MUST include closing </main> tag with comment
+   - Example: </main><!-- .site-main -->
 
-2. FOOTER WIDGET AREAS:
+2. SEMANTIC FOOTER TAG:
+   - MUST use semantic <footer> tag
+   - MUST include a container div inside footer
+   - Example: <footer class="site-footer">
+
+3. FOOTER WIDGET AREAS WITH VISIBLE CONTENT:
    - Create multi-column footer widget layout (3-4 columns)
-   - Use proper widget area structure
-   - Each widget area should have unique ID (footer-1, footer-2, etc.)
-   - Wrap in container for width constraint
-   - Use CSS Grid or Flexbox classes for layout
+   - Each widget area MUST have unique ID (footer-1, footer-2, footer-3)
+   - MUST include visible fallback content when widgets are not active
+   - Include default text like "About", "Quick Links", "Connect" as placeholder content
+   - Wrap in container div for width constraint
+   - Use responsive layout classes (grid or flexbox)
 
-3. FOOTER BOTTOM/COPYRIGHT:
-   - Separate section for site info/copyright
-   - Include current year with date('Y')
-   - Add site name with bloginfo('name')
-   - Optional: Add "Powered by WordPress" or theme credit
-   - Optional: Add footer menu or social links
+4. FOOTER CREDITS SECTION:
+   - MUST have separate <div class="site-info"> section
+   - MUST include copyright with current year: date('Y')
+   - MUST include site name: bloginfo('name')
+   - Include "All rights reserved" text
+   - Wrap in container div
 
-4. WORDPRESS HOOKS:
-   - Include wp_footer() call before </body>
-   - Properly close </body> and </html> tags
+5. WORDPRESS HOOKS:
+   - MUST include <?php wp_footer(); ?> before </body>
+   - MUST properly close </body> and </html> tags
 
-5. SAMPLE STRUCTURE:
+6. SAMPLE STRUCTURE WITH VISIBLE FALLBACK CONTENT:
 </main><!-- .site-main -->
 
 <footer class="site-footer">
@@ -1025,11 +1031,23 @@ CRITICAL REQUIREMENTS - Modern Footer Structure:
                 <div class="footer-widget-area footer-widget-1">
                     <?php dynamic_sidebar( 'footer-1' ); ?>
                 </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-1">
+                    <h3 class="widget-title">About</h3>
+                    <p>Welcome to our website. Visit us to learn more.</p>
+                </div>
             <?php endif; ?>
 
             <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
                 <div class="footer-widget-area footer-widget-2">
                     <?php dynamic_sidebar( 'footer-2' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-2">
+                    <h3 class="widget-title">Quick Links</h3>
+                    <ul>
+                        <li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a></li>
+                    </ul>
                 </div>
             <?php endif; ?>
 
@@ -1037,28 +1055,20 @@ CRITICAL REQUIREMENTS - Modern Footer Structure:
                 <div class="footer-widget-area footer-widget-3">
                     <?php dynamic_sidebar( 'footer-3' ); ?>
                 </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-3">
+                    <h3 class="widget-title">Connect</h3>
+                    <p>Stay connected with us.</p>
+                </div>
             <?php endif; ?>
         </div>
     </div>
 
     <div class="site-info">
         <div class="container">
-            <div class="site-info-inner">
-                <p class="copyright">
-                    &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
-                </p>
-                <?php if ( has_nav_menu( 'footer' ) ) : ?>
-                    <nav class="footer-navigation" aria-label="Footer Navigation">
-                        <?php
-                        wp_nav_menu( array(
-                            'theme_location' => 'footer',
-                            'menu_class'     => 'footer-menu',
-                            'depth'          => 1,
-                        ) );
-                        ?>
-                    </nav>
-                <?php endif; ?>
-            </div>
+            <p class="copyright">
+                &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
+            </p>
         </div>
     </div>
 </footer>
@@ -1067,25 +1077,24 @@ CRITICAL REQUIREMENTS - Modern Footer Structure:
 </body>
 </html>
 
-6. STYLING CONSIDERATIONS:
+7. STYLING CONSIDERATIONS:
    - Footer should have distinct background color
    - Widget areas should stack on mobile (responsive)
    - Proper spacing and typography
    - Copyright section should be visually separated
-   - Support for footer menu (horizontal links)
 
-7. ACCESSIBILITY:
+8. ACCESSIBILITY:
    - Proper landmark roles (footer role is implicit)
-   - Navigation aria-labels if menu present
    - Proper heading hierarchy in widgets
+   - Semantic HTML structure
 
-8. WORDPRESS STANDARDS:
+9. WORDPRESS STANDARDS:
    - Use proper escaping (esc_html, esc_url, etc.)
    - Follow WordPress coding standards
    - Include proper indentation
    - Add inline comments for sections
 
-IMPORTANT: Create a complete, production-ready footer with widget areas, copyright, and modern layout."""
+IMPORTANT: Create a complete, production-ready footer with widget areas, visible fallback content, copyright section, and modern layout. The footer MUST always display visible content even when no widgets are active."""
 
         try:
             # Pass design images for footer layout reference
@@ -1094,12 +1103,13 @@ IMPORTANT: Create a complete, production-ready footer with widget areas, copyrig
             )
 
             # Validate that generated code has required semantic structure
-            has_site_footer = 'site-footer' in php_code
-            has_closing_main = '</main>' in php_code
+            # Relaxed validation: accept any <footer> tag, not just with site-footer class
+            has_footer_tag = '<footer' in php_code.lower()
+            has_closing_main = '</main>' in php_code.lower()
 
-            if not (has_site_footer and has_closing_main):
+            if not (has_footer_tag and has_closing_main):
                 logger.warning("Generated footer.php missing required semantic structure - using fallback")
-                logger.warning(f"  site-footer: {has_site_footer}, </main>: {has_closing_main}")
+                logger.warning(f"  <footer> tag: {has_footer_tag}, </main>: {has_closing_main}")
                 # Use fallback template
                 raise ValueError("Generated footer missing required structure")
 
@@ -1107,24 +1117,61 @@ IMPORTANT: Create a complete, production-ready footer with widget areas, copyrig
 
         except Exception as e:
             logger.error(f"Failed to generate footer.php: {str(e)}")
-            fallback = """</main>
+            logger.info("Using enhanced fallback footer with visible content")
+            # Enhanced fallback with visible content to prevent empty footers
+            fallback = """</main><!-- .site-main -->
+
 <footer class="site-footer">
-    <div class="footer-widgets">
-        <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
-            <div class="footer-widget-area">
-                <?php dynamic_sidebar( 'footer-1' ); ?>
-            </div>
-        <?php endif; ?>
-        <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
-            <div class="footer-widget-area">
-                <?php dynamic_sidebar( 'footer-2' ); ?>
-            </div>
-        <?php endif; ?>
+    <div class="footer-widgets container">
+        <div class="footer-widgets-inner">
+            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                <div class="footer-widget-area footer-widget-1">
+                    <?php dynamic_sidebar( 'footer-1' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-1">
+                    <h3 class="widget-title">About</h3>
+                    <p>Welcome to <?php bloginfo( 'name' ); ?>. Visit us to learn more.</p>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
+                <div class="footer-widget-area footer-widget-2">
+                    <?php dynamic_sidebar( 'footer-2' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-2">
+                    <h3 class="widget-title">Quick Links</h3>
+                    <ul>
+                        <li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a></li>
+                        <li><a href="<?php echo esc_url( home_url( '/about' ) ); ?>">About</a></li>
+                        <li><a href="<?php echo esc_url( home_url( '/contact' ) ); ?>">Contact</a></li>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <?php if ( is_active_sidebar( 'footer-3' ) ) : ?>
+                <div class="footer-widget-area footer-widget-3">
+                    <?php dynamic_sidebar( 'footer-3' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget-area footer-widget-3">
+                    <h3 class="widget-title">Connect</h3>
+                    <p>Stay connected with us for updates and news.</p>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
+
     <div class="site-info">
-        <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+        <div class="container">
+            <p class="copyright">
+                &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
+            </p>
+        </div>
     </div>
 </footer>
+
 <?php wp_footer(); ?>
 </body>
 </html>

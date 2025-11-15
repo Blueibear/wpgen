@@ -659,9 +659,12 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     if footer_file.exists():
         try:
             content = footer_file.read_text(encoding='utf-8')
-            # Check for HTML class attribute (not CSS selector)
-            if 'site-footer' not in content:
-                issues.append("footer.php missing '.site-footer' class - layout structure incomplete")
+            # Relaxed validation: accept any <footer> tag, not just with site-footer class
+            # This ensures compatibility with local models like LM Studio
+            if '<footer' not in content.lower():
+                issues.append("footer.php missing <footer> tag - layout structure incomplete")
+            if '</main>' not in content.lower():
+                issues.append("footer.php missing </main> closing tag - layout structure incomplete")
         except Exception as e:
             logger.warning(f"Could not validate footer.php structure: {e}")
     else:
