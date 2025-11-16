@@ -54,6 +54,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
 
     def generate_theme(
         prompt: str,
+        design_profile: str = "streetwear_modern",
         image_files: list | None = None,
         text_files: list | None = None,
         push_to_github: bool = False,
@@ -306,6 +307,13 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             else:
                 requirements = parser.parse(prompt)
 
+            # Apply design profile to requirements
+            if design_profile:
+                from ..design_profiles import get_design_profile
+                profile = get_design_profile(design_profile)
+                requirements["design_profile"] = profile.to_dict()
+                status += f"  ✓ Design Profile: {design_profile.replace('_', ' ').title()}\n"
+
             status += f"  ✓ Theme: {requirements['theme_display_name']}\n"
             # Ensure features are strings before joining
             features = [str(f) for f in requirements.get('features', [])]
@@ -538,6 +546,20 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                     ),
                     lines=5,
                     info="Natural language brief describing your brand, pages, layout, colors, and tone. More detail = better results."
+                )
+
+                # Design Profile Selection
+                gr.Markdown("### 🎨 Design Profile")
+                gr.Markdown("Choose a visual style for your theme. This controls colors, typography, spacing, and component styling.")
+
+                from ..design_profiles import get_profile_names
+                profile_names = [name for name in get_profile_names() if not name.endswith('_clean') and name != 'minimal_clean']  # Remove aliases
+
+                design_profile_dropdown = gr.Dropdown(
+                    label="Visual Style",
+                    choices=profile_names,
+                    value="streetwear_modern",
+                    info="Select a design profile that matches your brand aesthetic. Each profile has its own color palette, typography, and component styles."
                 )
 
                 # LLM Provider Selection (optional configuration)
@@ -847,6 +869,7 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
             fn=generate_theme,
             inputs=[
                 prompt_input,
+                design_profile_dropdown,
                 image_upload,
                 text_upload,
                 push_checkbox,
