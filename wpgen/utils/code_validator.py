@@ -659,12 +659,24 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     if footer_file.exists():
         try:
             content = footer_file.read_text(encoding='utf-8')
-            # Relaxed validation: accept any <footer> tag, not just with site-footer class
-            # This ensures compatibility with local models like LM Studio
-            if '<footer' not in content.lower():
-                issues.append("footer.php missing <footer> tag - layout structure incomplete")
-            if '</main>' not in content.lower():
-                issues.append("footer.php missing </main> closing tag - layout structure incomplete")
+            # Very relaxed validation: accept any <footer> tag with any attributes
+            # Accept alternative closing structures (</div> wrappers, etc.) as long as DOM closes
+            # This ensures maximum compatibility with local models and prevents false positives
+            has_footer = '<footer' in content.lower()
+            has_wp_footer = 'wp_footer()' in content
+            has_closing_tags = ('</body>' in content.lower() and '</html>' in content.lower())
+
+            # Only warn if critical WordPress hooks are missing
+            if not has_wp_footer:
+                issues.append("footer.php missing wp_footer() hook - WordPress scripts/styles may not load")
+
+            # Only warn if HTML document is not properly closed
+            if not has_closing_tags:
+                issues.append("footer.php missing proper HTML closing tags (</body></html>)")
+
+            # Footer tag is recommended but not required - just log info, don't fail validation
+            if not has_footer:
+                logger.info("footer.php does not use semantic <footer> tag (recommended but not required)")
         except Exception as e:
             logger.warning(f"Could not validate footer.php structure: {e}")
     else:
@@ -1128,5 +1140,144 @@ function {safe_function_name}_pagination() {{
 
         php_code = php_code.rstrip() + helper_code
         repairs.append(f"Added missing helper functions: {', '.join(helpers_needed)}")
+
+    return php_code, repairs
+
+
+def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
+    """Automatically repair footer.php to ensure it has required structure.
+
+    This function ensures footer.php will never cause WordPress to display a blank
+    screen or break the Customizer preview.
+
+    Args:
+        php_code: Footer PHP code to repair
+
+    Returns:
+        Tuple of (repaired_code, list_of_repairs_made)
+    """
+    repairs = []
+    content_lower = php_code.lower()
+
+    # Safe default footer that prevents layout collapse
+    safe_footer = """
+<footer class="site-footer">
+    <div class="footer-inner container">
+        <div class="footer-widgets">
+            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                <div class="footer-widget-area">
+                    <?php dynamic_sidebar( 'footer-1' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget-area">
+                    <h3 class="widget-title">About</h3>
+                    <p>Welcome to <?php bloginfo( 'name' ); ?>.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+        <div class="site-info">
+            <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+"""
+
+    # 1. Ensure wp_footer() hook exists
+    if 'wp_footer()' not in php_code:
+        # Find the position before </body> or at the end
+        if '</body>' in content_lower:
+            # Insert before </body>
+            php_code = re.sub(
+                r'(</body>)',
+                r'<?php wp_footer(); ?>\n\1',
+                php_code,
+                flags=re.IGNORECASE
+            )
+            repairs.append("Added missing wp_footer() hook before </body>")
+        else:
+            # Append at end with closing tags
+            php_code = php_code.rstrip() + "\n<?php wp_footer(); ?>\n</body>\n</html>\n"
+            repairs.append("Added missing wp_footer() hook and closing tags")
+
+    # 2. Ensure closing </body> and </html> tags exist
+    if '</body>' not in content_lower:
+        php_code = php_code.rstrip() + "\n</body>\n</html>\n"
+        repairs.append("Added missing </body></html> closing tags")
+    elif '</html>' not in content_lower:
+        php_code = php_code.rstrip() + "\n</html>\n"
+        repairs.append("Added missing </html> closing tag")
+
+    # 3. If no <footer> tag at all, insert safe default footer
+    if '<footer' not in content_lower:
+        # Try to insert before wp_footer() or </body>
+        if 'wp_footer()' in php_code:
+            php_code = re.sub(
+                r'(<\?php\s+wp_footer\(\);?\s*\?>)',
+                safe_footer + r'\n\1',
+                php_code,
+                flags=re.IGNORECASE
+            )
+            repairs.append("Inserted safe default <footer> block (was missing)")
+        elif '</body>' in content_lower:
+            php_code = re.sub(
+                r'(</body>)',
+                safe_footer + r'\n\1',
+                php_code,
+                flags=re.IGNORECASE
+            )
+            repairs.append("Inserted safe default <footer> block before </body>")
+        else:
+            # Append before the end
+            php_code = php_code.rstrip() + "\n" + safe_footer + "\n"
+            repairs.append("Appended safe default <footer> block")
+
+    # 4. If content area (</main>, </div class="content">, etc.) is not closed,
+    # try to add a closing tag before footer
+    # Look for opening <main but no closing </main>
+    has_main_open = '<main' in content_lower
+    has_main_close = '</main>' in content_lower
+
+    if has_main_open and not has_main_close:
+        # Insert </main> before <footer>
+        if '<footer' in content_lower:
+            php_code = re.sub(
+                r'(<footer)',
+                r'</main><!-- .site-main -->\n\n\1',
+                php_code,
+                count=1,
+                flags=re.IGNORECASE
+            )
+            repairs.append("Added missing </main> closing tag before footer")
+
+    # 5. Ensure there's at least some visible content in footer
+    # Check if footer has any visible text or widgets
+    if '<footer' in content_lower:
+        # Extract footer content
+        footer_match = re.search(
+            r'<footer[^>]*>(.*?)</footer>',
+            php_code,
+            flags=re.IGNORECASE | re.DOTALL
+        )
+        if footer_match:
+            footer_content = footer_match.group(1)
+            # Remove PHP code and check if there's any HTML content
+            footer_content_no_php = re.sub(r'<\?php.*?\?>', '', footer_content, flags=re.DOTALL)
+            # Check for any meaningful HTML tags or text
+            has_content = (
+                'dynamic_sidebar' in footer_content or
+                '<div' in footer_content_no_php or
+                '<p' in footer_content_no_php or
+                len(footer_content_no_php.strip()) > 20
+            )
+            if not has_content:
+                # Footer is empty, replace it with safe footer
+                php_code = re.sub(
+                    r'<footer[^>]*>.*?</footer>',
+                    safe_footer,
+                    php_code,
+                    count=1,
+                    flags=re.IGNORECASE | re.DOTALL
+                )
+                repairs.append("Replaced empty footer with safe default content")
 
     return php_code, repairs
