@@ -18,6 +18,7 @@ from ..utils.code_validator import (
     get_fallback_template,
     remove_nonexistent_requires,
     repair_wordpress_code,
+    repair_footer_php,
     validate_php_syntax,
 )
 from ..utils.logger import get_logger
@@ -730,6 +731,12 @@ Note: theme-base-layout provides structural CSS and must load first."""
         if repairs:
             logger.info(f"Auto-repaired {filename}: {', '.join(repairs)}")
 
+        # For footer.php, apply additional footer-specific repairs
+        if filename == "footer.php":
+            php_code, footer_repairs = repair_footer_php(php_code)
+            if footer_repairs:
+                logger.info(f"Auto-repaired footer.php structure: {', '.join(footer_repairs)}")
+
         # Validate PHP syntax
         is_valid, error_msg = validate_php_syntax(php_code)
         if not is_valid:
@@ -991,35 +998,40 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
 
         description = """Create a modern, fully-featured footer.php template for WordPress theme.
 
-CRITICAL REQUIREMENTS - Modern Footer Structure:
+CRITICAL REQUIREMENTS - Footer Must Prevent Blank Screens:
 
 1. CLOSE MAIN CONTENT AREA:
-   - MUST include closing </main> tag with comment
+   - Include closing </main> tag if header.php opens it
    - Example: </main><!-- .site-main -->
+   - If unsure, include it - won't cause issues if redundant
 
-2. SEMANTIC FOOTER TAG:
-   - MUST use semantic <footer> tag
-   - MUST include a container div inside footer
-   - Example: <footer class="site-footer">
+2. SEMANTIC FOOTER TAG WITH VISIBLE CONTENT:
+   - MUST use semantic <footer> tag with any class name
+   - Footer MUST contain visible content to prevent layout collapse
+   - Include container div inside footer for structure
+   - Example: <footer class="site-footer"> or <footer class="footer">
 
-3. FOOTER WIDGET AREAS WITH VISIBLE CONTENT:
-   - Create multi-column footer widget layout (3-4 columns)
-   - Each widget area MUST have unique ID (footer-1, footer-2, footer-3)
-   - MUST include visible fallback content when widgets are not active
-   - Include default text like "About", "Quick Links", "Connect" as placeholder content
+3. FOOTER WIDGET AREAS WITH ALWAYS-VISIBLE FALLBACK:
+   - Create multi-column footer widget layout (2-4 columns)
+   - Each widget area has unique ID (footer-1, footer-2, footer-3)
+   - CRITICAL: MUST include visible fallback content when widgets are not active
+   - Use if/else with dynamic_sidebar() to show fallback when no widgets
+   - Fallback content: "About", "Quick Links", "Connect" with real text
+   - This ensures footer NEVER appears empty
    - Wrap in container div for width constraint
-   - Use responsive layout classes (grid or flexbox)
 
 4. FOOTER CREDITS SECTION:
-   - MUST have separate <div class="site-info"> section
-   - MUST include copyright with current year: date('Y')
-   - MUST include site name: bloginfo('name')
-   - Include "All rights reserved" text
-   - Wrap in container div
+   - Include <div class="site-info"> section with copyright
+   - Include current year: date('Y')
+   - Include site name: bloginfo('name')
+   - Example: "&copy; 2024 Site Name. All rights reserved."
+   - This adds visible content to prevent blank footers
 
-5. WORDPRESS HOOKS:
+5. WORDPRESS HOOKS (CRITICAL):
    - MUST include <?php wp_footer(); ?> before </body>
-   - MUST properly close </body> and </html> tags
+   - MUST include closing </body> and </html> tags
+   - These are required for WordPress to function properly
+   - Missing these causes WordPress Customizer to fail
 
 6. SAMPLE STRUCTURE WITH VISIBLE FALLBACK CONTENT:
 </main><!-- .site-main -->
@@ -1094,7 +1106,14 @@ CRITICAL REQUIREMENTS - Modern Footer Structure:
    - Include proper indentation
    - Add inline comments for sections
 
-IMPORTANT: Create a complete, production-ready footer with widget areas, visible fallback content, copyright section, and modern layout. The footer MUST always display visible content even when no widgets are active."""
+IMPORTANT: The footer MUST prevent blank screens and WordPress Customizer failures:
+- Include wp_footer() hook and closing tags (</body></html>) - REQUIRED
+- Include visible fallback content in widget areas - prevents empty footer
+- Include copyright section - adds visible content
+- Close any open tags (</main> if needed) - prevents DOM breaks
+- Use proper structure to ensure WordPress preview never blanks out
+
+Create a complete, production-ready footer that will NEVER cause layout collapse or preview failures."""
 
         try:
             # Pass design images for footer layout reference
@@ -1102,17 +1121,18 @@ IMPORTANT: Create a complete, production-ready footer with widget areas, visible
                 description, "php", context, images=self.design_images
             )
 
-            # Validate that generated code has required semantic structure
-            # Relaxed validation: accept any <footer> tag, not just with site-footer class
-            has_footer_tag = '<footer' in php_code.lower()
-            has_closing_main = '</main>' in php_code.lower()
+            # Very relaxed validation: auto-repair will fix any issues
+            # Just check that we got some content back
+            if not php_code or len(php_code.strip()) < 10:
+                logger.warning("Generated footer.php is empty or too short - using fallback")
+                raise ValueError("Generated footer is empty")
 
-            if not (has_footer_tag and has_closing_main):
-                logger.warning("Generated footer.php missing required semantic structure - using fallback")
-                logger.warning(f"  <footer> tag: {has_footer_tag}, </main>: {has_closing_main}")
-                # Use fallback template
-                raise ValueError("Generated footer missing required structure")
-
+            # The auto-repair function will ensure footer.php has:
+            # - <footer> tag (if missing, will be added)
+            # - </main> closing tag (if main is open but not closed)
+            # - wp_footer() hook (if missing, will be added)
+            # - Proper closing tags (will be added if missing)
+            # - Visible content (empty footers will be replaced)
             self._validate_and_write_php(theme_dir, "footer.php", php_code)
 
         except Exception as e:
