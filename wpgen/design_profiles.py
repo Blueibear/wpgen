@@ -363,19 +363,155 @@ EARTHY_NATURAL.components = {
 }
 
 
+BOLD_NEON = DesignProfile(
+    name="bold_neon",
+    description="High-energy design with neon accents, dark backgrounds, and electric vibes"
+)
+BOLD_NEON.colors = {
+    'primary': '#0A0E27',
+    'secondary': '#1A1F3A',
+    'accent': '#00FFF0',
+    'background': '#0D1117',
+    'surface': '#161B22',
+    'text': '#FFFFFF',
+    'text_muted': '#8B949E',
+    'border': '#30363D',
+    'hover': '#00FFF0',
+    'success': '#39FF14',
+    'warning': '#FFD700',
+    'error': '#FF006E',
+}
+BOLD_NEON.fonts = {
+    'primary': "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    'headings': "'Orbitron', 'Impact', sans-serif",
+    'mono': "'Share Tech Mono', 'Courier New', monospace",
+    'base_size': '16px',
+    'scale': '1.4',  # Augmented fourth
+}
+BOLD_NEON.spacing = {
+    'unit': '8px',
+    'xs': '4px',
+    'sm': '8px',
+    'md': '16px',
+    'lg': '32px',
+    'xl': '64px',
+    'xxl': '128px',
+    'container_max': '1400px',
+    'content_max': '900px',
+}
+BOLD_NEON.layout = {
+    'density': 'spacious',
+    'header_height': '90px',
+    'hero_height': '700px',
+    'grid_columns': '3',
+    'gap': '40px',
+    'border_radius': '8px',
+    'border_width': '2px',
+}
+BOLD_NEON.components = {
+    'buttons': {
+        'style': 'neon',
+        'size': 'large',
+        'uppercase': True,
+        'weight': 'bold',
+        'hover_effect': 'glow',
+    },
+    'cards': {
+        'shadow': 'neon-glow',
+        'border': True,
+        'hover_lift': True,
+    },
+    'navigation': {
+        'style': 'horizontal',
+        'uppercase': True,
+        'weight': 'bold',
+    },
+}
+
+
+DARK_MODE = DesignProfile(
+    name="dark_mode",
+    description="Sophisticated dark theme with subtle accents and excellent readability"
+)
+DARK_MODE.colors = {
+    'primary': '#3B82F6',
+    'secondary': '#8B5CF6',
+    'accent': '#06B6D4',
+    'background': '#0F172A',
+    'surface': '#1E293B',
+    'text': '#F1F5F9',
+    'text_muted': '#94A3B8',
+    'border': '#334155',
+    'hover': '#60A5FA',
+    'success': '#10B981',
+    'warning': '#F59E0B',
+    'error': '#EF4444',
+}
+DARK_MODE.fonts = {
+    'primary': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    'headings': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    'mono': "'JetBrains Mono', 'Courier New', monospace",
+    'base_size': '16px',
+    'scale': '1.25',
+}
+DARK_MODE.spacing = {
+    'unit': '8px',
+    'xs': '4px',
+    'sm': '8px',
+    'md': '16px',
+    'lg': '32px',
+    'xl': '64px',
+    'xxl': '96px',
+    'container_max': '1200px',
+    'content_max': '800px',
+}
+DARK_MODE.layout = {
+    'density': 'comfortable',
+    'header_height': '80px',
+    'hero_height': '600px',
+    'grid_columns': '3',
+    'gap': '32px',
+    'border_radius': '12px',
+    'border_width': '1px',
+}
+DARK_MODE.components = {
+    'buttons': {
+        'style': 'filled',
+        'size': 'medium',
+        'uppercase': False,
+        'weight': 'semibold',
+        'hover_effect': 'brighten',
+    },
+    'cards': {
+        'shadow': 'elevated',
+        'border': True,
+        'hover_lift': True,
+    },
+    'navigation': {
+        'style': 'horizontal',
+        'uppercase': False,
+        'weight': 'medium',
+    },
+}
+
+
 # Profile Registry
 DESIGN_PROFILES = {
     'modern_streetwear': MODERN_STREETWEAR,
+    'streetwear_modern': MODERN_STREETWEAR,  # Alias for consistency
     'minimalist': MINIMALIST,
+    'minimal_clean': MINIMALIST,  # Alias
     'corporate': CORPORATE,
     'vibrant_bold': VIBRANT_BOLD,
     'earthy_natural': EARTHY_NATURAL,
+    'bold_neon': BOLD_NEON,
+    'dark_mode': DARK_MODE,
 }
 
 
 def get_design_profile(profile_name: str = None) -> DesignProfile:
     """
-    Get a design profile by name. Defaults to minimalist if not specified.
+    Get a design profile by name. Defaults to streetwear_modern if not specified.
 
     Args:
         profile_name: Name of the design profile
@@ -385,7 +521,7 @@ def get_design_profile(profile_name: str = None) -> DesignProfile:
     """
     if profile_name and profile_name in DESIGN_PROFILES:
         return DESIGN_PROFILES[profile_name]
-    return MINIMALIST  # Default profile
+    return MODERN_STREETWEAR  # Default to streetwear_modern profile
 
 
 def get_profile_names() -> list:

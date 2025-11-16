@@ -367,12 +367,13 @@ Tags: {tags_str}
         description = f"""Create a modern, visually attractive, production-ready CSS stylesheet for a WordPress theme.
 This should be a COMPLETE, FULLY-STYLED theme - not a minimal boilerplate.
 
-DESIGN SYSTEM:
 """
 
         # Add design profile details if available
         if design_profile:
             from ..design_profiles import profile_to_prompt_context, DesignProfile
+            from ..design_inspiration import get_inspiration_context
+
             # Convert dict back to DesignProfile if needed
             if isinstance(design_profile, dict):
                 temp_profile = DesignProfile(design_profile['name'], design_profile['description'])
@@ -381,10 +382,20 @@ DESIGN SYSTEM:
                 temp_profile.spacing = design_profile['spacing']
                 temp_profile.layout = design_profile['layout']
                 temp_profile.components = design_profile['components']
+                description += "DESIGN SYSTEM:\n"
                 description += profile_to_prompt_context(temp_profile)
-            description += "\n\nUse these exact colors, fonts, spacing, and component styles in the CSS.\n"
+                description += "\n\n"
+
+                # Add design inspiration context
+                inspiration_context = get_inspiration_context(design_profile['name'])
+                if inspiration_context:
+                    description += inspiration_context
+                    description += "\n\n"
+
+            description += "Use these exact colors, fonts, spacing, and component styles in the CSS.\n"
         else:
-            description += f"""Color Scheme: {context['color_scheme']}
+            description += f"""DESIGN SYSTEM:
+Color Scheme: {context['color_scheme']}
 Layout Type: {context['layout']}
 Use a cohesive, professional color palette with primary, secondary, and accent colors.
 """
@@ -800,26 +811,10 @@ Use modern WordPress template tags and best practices."""
 
         except Exception as e:
             logger.error(f"Failed to generate index.php: {str(e)}")
-            # Use minimal fallback
-            fallback = """<?php
-get_header();
-
-if ( have_posts() ) :
-    while ( have_posts() ) : the_post();
-        ?>
-        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-            <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
-            <div class="entry-content">
-                <?php the_content(); ?>
-            </div>
-        </article>
-        <?php
-    endwhile;
-    the_posts_pagination();
-endif;
-
-get_footer();
-"""
+            # Use rich fallback
+            from ..fallback_templates import get_rich_fallback_index
+            fallback = get_rich_fallback_index(requirements["theme_name"])
+            logger.info("Using rich fallback template for index.php")
             self._validate_and_write_php(theme_dir, "index.php", fallback)
 
     def _generate_header_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
@@ -831,12 +826,21 @@ get_footer();
         """
         logger.info("Generating header.php")
 
+        # Import header pattern for structured guidance
+        from ..patterns import pattern_to_prompt_context
+
+        header_pattern = pattern_to_prompt_context('header')
+
         context = {
             "theme_name": requirements["theme_name"],
             "navigation": requirements.get("navigation", []),
         }
 
-        description = """Create a modern, fully-featured header.php template for WordPress theme.
+        description = f"""Create a modern, fully-featured header.php template for WordPress theme.
+
+HEADER DESIGN PATTERN:
+
+{header_pattern}
 
 CRITICAL REQUIREMENTS - Modern Header Structure:
 
@@ -994,9 +998,18 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
         """
         logger.info("Generating footer.php")
 
+        # Import footer pattern for structured guidance
+        from ..patterns import pattern_to_prompt_context
+
+        footer_pattern = pattern_to_prompt_context('footer')
+
         context = {"theme_name": requirements["theme_name"]}
 
-        description = """Create a modern, fully-featured footer.php template for WordPress theme.
+        description = f"""Create a modern, fully-featured footer.php template for WordPress theme.
+
+FOOTER DESIGN PATTERN:
+
+{footer_pattern}
 
 CRITICAL REQUIREMENTS - Footer Must Prevent Blank Screens:
 
@@ -1238,6 +1251,13 @@ Include:
         """
         logger.info("Generating template files")
 
+        # Import rich fallback templates
+        from ..fallback_templates import (
+            get_rich_fallback_front_page,
+            get_rich_fallback_index,
+            get_rich_fallback_archive
+        )
+
         templates_to_generate = {
             "front-page.php": "Homepage template with hero section",
             "single.php": "Single post template",
@@ -1261,8 +1281,29 @@ Include:
 
                 # Special prompts for modern templates
                 if template_file == "front-page.php":
+                    # Import pattern library for structured guidance
+                    from ..patterns import pattern_to_prompt_context, get_pattern
+                    from ..design_inspiration import get_ecommerce_best_practices
+
+                    hero_pattern = pattern_to_prompt_context('hero')
+                    product_grid_pattern = pattern_to_prompt_context('product_grid')
+                    cta_pattern = pattern_to_prompt_context('cta_strip')
+                    feature_pattern = pattern_to_prompt_context('feature_strip')
+
                     full_description = f"""Create a modern, visually impressive front-page.php (homepage) template for WordPress.
-This should be a COMPLETE, PRODUCTION-READY homepage with hero section, featured content grid, and call-to-action sections.
+This should be a COMPLETE, PRODUCTION-READY, ECOMMERCE-STYLE homepage with multiple rich sections - NOT a minimal blog layout.
+
+DESIGN PATTERNS TO FOLLOW:
+
+{hero_pattern}
+
+{product_grid_pattern}
+
+{feature_pattern}
+
+{cta_pattern}
+
+{get_ecommerce_best_practices()}
 
 REQUIRED STRUCTURE:
 
@@ -1440,16 +1481,31 @@ Follow WordPress template hierarchy and coding standards."""
                     full_description, "php", context, images=self.design_images
                 )
 
-                # Get fallback template if available
-                fallback = get_fallback_template(template_file, requirements["theme_name"])
+                # Get rich fallback template if available
+                fallback = None
+                if template_file == "front-page.php":
+                    fallback = get_rich_fallback_front_page(requirements["theme_name"])
+                elif template_file == "archive.php":
+                    fallback = get_rich_fallback_archive(requirements["theme_name"])
+                else:
+                    fallback = get_fallback_template(template_file, requirements["theme_name"])
 
                 self._validate_and_write_php(theme_dir, template_file, php_code, fallback if fallback else None)
                 logger.info(f"Generated {template_file} successfully")
 
             except Exception as e:
                 logger.error(f"Failed to generate {template_file}: {str(e)}")
-                # Use fallback template if available
-                fallback = get_fallback_template(template_file, requirements["theme_name"])
+                # Use rich fallback template if available
+                fallback = None
+                if template_file == "front-page.php":
+                    fallback = get_rich_fallback_front_page(requirements["theme_name"])
+                    logger.info(f"Using rich fallback template for {template_file}")
+                elif template_file == "archive.php":
+                    fallback = get_rich_fallback_archive(requirements["theme_name"])
+                    logger.info(f"Using rich fallback template for {template_file}")
+                else:
+                    fallback = get_fallback_template(template_file, requirements["theme_name"])
+
                 if fallback:
                     logger.warning(f"Using fallback template for {template_file}")
                     self._validate_and_write_php(theme_dir, template_file, fallback)

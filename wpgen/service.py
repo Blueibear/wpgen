@@ -54,7 +54,7 @@ class GenerationRequest(BaseModel):
     guided_mode: Optional[Dict[str, Any]] = Field(default=None, description="Structured theme configuration")
 
     # Design profile
-    design_profile: Optional[str] = Field(default=None, description="Design profile (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)")
+    design_profile: Optional[str] = Field(default=None, description="Design profile (streetwear_modern, minimalist, corporate, vibrant_bold, earthy_natural, bold_neon, dark_mode)")
 
     # Optional features
     optional_features: Optional[Dict[str, Any]] = Field(default=None, description="Optional theme features")
