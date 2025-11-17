@@ -10,7 +10,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..utils.logger import get_logger
 
@@ -33,11 +33,11 @@ class FileHandler:
 
     def __init__(
         self,
-        max_upload_size: Optional[int] = None,
-        max_image_size: Optional[int] = None,
-        max_text_size: Optional[int] = None,
-        max_pdf_pages: Optional[int] = None,
-        temp_workspace: Optional[Path] = None,
+        max_upload_size: int | None = None,
+        max_image_size: int | None = None,
+        max_text_size: int | None = None,
+        max_pdf_pages: int | None = None,
+        temp_workspace: Path | None = None,
     ):
         """Initialize file handler with security limits.
 
@@ -94,8 +94,8 @@ class FileHandler:
                 logger.warning(f"Failed to cleanup temp workspace: {e}")
 
     def process_uploads(
-        self, image_files: Optional[List[str]] = None, text_files: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        self, image_files: list[str] | None = None, text_files: list[str] | None = None
+    ) -> dict[str, Any]:
         """Process all uploaded files and prepare them for LLM context.
 
         Args:
@@ -143,7 +143,7 @@ class FileHandler:
 
         return result
 
-    def _secure_copy_to_workspace(self, file_path: str) -> Optional[Path]:
+    def _secure_copy_to_workspace(self, file_path: str) -> Path | None:
         """Securely copy file to temp workspace with path validation.
 
         Args:
@@ -175,7 +175,7 @@ class FileHandler:
             logger.error(f"Failed to copy file to workspace: {e}")
             return None
 
-    def process_image(self, image_path: str) -> Optional[Dict[str, Any]]:
+    def process_image(self, image_path: str) -> dict[str, Any] | None:
         """Process a single image file with EXIF orientation fix.
 
         Args:
@@ -261,7 +261,7 @@ class FileHandler:
             logger.error(f"Error processing image {image_path}: {str(e)}")
             return None
 
-    def process_text_file(self, file_path: str) -> Optional[str]:
+    def process_text_file(self, file_path: str) -> str | None:
         """Process a text file and extract its content.
 
         Args:
@@ -305,7 +305,7 @@ class FileHandler:
             logger.error(f"Error processing text file {file_path}: {str(e)}")
             return None
 
-    def _extract_pdf_text(self, pdf_path: Path) -> Optional[str]:
+    def _extract_pdf_text(self, pdf_path: Path) -> str | None:
         """Extract text from a PDF file with page limit.
 
         Args:
@@ -346,7 +346,7 @@ class FileHandler:
             logger.error(f"Error extracting PDF text: {str(e)}")
             return f"[PDF file: {pdf_path.name} - error extracting text]"
 
-    def validate_upload(self, file_path: str) -> Tuple[bool, str]:
+    def validate_upload(self, file_path: str) -> tuple[bool, str]:
         """Validate an uploaded file.
 
         Args:
@@ -389,7 +389,7 @@ class FileHandler:
 
         return True, ""
 
-    def create_zip(self, directory: str) -> Optional[str]:
+    def create_zip(self, directory: str) -> str | None:
         """Create a ZIP archive of a directory.
 
         Args:

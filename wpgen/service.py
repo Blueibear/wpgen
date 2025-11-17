@@ -8,7 +8,7 @@ complete pipeline from prompt to deployed theme.
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -39,32 +39,32 @@ class GenerationRequest(BaseModel):
     prompt: str = Field(..., min_length=10, description="Natural language description of the WordPress site")
 
     # File inputs
-    image_files: Optional[List[str]] = Field(default=None, description="Paths to design mockup images")
-    text_files: Optional[List[str]] = Field(default=None, description="Paths to content documents (PDF, MD, TXT)")
+    image_files: list[str] | None = Field(default=None, description="Paths to design mockup images")
+    text_files: list[str] | None = Field(default=None, description="Paths to content documents (PDF, MD, TXT)")
 
     # LLM configuration
-    llm_provider: Optional[LLMProvider] = Field(default=None, description="LLM provider to use")
-    llm_model: Optional[str] = Field(default=None, description="Specific model name")
-    llm_brains_model: Optional[str] = Field(default=None, description="Brains model for local LLMs")
-    llm_brains_base_url: Optional[str] = Field(default=None, description="Brains model base URL")
-    llm_vision_model: Optional[str] = Field(default=None, description="Vision model for local LLMs")
-    llm_vision_base_url: Optional[str] = Field(default=None, description="Vision model base URL")
+    llm_provider: LLMProvider | None = Field(default=None, description="LLM provider to use")
+    llm_model: str | None = Field(default=None, description="Specific model name")
+    llm_brains_model: str | None = Field(default=None, description="Brains model for local LLMs")
+    llm_brains_base_url: str | None = Field(default=None, description="Brains model base URL")
+    llm_vision_model: str | None = Field(default=None, description="Vision model for local LLMs")
+    llm_vision_base_url: str | None = Field(default=None, description="Vision model base URL")
 
     # Guided mode parameters
-    guided_mode: Optional[Dict[str, Any]] = Field(default=None, description="Structured theme configuration")
+    guided_mode: dict[str, Any] | None = Field(default=None, description="Structured theme configuration")
 
     # Design profile
-    design_profile: Optional[str] = Field(default=None, description="Design profile (streetwear_modern, minimalist, corporate, vibrant_bold, earthy_natural, bold_neon, dark_mode)")
+    design_profile: str | None = Field(default=None, description="Design profile (streetwear_modern, minimalist, corporate, vibrant_bold, earthy_natural, bold_neon, dark_mode)")
 
     # Optional features
-    optional_features: Optional[Dict[str, Any]] = Field(default=None, description="Optional theme features")
+    optional_features: dict[str, Any] | None = Field(default=None, description="Optional theme features")
 
     # Output configuration
-    output_dir: Optional[str] = Field(default=None, description="Output directory for generated theme")
+    output_dir: str | None = Field(default=None, description="Output directory for generated theme")
 
     # GitHub integration
     push_to_github: bool = Field(default=False, description="Push theme to GitHub")
-    github_repo_name: Optional[str] = Field(default=None, description="GitHub repository name")
+    github_repo_name: str | None = Field(default=None, description="GitHub repository name")
 
     # WordPress deployment
     deploy_to_wordpress: bool = Field(default=False, description="Deploy theme to WordPress site")
@@ -86,33 +86,33 @@ class GenerationResult(BaseModel):
     """Result model for theme generation."""
 
     success: bool = Field(..., description="Whether generation succeeded")
-    theme_dir: Optional[str] = Field(default=None, description="Path to generated theme directory")
+    theme_dir: str | None = Field(default=None, description="Path to generated theme directory")
     theme_name: str = Field(..., description="Generated theme name")
     theme_display_name: str = Field(..., description="Theme display name")
     description: str = Field(..., description="Theme description")
-    features: List[str] = Field(default_factory=list, description="Theme features")
+    features: list[str] = Field(default_factory=list, description="Theme features")
 
     # GitHub information
-    github_url: Optional[str] = Field(default=None, description="GitHub repository URL")
+    github_url: str | None = Field(default=None, description="GitHub repository URL")
 
     # WordPress information
     wordpress_deployed: bool = Field(default=False, description="Whether theme was deployed to WordPress")
     wordpress_activated: bool = Field(default=False, description="Whether theme was activated")
-    wordpress_theme_id: Optional[str] = Field(default=None, description="WordPress theme ID")
+    wordpress_theme_id: str | None = Field(default=None, description="WordPress theme ID")
 
     # Validation results
-    validation_errors: List[str] = Field(default_factory=list, description="Validation errors")
-    validation_warnings: List[str] = Field(default_factory=list, description="Validation warnings")
+    validation_errors: list[str] = Field(default_factory=list, description="Validation errors")
+    validation_warnings: list[str] = Field(default_factory=list, description="Validation warnings")
 
     # Error information
-    error: Optional[str] = Field(default=None, description="Error message if generation failed")
-    error_details: Optional[str] = Field(default=None, description="Detailed error information")
+    error: str | None = Field(default=None, description="Error message if generation failed")
+    error_details: str | None = Field(default=None, description="Detailed error information")
 
 
 class ThemeGenerationService:
     """Service for generating WordPress themes."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize the theme generation service.
 
         Args:
@@ -309,7 +309,7 @@ class ThemeGenerationService:
 
         return prompt
 
-    def _apply_design_profile(self, requirements: Dict[str, Any], profile_name: str) -> Dict[str, Any]:
+    def _apply_design_profile(self, requirements: dict[str, Any], profile_name: str) -> Dict[str, Any]:
         """Apply design profile to requirements.
 
         Args:
@@ -324,7 +324,7 @@ class ThemeGenerationService:
         requirements["design_profile"] = profile.to_dict()
         return requirements
 
-    def _apply_guided_mode(self, requirements: Dict[str, Any], guided_mode: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_guided_mode(self, requirements: dict[str, Any], guided_mode: dict[str, Any]) -> Dict[str, Any]:
         """Apply guided mode parameters to requirements.
 
         Args:
@@ -339,7 +339,7 @@ class ThemeGenerationService:
         requirements["guided_mode"] = guided_mode
         return requirements
 
-    def _apply_optional_features(self, requirements: Dict[str, Any], optional_features: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_optional_features(self, requirements: dict[str, Any], optional_features: dict[str, Any]) -> Dict[str, Any]:
         """Apply optional features to requirements.
 
         Args:
@@ -392,7 +392,7 @@ class ThemeGenerationService:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _push_to_github(self, theme_dir: str, request: GenerationRequest, requirements: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    def _push_to_github(self, theme_dir: str, request: GenerationRequest, requirements: dict[str, Any], cfg: dict[str, Any]) -> Dict[str, Any]:
         """Push theme to GitHub.
 
         Args:
@@ -425,7 +425,7 @@ class ThemeGenerationService:
             self.logger.error(f"GitHub push failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _deploy_to_wordpress(self, theme_dir: str, request: GenerationRequest, requirements: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    def _deploy_to_wordpress(self, theme_dir: str, request: GenerationRequest, requirements: dict[str, Any], cfg: dict[str, Any]) -> Dict[str, Any]:
         """Deploy theme to WordPress site.
 
         Args:
@@ -482,7 +482,7 @@ class ThemeGenerationService:
 
 
 # Convenience function for simple usage
-def generate_theme(config: Dict[str, Any], request: GenerationRequest) -> GenerationResult:
+def generate_theme(config: dict[str, Any], request: GenerationRequest) -> GenerationResult:
     """Generate a WordPress theme (convenience function).
 
     Args:

@@ -8,7 +8,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from .logger import get_logger
 from .php_validation import (
@@ -136,7 +136,7 @@ class CodeValidator:
             logger.warning(f"PHP is not available: {e}")
             return False
 
-    def validate_php_syntax(self, php_code: str) -> Tuple[bool, Optional[str], bool]:
+    def validate_php_syntax(self, php_code: str) -> tuple[bool, str | None, bool]:
         """Validate PHP code syntax.
 
         Args:
@@ -191,7 +191,7 @@ class CodeValidator:
                 logger.warning(warning_msg)
                 return True, warning_msg, True
 
-    def validate_file(self, file_path: Path) -> Dict[str, Any]:
+    def validate_file(self, file_path: Path) -> dict[str, Any]:
         """Validate a single file.
 
         Args:
@@ -230,7 +230,7 @@ class CodeValidator:
 
         return result
 
-    def validate_directory(self, directory: str) -> Dict[str, Any]:
+    def validate_directory(self, directory: str) -> dict[str, Any]:
         """Validate all PHP files in a directory.
 
         Args:
@@ -281,7 +281,7 @@ class CodeValidator:
         return results
 
 
-def validate_php_syntax(php_code: str) -> Tuple[bool, Optional[str]]:
+def validate_php_syntax(php_code: str) -> tuple[bool, str | None]:
     """Validate PHP code syntax using php -l command.
 
     Args:
@@ -335,7 +335,7 @@ def validate_php_syntax(php_code: str) -> Tuple[bool, Optional[str]]:
         return True, None  # Don't block on validation errors
 
 
-def remove_nonexistent_requires(php_code: str, theme_dir: Optional[Path] = None) -> str:
+def remove_nonexistent_requires(php_code: str, theme_dir: Path | None = None) -> str:
     """Remove or comment out require/include statements for files that don't exist.
 
     Args:
@@ -413,7 +413,7 @@ def validate_and_repair_php_file(
     file_type: str,
     filename: str,
     max_retries: int = 2
-) -> Tuple[str, bool, List[str]]:
+) -> tuple[str, bool, list[str]]:
     """Validate and repair a PHP file with retry logic.
 
     Args:

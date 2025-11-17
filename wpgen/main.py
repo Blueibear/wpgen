@@ -7,7 +7,6 @@ Command-line interface for generating WordPress themes from natural language des
 import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 import yaml
@@ -89,15 +88,15 @@ def cli():
     help="Design profile for theme styling (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)",
 )
 def generate(
-    prompt: Optional[str],
+    prompt: str | None,
     config_path: str,
-    output: Optional[str],
+    output: str | None,
     push: bool,
-    repo_name: Optional[str],
+    repo_name: str | None,
     interactive: bool,
-    provider: Optional[str],
-    model: Optional[str],
-    design_profile: Optional[str],
+    provider: str | None,
+    model: str | None,
+    design_profile: str | None,
 ):
     """Generate a WordPress theme from a description.
 

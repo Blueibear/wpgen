@@ -9,7 +9,7 @@ import re
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..llm.base import BaseLLMProvider
 from ..utils.code_validator import (
@@ -73,7 +73,7 @@ Text Domain: {text_domain}
             f.write(header + "\n\n" + original)
 
 
-def _first_hex(color_scheme: Optional[str], fallback: str = "#0f172a") -> str:
+def _first_hex(color_scheme: str | None, fallback: str = "#0f172a") -> str:
     """Extract first hex color from color scheme string.
 
     Args:
@@ -95,7 +95,7 @@ def _first_hex(color_scheme: Optional[str], fallback: str = "#0f172a") -> str:
     return f"#{m.group(1)}" if m else fallback
 
 
-def _ensure_screenshot(theme_dir: str, requirements: dict, images: Optional[List[Dict[str, Any]]]) -> None:
+def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str, Any | None]]) -> None:
     """Ensure theme has a screenshot.png file.
 
     Creates a screenshot from the first user image or generates a placeholder.
@@ -181,7 +181,7 @@ class WordPressGenerator:
         self,
         llm_provider: BaseLLMProvider,
         output_dir: str = "output",
-        config: Dict[str, Any] = None,
+        config: dict[str, Any] = None,
     ):
         """Initialize the WordPress generator.
 
@@ -201,7 +201,7 @@ class WordPressGenerator:
         logger.info(f"Initialized WordPressGenerator with output dir: {output_dir}")
 
     def generate(
-        self, requirements: Dict[str, Any], images: Optional[List[Dict[str, Any]]] = None
+        self, requirements: dict[str, Any], images: list[dict[str, Any | None]] = None
     ) -> str:
         """Generate a complete WordPress theme from requirements with optional visual references.
 
@@ -302,7 +302,7 @@ class WordPressGenerator:
             logger.error(f"Failed to generate theme: {str(e)}")
             raise
 
-    def _generate_style_css(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_style_css(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate style.css file with theme header and styles.
 
         Args:
@@ -558,7 +558,7 @@ The theme should look modern, professional, and visually impressive when activat
             style_file = theme_dir / "style.css"
             style_file.write_text(header + "\n/* Add your styles here */\n", encoding="utf-8")
 
-    def _generate_functions_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_functions_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate functions.php file.
 
         Args:
@@ -712,7 +712,7 @@ Note: theme-base-layout provides structural CSS and must load first."""
         logger.info("Created plugin compatibility structure: includes/customizer/controls/selectbtn/")
 
     def _validate_and_write_php(
-        self, theme_dir: Path, filename: str, php_code: str, fallback_code: Optional[str] = None
+        self, theme_dir: Path, filename: str, php_code: str, fallback_code: str | None = None
     ) -> None:
         """Validate PHP code and write to file with comprehensive validation and fallback.
 
@@ -781,7 +781,7 @@ Note: theme-base-layout provides structural CSS and must load first."""
         else:
             logger.warning(f"⚠ Written {filename} (may have issues)")
 
-    def _generate_index_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_index_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate index.php template file.
 
         Args:
@@ -836,7 +836,7 @@ Use modern WordPress template tags and best practices."""
             logger.info("Using rich fallback template for index.php")
             self._validate_and_write_php(theme_dir, "index.php", fallback)
 
-    def _generate_header_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_header_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate header.php template file.
 
         Args:
@@ -1010,7 +1010,7 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
 """
             self._validate_and_write_php(theme_dir, "header.php", fallback)
 
-    def _generate_footer_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_footer_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate footer.php template file.
 
         Args:
@@ -1234,7 +1234,7 @@ Create a complete, production-ready footer that will NEVER cause layout collapse
 """
             self._validate_and_write_php(theme_dir, "footer.php", fallback)
 
-    def _generate_sidebar_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_sidebar_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate sidebar.php template file.
 
         Args:
@@ -1265,7 +1265,7 @@ Include:
             fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
             self._validate_and_write_php(theme_dir, "sidebar.php", fallback)
 
-    def _generate_templates(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_templates(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate additional template files based on requirements.
 
         Args:
@@ -1536,7 +1536,7 @@ Follow WordPress template hierarchy and coding standards."""
                     logger.warning(f"No fallback available for {template_file}, skipping")
                     continue
 
-    def _generate_template_parts(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_template_parts(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Scan for get_template_part() calls and generate missing template files.
 
         Args:
@@ -2629,7 +2629,7 @@ select:focus {
         css_file.write_text(css_content, encoding="utf-8")
         logger.info("Generated base layout CSS successfully")
 
-    def _generate_optional_features(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_optional_features(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate optional feature assets based on requirements.
 
         Args:
@@ -2695,7 +2695,7 @@ get_footer();
         woo_file.write_text(woo_template, encoding="utf-8")
         logger.info("Created woocommerce.php template")
 
-    def _generate_gutenberg_blocks(self, theme_dir: Path, blocks: List[str]) -> None:
+    def _generate_gutenberg_blocks(self, theme_dir: Path, blocks: list[str]) -> None:
         """Generate custom Gutenberg blocks scaffolding."""
         blocks_dir = theme_dir / "blocks"
         blocks_dir.mkdir(exist_ok=True)
@@ -2768,7 +2768,7 @@ registerBlockType('wpgen/{block_name}', {{
 
             logger.info(f"Created Gutenberg block: {block_name}")
 
-    def _generate_dark_mode(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_dark_mode(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate dark mode toggle CSS and JS."""
         assets_dir = theme_dir / "assets"
         css_dir = assets_dir / "css"
@@ -2856,7 +2856,7 @@ body {
         (js_dir / "dark-mode.js").write_text(dark_js, encoding="utf-8")
         logger.info("Generated dark mode toggle")
 
-    def _generate_preloader(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_preloader(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate animated preloader HTML/CSS/JS."""
         assets_dir = theme_dir / "assets"
         css_dir = assets_dir / "css"
@@ -2934,7 +2934,7 @@ body {
         (js_dir / "preloader.js").write_text(preloader_js, encoding="utf-8")
         logger.info("Generated animated preloader")
 
-    def _generate_readme(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_readme(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate README.md for the theme.
 
         Args:
@@ -3035,7 +3035,7 @@ build/
         gitignore_file.write_text(gitignore_content, encoding="utf-8")
         logger.info("Generated .gitignore successfully")
 
-    def _generate_wp_config(self, output_dir: Path, requirements: Dict[str, Any]) -> None:
+    def _generate_wp_config(self, output_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate sample wp-config.php file.
 
         Args:

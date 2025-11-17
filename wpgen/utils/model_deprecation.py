@@ -1,7 +1,6 @@
 """Model deprecation warnings and recommendations."""
 
 import re
-from typing import Optional, Tuple
 
 from .logger import get_logger
 
@@ -32,7 +31,7 @@ DEPRECATED_PATTERNS = [
 ]
 
 
-def check_model_deprecation(model_name: str, provider: str = "unknown") -> Tuple[bool, Optional[str], Optional[str]]:
+def check_model_deprecation(model_name: str, provider: str = "unknown") -> tuple[bool, str | None, str | None]:
     """Check if a model name appears deprecated and suggest replacement.
 
     Args:
@@ -71,7 +70,7 @@ def check_model_deprecation(model_name: str, provider: str = "unknown") -> Tuple
     return False, None, None
 
 
-def _suggest_stable_model(model_name: str, provider: str) -> Optional[str]:
+def _suggest_stable_model(model_name: str, provider: str) -> str | None:
     """Suggest a stable model based on the deprecated model name.
 
     Args:

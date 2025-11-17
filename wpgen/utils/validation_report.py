@@ -1,6 +1,6 @@
 """Validation report formatting utilities."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from colorama import Fore, Style
 from colorama import init as colorama_init
@@ -8,7 +8,7 @@ from colorama import init as colorama_init
 colorama_init(autoreset=True)
 
 
-def print_validation_summary_table(results: Dict[str, Any], strict: bool = False) -> None:
+def print_validation_summary_table(results: dict[str, Any], strict: bool = False) -> None:
     """Print a structured validation summary table.
 
     Args:
@@ -78,7 +78,7 @@ def print_validation_summary_table(results: Dict[str, Any], strict: bool = False
     print()
 
 
-def print_file_validation_table(file_results: List[Dict[str, Any]]) -> None:
+def print_file_validation_table(file_results: list[dict[str, Any]]) -> None:
     """Print a table of per-file validation results.
 
     Args:

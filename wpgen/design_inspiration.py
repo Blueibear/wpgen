@@ -3,7 +3,7 @@ Design Inspiration Configuration for WPGen
 Non-code inspiration references for modern ecommerce theme generation
 """
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 # Inspiration brand references (non-scraping, style guidance only)

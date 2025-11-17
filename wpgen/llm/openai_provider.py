@@ -4,7 +4,7 @@ Implements the LLM provider interface using OpenAI's API.
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..utils.logger import get_logger
 from .base import BaseLLMProvider
@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI implementation of the LLM provider."""
 
-    def __init__(self, api_key: str, config: Dict[str, Any]):
+    def __init__(self, api_key: str, config: dict[str, Any]):
         """Initialize OpenAI provider.
 
         Args:
@@ -29,7 +29,7 @@ class OpenAIProvider(BaseLLMProvider):
         self.client = OpenAI(api_key=api_key)
         logger.info(f"Initialized OpenAI provider with model: {self.model}")
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None) -> str:
         """Generate text using OpenAI's API.
 
         Args:
@@ -69,8 +69,8 @@ class OpenAIProvider(BaseLLMProvider):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
+        context: dict[str, Any | None] = None,
+        images: list[dict[str, Any | None]] = None,
     ) -> str:
         """Generate code using OpenAI with optional visual references.
 
@@ -173,7 +173,7 @@ Requirements:
             logger.error(f"Failed to generate {file_type} code: {str(e)}")
             raise
 
-    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+    def analyze_prompt(self, prompt: str) -> dict[str, Any]:
         """Analyze user prompt to extract WordPress theme requirements.
 
         Args:
@@ -263,9 +263,9 @@ Requirements:
     def analyze_prompt_multimodal(
         self,
         prompt: str,
-        images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        images: list[dict[str, Any | None]] = None,
+        additional_context: str | None = None,
+    ) -> dict[str, Any]:
         """Analyze user prompt with multi-modal inputs (images, additional text).
 
         Args:
@@ -401,7 +401,7 @@ Return ONLY valid JSON, no other text."""
                 "integrations": [],
             }
 
-    def analyze_image(self, image_data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
+    def analyze_image(self, image_data: dict[str, Any], prompt: str) -> dict[str, Any]:
         """Analyze a single image with GPT-4 Vision capabilities.
 
         Args:
@@ -455,7 +455,7 @@ Return ONLY valid JSON, no other text."""
             logger.error(f"Failed to analyze image with GPT-4 Vision: {str(e)}")
             raise
 
-    def _extract_json(self, text: str) -> Dict[str, Any]:
+    def _extract_json(self, text: str) -> dict[str, Any]:
         """Extract JSON from LLM response text.
 
         Handles various formats:

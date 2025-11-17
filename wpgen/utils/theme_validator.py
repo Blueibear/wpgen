@@ -6,7 +6,6 @@ and identify which files are causing WordPress to crash.
 
 import subprocess
 from pathlib import Path
-from typing import Dict, Tuple
 
 from .logger import get_logger
 
@@ -43,7 +42,7 @@ class ThemeValidator:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
-    def validate(self, theme_path: str) -> Dict[str, any]:
+    def validate(self, theme_path: str) -> dict[str, any]:
         """Validate a WordPress theme directory.
 
         Args:
@@ -128,7 +127,7 @@ class ThemeValidator:
 
         return results
 
-    def _validate_php_file(self, php_file: Path, theme_dir: Path) -> Dict[str, any]:
+    def _validate_php_file(self, php_file: Path, theme_dir: Path) -> dict[str, any]:
         """Validate a single PHP file.
 
         Args:
@@ -177,7 +176,7 @@ class ThemeValidator:
 
         return result
 
-    def _validate_php_syntax_file(self, file_path: str) -> Tuple[bool, str]:
+    def _validate_php_syntax_file(self, file_path: str) -> tuple[bool, str]:
         """Validate PHP syntax of a file.
 
         Args:
@@ -210,7 +209,7 @@ class ThemeValidator:
             return True, f"Validation failed: {str(e)}"
 
 
-def validate_theme_directory(theme_path: str) -> Dict[str, any]:
+def validate_theme_directory(theme_path: str) -> dict[str, any]:
     """Validate all PHP files in a theme directory.
 
     Args:
@@ -301,7 +300,7 @@ def validate_theme_directory(theme_path: str) -> Dict[str, any]:
     return results
 
 
-def validate_php_syntax_file(file_path: str) -> Tuple[bool, str]:
+def validate_php_syntax_file(file_path: str) -> tuple[bool, str]:
     """Validate PHP syntax of a file.
 
     Args:
@@ -345,7 +344,7 @@ def validate_php_syntax_file(file_path: str) -> Tuple[bool, str]:
         return True, f"Validation failed: {str(e)}"
 
 
-def print_validation_report(results: Dict[str, any]) -> None:
+def print_validation_report(results: dict[str, any]) -> None:
     """Print a formatted validation report.
 
     Args:

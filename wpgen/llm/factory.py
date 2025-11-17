@@ -4,7 +4,7 @@ Provides a registry and factory function for LLM provider classes.
 For actual provider instantiation with configuration, use wpgen.utils.config.get_llm_provider.
 """
 
-from typing import Dict, Type
+from typing import Type
 
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
@@ -13,7 +13,7 @@ from .mock_provider import MockLLMProvider
 from .openai_provider import OpenAIProvider
 
 # Provider registry mapping provider names to classes
-_PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
+_PROVIDER_MAP: dict[str, Type[BaseLLMProvider]] = {
     "mock": MockLLMProvider,
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,

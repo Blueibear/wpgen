@@ -9,7 +9,6 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 from pythonjsonlogger import jsonlogger
 
@@ -116,7 +115,7 @@ class ColoredFormatter(logging.Formatter):
 
 def setup_logger(
     name: str,
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
     level: str = "INFO",
     format_type: str = "text",
     colored_console: bool = True,

@@ -3,7 +3,7 @@ Design Profile System for WPGen
 Defines modern design profiles with complete styling specifications
 """
 
-from typing import Dict, Any
+from typing import Any
 
 
 class DesignProfile:
@@ -18,7 +18,7 @@ class DesignProfile:
         self.layout = {}
         self.components = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert profile to dictionary for template injection"""
         return {
             'name': self.name,

@@ -4,13 +4,13 @@ Provides helper functions for loading configuration and initializing components.
 """
 
 import os
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..llm import BaseLLMProvider
 
 
-def get_llm_provider(config: Dict[str, Any]) -> "BaseLLMProvider":
+def get_llm_provider(config: dict[str, Any]) -> "BaseLLMProvider":
     """Initialize and return the configured LLM provider.
 
     Args:

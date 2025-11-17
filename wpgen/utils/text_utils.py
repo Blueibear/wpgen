@@ -6,7 +6,7 @@ various file formats including markdown, plain text, and PDFs.
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..utils.logger import get_logger
 
@@ -20,7 +20,7 @@ class TextProcessor:
         """Initialize text processor."""
         logger.info("Initialized TextProcessor")
 
-    def process_text_file(self, file_path: str) -> Dict[str, Any]:
+    def process_text_file(self, file_path: str) -> dict[str, Any]:
         """Process a text file and extract structured content.
 
         Args:
@@ -30,7 +30,7 @@ class TextProcessor:
             Dictionary containing:
                 - content: str - Full text content
                 - summary: str - Brief summary
-                - sections: List[Dict] - Detected sections
+                - sections: list[dict] - Detected sections
                 - metadata: Dict - File metadata
         """
         path = Path(file_path)
@@ -136,7 +136,7 @@ class TextProcessor:
             logger.error(f"Text extraction error: {str(e)}")
             return ""
 
-    def _parse_markdown_sections(self, markdown_content: str) -> List[Dict[str, Any]]:
+    def _parse_markdown_sections(self, markdown_content: str) -> list[dict[str, Any]]:
         """Parse markdown content into sections.
 
         Args:
@@ -207,7 +207,7 @@ class TextProcessor:
 
         return truncated + "..."
 
-    def batch_process_files(self, file_paths: List[str]) -> Dict[str, Any]:
+    def batch_process_files(self, file_paths: list[str]) -> dict[str, Any]:
         """Process multiple text files in batch.
 
         Args:
@@ -243,7 +243,7 @@ class TextProcessor:
 
         return results
 
-    def _empty_result(self) -> Dict[str, Any]:
+    def _empty_result(self) -> dict[str, Any]:
         """Return empty result structure.
 
         Returns:
@@ -254,9 +254,9 @@ class TextProcessor:
     def create_structured_context(
         self,
         user_prompt: str,
-        image_summaries: Optional[str] = None,
-        text_content: Optional[str] = None,
-        file_descriptions: Optional[List[str]] = None,
+        image_summaries: str | None = None,
+        text_content: str | None = None,
+        file_descriptions: list[str] | None = None,
     ) -> str:
         """Create a well-structured context for LLM from all inputs.
 
@@ -307,7 +307,7 @@ class TextProcessor:
 
         return "\n".join(sections)
 
-    def extract_key_requirements(self, text: str) -> Dict[str, List[str]]:
+    def extract_key_requirements(self, text: str) -> dict[str, list[str]]:
         """Extract key requirements from text using pattern matching.
 
         Args:

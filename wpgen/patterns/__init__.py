@@ -3,7 +3,7 @@ Pattern and Component Library for WPGen
 Provides reusable design patterns for modern WordPress themes
 """
 
-from typing import Dict, Any
+from typing import Any
 import json
 from pathlib import Path
 
@@ -21,11 +21,11 @@ class PatternLibrary:
         # Patterns will be loaded from JSON files or defined here
         pass
 
-    def get_pattern(self, pattern_name: str) -> Dict[str, Any]:
+    def get_pattern(self, pattern_name: str) -> dict[str, Any]:
         """Get a specific pattern by name"""
         return self._patterns.get(pattern_name, {})
 
-    def get_all_patterns(self) -> Dict[str, Any]:
+    def get_all_patterns(self) -> dict[str, Any]:
         """Get all available patterns"""
         return self._patterns
 
@@ -295,7 +295,7 @@ PATTERNS = {
 }
 
 
-def get_pattern(pattern_name: str) -> Dict[str, Any]:
+def get_pattern(pattern_name: str) -> dict[str, Any]:
     """
     Get a pattern definition by name
 
@@ -308,7 +308,7 @@ def get_pattern(pattern_name: str) -> Dict[str, Any]:
     return PATTERNS.get(pattern_name, {})
 
 
-def get_all_patterns() -> Dict[str, Any]:
+def get_all_patterns() -> dict[str, Any]:
     """Get all available patterns"""
     return PATTERNS
 
