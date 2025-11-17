@@ -5,7 +5,7 @@ commands, using an LLM to parse instructions and execute appropriate API calls.
 """
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
@@ -28,7 +28,7 @@ class WordPressManager:
         self.llm = llm_provider
         logger.info("Initialized WordPress Manager with LLM control")
 
-    def execute_command(self, command: str) -> Dict[str, Any]:
+    def execute_command(self, command: str) -> dict[str, Any]:
         """Execute a natural language command on the WordPress site.
 
         Args:
@@ -83,7 +83,7 @@ class WordPressManager:
             logger.error(f"Command execution failed: {str(e)}")
             return {"success": False, "error": str(e), "command": command}
 
-    def _parse_command(self, command: str) -> Dict[str, Any]:
+    def _parse_command(self, command: str) -> dict[str, Any]:
         """Parse natural language command using LLM.
 
         Args:
@@ -148,7 +148,7 @@ Return JSON only."""
             logger.error(f"Command parsing failed: {str(e)}")
             return self._fallback_parse(command)
 
-    def _fallback_parse(self, command: str) -> Dict[str, Any]:
+    def _fallback_parse(self, command: str) -> dict[str, Any]:
         """Fallback parser using simple keyword matching.
 
         Args:
@@ -205,7 +205,7 @@ Return JSON only."""
         else:
             return {"action": "get_site_info", "parameters": {}, "confidence": 0.3}
 
-    def _handle_create_page(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_create_page(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle create page action.
 
         Args:
@@ -241,7 +241,7 @@ Return JSON only."""
             logger.error(f"Failed to create page: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_update_page(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_update_page(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle update page action.
 
         Args:
@@ -279,7 +279,7 @@ Return JSON only."""
             logger.error(f"Failed to update page: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_delete_page(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_delete_page(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle delete page action.
 
         Args:
@@ -314,7 +314,7 @@ Return JSON only."""
             logger.error(f"Failed to delete page: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_create_post(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_create_post(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle create post action.
 
         Args:
@@ -350,7 +350,7 @@ Return JSON only."""
             logger.error(f"Failed to create post: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_list_pages(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_list_pages(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle list pages action.
 
         Args:
@@ -374,7 +374,7 @@ Return JSON only."""
             logger.error(f"Failed to list pages: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_list_posts(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_list_posts(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle list posts action.
 
         Args:
@@ -398,7 +398,7 @@ Return JSON only."""
             logger.error(f"Failed to list posts: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_upload_media(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_upload_media(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle upload media action.
 
         Args:
@@ -427,7 +427,7 @@ Return JSON only."""
             logger.error(f"Failed to upload media: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_install_plugin(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_install_plugin(self, params: dict[str, Any]) -> dict[str, Any]:
         """Handle install plugin action.
 
         Args:
@@ -454,7 +454,7 @@ Return JSON only."""
             logger.error(f"Failed to install plugin: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    def _handle_get_site_info(self) -> Dict[str, Any]:
+    def _handle_get_site_info(self) -> dict[str, Any]:
         """Handle get site info action.
 
         Returns:

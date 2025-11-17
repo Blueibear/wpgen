@@ -3,7 +3,7 @@
 Provides TypedDict models for structured data at API boundaries.
 """
 
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 
 class GenerationRequestDict(TypedDict, total=False):
@@ -11,11 +11,11 @@ class GenerationRequestDict(TypedDict, total=False):
 
     prompt: str  # Required
     push_to_github: bool
-    repo_name: Optional[str]
-    llm_provider: Optional[str]
-    llm_model: Optional[str]
-    image_files: Optional[List[str]]
-    text_files: Optional[List[str]]
+    repo_name: str | None
+    llm_provider: str | None
+    llm_model: str | None
+    image_files: list[str] | None
+    text_files: list[str] | None
     strict_validation: bool
     deploy_to_wordpress: bool
 
@@ -27,23 +27,23 @@ class GenerationResultDict(TypedDict, total=False):
     theme_name: str
     theme_display_name: str
     description: str
-    theme_dir: Optional[str]
-    features: List[str]
-    github_url: Optional[str]
-    repo_name: Optional[str]
+    theme_dir: str | None
+    features: list[str]
+    github_url: str | None
+    repo_name: str | None
     deployment_workflow: bool
-    validation_errors: List[str]
-    validation_warnings: List[str]
-    error: Optional[str]
-    error_details: Optional[str]
+    validation_errors: list[str]
+    validation_warnings: list[str]
+    error: str | None
+    error_details: str | None
 
 
 class ValidationReportDict(TypedDict, total=False):
     """Type for code validation report."""
 
-    errors: List[str]
-    warnings: List[str]
-    info: List[str]
+    errors: list[str]
+    warnings: list[str]
+    info: list[str]
     passed: bool
     strict_mode: bool
 
@@ -52,17 +52,17 @@ class GitHubPushResultDict(TypedDict, total=False):
     """Type for GitHub push operation result."""
 
     success: bool  # Required
-    url: Optional[str]
-    repo_name: Optional[str]
-    error: Optional[str]
+    url: str | None
+    repo_name: str | None
+    error: str | None
 
 
 class ConfigSummaryDict(TypedDict, total=False):
     """Type for redacted configuration summary."""
 
-    llm: Dict[str, str]
-    github: Dict[str, bool]
-    wordpress: Dict[str, str]
-    output: Dict[str, str]
-    validation: Dict[str, bool]
-    wordpress_api: Dict[str, str]
+    llm: dict[str, str]
+    github: dict[str, bool]
+    wordpress: dict[str, str]
+    output: dict[str, str]
+    validation: dict[str, bool]
+    wordpress_api: dict[str, str]

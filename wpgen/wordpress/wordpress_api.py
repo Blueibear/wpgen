@@ -11,7 +11,7 @@ import logging
 import zipfile
 from base64 import b64encode
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 from tenacity import (
@@ -86,7 +86,7 @@ class WordPressAPI:
         logger.info(f"Initialized WordPress API client for {self.site_url}")
 
     @get_retry_decorator()
-    def test_connection(self) -> Dict[str, Any]:
+    def test_connection(self) -> dict[str, Any]:
         """Test connection to WordPress REST API.
 
         Returns:
@@ -136,7 +136,7 @@ class WordPressAPI:
             logger.error(f"WordPress API connection failed: {str(e)}")
             raise Exception(f"Failed to connect to WordPress API: {str(e)}")
 
-    def deploy_theme(self, theme_path: str) -> Dict[str, Any]:
+    def deploy_theme(self, theme_path: str) -> dict[str, Any]:
         """Deploy WordPress theme to the site.
 
         This creates a ZIP of the theme and uploads it. Note: Direct theme upload
@@ -200,7 +200,7 @@ class WordPressAPI:
             logger.error(f"Theme deployment failed: {str(e)}")
             raise
 
-    def get_themes(self) -> List[Dict[str, Any]]:
+    def get_themes(self) -> list[dict[str, Any]]:
         """Get list of installed themes.
 
         Returns:
@@ -215,7 +215,7 @@ class WordPressAPI:
             logger.error(f"Failed to get themes: {str(e)}")
             return []
 
-    def activate_theme(self, theme_slug: str) -> Dict[str, Any]:
+    def activate_theme(self, theme_slug: str) -> dict[str, Any]:
         """Activate a theme.
 
         Args:
@@ -239,7 +239,7 @@ class WordPressAPI:
 
     def create_page(
         self, title: str, content: str, status: str = "publish", **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new page.
 
         Args:
@@ -284,8 +284,8 @@ class WordPressAPI:
             raise Exception(f"Failed to create page: {str(e)}")
 
     def update_page(
-        self, page_id: int, title: Optional[str] = None, content: Optional[str] = None, **kwargs
-    ) -> Dict[str, Any]:
+        self, page_id: int, title: str | None = None, content: str | None = None, **kwargs
+    ) -> dict[str, Any]:
         """Update an existing page.
 
         Args:
@@ -333,7 +333,7 @@ class WordPressAPI:
             raise Exception(f"Failed to update page: {str(e)}")
 
     @get_retry_decorator()
-    def get_pages(self, **params) -> List[Dict[str, Any]]:
+    def get_pages(self, **params) -> list[dict[str, Any]]:
         """Get list of pages.
 
         Args:
@@ -372,7 +372,7 @@ class WordPressAPI:
             logger.error(f"Failed to get pages: {str(e)}")
             return []
 
-    def delete_page(self, page_id: int, force: bool = False) -> Dict[str, Any]:
+    def delete_page(self, page_id: int, force: bool = False) -> dict[str, Any]:
         """Delete a page.
 
         Args:
@@ -404,7 +404,7 @@ class WordPressAPI:
 
     def create_post(
         self, title: str, content: str, status: str = "publish", **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new blog post.
 
         Args:
@@ -446,7 +446,7 @@ class WordPressAPI:
             raise Exception(f"Failed to create post: {str(e)}")
 
     @get_retry_decorator()
-    def get_posts(self, **params) -> List[Dict[str, Any]]:
+    def get_posts(self, **params) -> list[dict[str, Any]]:
         """Get list of posts.
 
         Args:
@@ -486,8 +486,8 @@ class WordPressAPI:
             return []
 
     def upload_media(
-        self, file_path: str, title: Optional[str] = None, alt_text: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, file_path: str, title: str | None = None, alt_text: str | None = None
+    ) -> dict[str, Any]:
         """Upload media file to WordPress.
 
         Args:
@@ -560,7 +560,7 @@ class WordPressAPI:
             logger.error(f"Media upload failed: {str(e)}")
             raise Exception(f"Failed to upload media: {str(e)}")
 
-    def get_plugins(self) -> List[Dict[str, Any]]:
+    def get_plugins(self) -> list[dict[str, Any]]:
         """Get list of installed plugins.
 
         Note: Requires custom endpoint or plugin management plugin.
@@ -576,7 +576,7 @@ class WordPressAPI:
             logger.error(f"Failed to get plugins: {str(e)}")
             return []
 
-    def install_plugin(self, plugin_slug: str) -> Dict[str, Any]:
+    def install_plugin(self, plugin_slug: str) -> dict[str, Any]:
         """Install a plugin from WordPress.org repository.
 
         Args:
@@ -599,7 +599,7 @@ class WordPressAPI:
             logger.error(f"Plugin installation failed: {str(e)}")
             raise
 
-    def get_site_health(self) -> Dict[str, Any]:
+    def get_site_health(self) -> dict[str, Any]:
         """Get WordPress site health information.
 
         Returns:

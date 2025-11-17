@@ -4,13 +4,13 @@ Defines the abstract interface that all LLM providers must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
 
-    def __init__(self, api_key: str, config: Dict[str, Any]):
+    def __init__(self, api_key: str, config: dict[str, Any]):
         """Initialize the LLM provider.
 
         Args:
@@ -24,7 +24,7 @@ class BaseLLMProvider(ABC):
         self.temperature = config.get("temperature", 0.7)
 
     @abstractmethod
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None) -> str:
         """Generate text based on the given prompt.
 
         Args:
@@ -44,8 +44,8 @@ class BaseLLMProvider(ABC):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
+        context: dict[str, Any] | None = None,
+        images: list[dict[str, Any]] | None = None,
     ) -> str:
         """Generate code based on description and type with optional visual references.
 
@@ -65,7 +65,7 @@ class BaseLLMProvider(ABC):
         pass
 
     @abstractmethod
-    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+    def analyze_prompt(self, prompt: str) -> dict[str, Any]:
         """Analyze user prompt to extract requirements.
 
         Args:
@@ -85,7 +85,7 @@ class BaseLLMProvider(ABC):
         """
         pass
 
-    def analyze_image(self, image_data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
+    def analyze_image(self, image_data: dict[str, Any], prompt: str) -> dict[str, Any]:
         """Analyze a single image with vision capabilities.
 
         Args:
@@ -103,9 +103,9 @@ class BaseLLMProvider(ABC):
     def analyze_prompt_multimodal(
         self,
         prompt: str,
-        images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        images: list[dict[str, Any]] | None = None,
+        additional_context: str | None = None,
+    ) -> dict[str, Any]:
         """Analyze user prompt with multi-modal inputs (images, additional text).
 
         Args:

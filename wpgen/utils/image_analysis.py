@@ -10,7 +10,7 @@ This module provides comprehensive image analysis capabilities including:
 
 import base64
 import io
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PIL import Image
 
@@ -32,8 +32,8 @@ class ImageAnalyzer:
         logger.info("Initialized ImageAnalyzer")
 
     def analyze_design_mockup(
-        self, image_data: Dict[str, Any], use_llm: bool = True
-    ) -> Dict[str, Any]:
+        self, image_data: dict[str, Any], use_llm: bool = True
+    ) -> dict[str, Any]:
         """Analyze a design mockup image for layout and styling insights.
 
         Args:
@@ -43,10 +43,10 @@ class ImageAnalyzer:
         Returns:
             Dictionary containing:
                 - caption: str - Brief description of the image
-                - layout_hints: List[str] - Detected layout patterns
+                - layout_hints: list[str] - Detected layout patterns
                 - color_notes: str - Color scheme observations
                 - typography_notes: str - Typography observations
-                - components: List[str] - Detected UI components
+                - components: list[str] - Detected UI components
                 - overall_style: str - Overall design style
         """
         logger.info(f"Analyzing design mockup: {image_data.get('name', 'unknown')}")
@@ -95,7 +95,7 @@ class ImageAnalyzer:
 
         return analysis
 
-    def _analyze_with_vision(self, image_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_with_vision(self, image_data: dict[str, Any]) -> dict[str, Any]:
         """Use LLM vision capabilities to analyze the image.
 
         Args:
@@ -165,7 +165,7 @@ Return ONLY the JSON, no other text."""
             logger.error(f"Vision analysis failed: {str(e)}")
             return {}
 
-    def _get_image_metadata(self, image_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_image_metadata(self, image_data: dict[str, Any]) -> dict[str, Any]:
         """Extract basic metadata from image.
 
         Args:
@@ -186,7 +186,7 @@ Return ONLY the JSON, no other text."""
             "size_bytes": len(image_bytes),
         }
 
-    def _extract_color_palette(self, image_data: Dict[str, Any], max_colors: int = 5) -> str:
+    def _extract_color_palette(self, image_data: dict[str, Any], max_colors: int = 5) -> str:
         """Extract dominant colors from image.
 
         Args:
@@ -229,7 +229,7 @@ Return ONLY the JSON, no other text."""
 
         return "Color analysis not available"
 
-    def _extract_text_ocr(self, image_data: Dict[str, Any]) -> Optional[str]:
+    def _extract_text_ocr(self, image_data: dict[str, Any]) -> str | None:
         """Extract text from image using OCR (Tesseract fallback).
 
         Args:
@@ -262,7 +262,7 @@ Return ONLY the JSON, no other text."""
 
         return None
 
-    def generate_image_summary(self, analyses: List[Dict[str, Any]]) -> str:
+    def generate_image_summary(self, analyses: list[dict[str, Any]]) -> str:
         """Generate a comprehensive summary from multiple image analyses.
 
         Args:
@@ -309,8 +309,8 @@ Return ONLY the JSON, no other text."""
         return "\n".join(summary_parts)
 
     def batch_analyze_images(
-        self, images: List[Dict[str, Any]], use_llm: bool = True
-    ) -> List[Dict[str, Any]]:
+        self, images: list[dict[str, Any]], use_llm: bool = True
+    ) -> list[dict[str, Any]]:
         """Analyze multiple images in batch.
 
         Args:

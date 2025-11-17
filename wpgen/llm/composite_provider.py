@@ -5,7 +5,7 @@ based on whether images are present in the request.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..utils.logger import get_logger
 from .base import BaseLLMProvider
@@ -26,7 +26,7 @@ class CompositeLLMProvider(BaseLLMProvider):
         brains_client,
         brains_model: str,
         vision_client=None,
-        vision_model: Optional[str] = None,
+        vision_model: str | None = None,
         temperature: float = 0.4,
         max_tokens: int = 2048,
         timeout: int = 60,
@@ -58,7 +58,7 @@ class CompositeLLMProvider(BaseLLMProvider):
 
         logger.info(f"Initialized CompositeLLMProvider: brains={brains_model}, vision={vision_model or 'disabled'}")
 
-    def _route_client(self, images: Optional[List[Dict[str, Any]]] = None):
+    def _route_client(self, images: list[dict[str, Any | None]] = None):
         """Determine which client and model to use based on images.
 
         Args:
@@ -85,7 +85,7 @@ class CompositeLLMProvider(BaseLLMProvider):
             logger.debug(f"Routing to brains model: {self.brains_model}")
             return self.brains_client, self.brains_model
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None) -> str:
         """Generate text using brains model (text-only).
 
         Args:
@@ -118,8 +118,8 @@ class CompositeLLMProvider(BaseLLMProvider):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
+        context: dict[str, Any | None] = None,
+        images: list[dict[str, Any | None]] = None,
     ) -> str:
         """Generate code using appropriate model (vision if images, else brains).
 
@@ -208,7 +208,7 @@ Requirements:
             logger.error(f"Failed to generate {file_type} code: {str(e)}")
             raise
 
-    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+    def analyze_prompt(self, prompt: str) -> dict[str, Any]:
         """Analyze user prompt to extract requirements (brains model).
 
         Args:
@@ -276,9 +276,9 @@ Requirements:
     def analyze_prompt_multimodal(
         self,
         prompt: str,
-        images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        images: list[dict[str, Any | None]] = None,
+        additional_context: str | None = None,
+    ) -> dict[str, Any]:
         """Analyze prompt with multi-modal inputs (uses vision model if images present).
 
         Args:
@@ -377,7 +377,7 @@ Return ONLY valid JSON, no other text."""
             logger.error(f"Failed to analyze multi-modal prompt: {str(e)}")
             return self._get_fallback_requirements()
 
-    def analyze_image(self, image_data: Dict[str, Any], prompt: str) -> Dict[str, Any]:
+    def analyze_image(self, image_data: dict[str, Any], prompt: str) -> dict[str, Any]:
         """Analyze a single image with vision model.
 
         Args:
@@ -423,7 +423,7 @@ Return ONLY valid JSON, no other text."""
             logger.error(f"Failed to analyze image: {str(e)}")
             raise
 
-    def _extract_json(self, text: str) -> Dict[str, Any]:
+    def _extract_json(self, text: str) -> dict[str, Any]:
         """Extract JSON from LLM response text.
 
         Args:
@@ -476,7 +476,7 @@ Return ONLY valid JSON, no other text."""
 
         raise json.JSONDecodeError("No valid JSON found in response", text, 0)
 
-    def _get_fallback_requirements(self) -> Dict[str, Any]:
+    def _get_fallback_requirements(self) -> dict[str, Any]:
         """Get fallback requirements structure."""
         return {
             "theme_name": "wpgen-theme",

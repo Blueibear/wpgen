@@ -4,7 +4,7 @@ This module takes natural language descriptions and converts them into
 structured theme requirements using LLM providers.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..llm.base import BaseLLMProvider
 from ..utils.logger import get_logger
@@ -24,7 +24,7 @@ class PromptParser:
         self.llm_provider = llm_provider
         logger.info("Initialized PromptParser")
 
-    def parse(self, prompt: str) -> Dict[str, Any]:
+    def parse(self, prompt: str) -> dict[str, Any]:
         """Parse a natural language prompt into structured requirements.
 
         Args:
@@ -36,12 +36,12 @@ class PromptParser:
                 - theme_display_name: str
                 - description: str
                 - color_scheme: str
-                - features: List[str]
-                - pages: List[str]
+                - features: list[str]
+                - pages: list[str]
                 - layout: str
-                - post_types: List[str]
-                - navigation: List[str]
-                - integrations: List[str]
+                - post_types: list[str]
+                - navigation: list[str]
+                - integrations: list[str]
 
         Raises:
             ValueError: If prompt is empty or invalid
@@ -82,9 +82,9 @@ class PromptParser:
     def parse_multimodal(
         self,
         prompt: str,
-        images: Optional[List[Dict[str, Any]]] = None,
-        additional_context: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        images: list[dict[str, Any | None]] = None,
+        additional_context: str | None = None,
+    ) -> dict[str, Any]:
         """Parse a prompt with multi-modal inputs (images, additional text).
 
         Args:
@@ -139,7 +139,7 @@ class PromptParser:
                 "integrations": [],
             }
 
-    def _validate_requirements(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_requirements(self, requirements: dict[str, Any]) -> dict[str, Any]:
         """Validate and normalize parsed requirements.
 
         Args:
@@ -230,7 +230,7 @@ class PromptParser:
         logger.debug(f"Validated requirements: {requirements}")
         return requirements
 
-    def extract_features(self, requirements: Dict[str, Any]) -> Dict[str, bool]:
+    def extract_features(self, requirements: dict[str, Any]) -> dict[str, bool]:
         """Extract and categorize features from requirements.
 
         Args:

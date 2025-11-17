@@ -3,7 +3,7 @@
 Provides deterministic responses for CI/testing without requiring API keys.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import BaseLLMProvider
 
@@ -29,7 +29,7 @@ class MockLLMProvider(BaseLLMProvider):
     def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         **kwargs
     ) -> str:
         """Generate a mocked response based on prompt keywords.
@@ -64,8 +64,8 @@ class MockLLMProvider(BaseLLMProvider):
         self,
         description: str,
         file_type: str,
-        context: Optional[Dict[str, Any]] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
+        context: dict[str, Any | None] = None,
+        images: list[dict[str, Any | None]] = None,
     ) -> str:
         """Generate mock code for WordPress theme files.
 
@@ -89,7 +89,7 @@ class MockLLMProvider(BaseLLMProvider):
         else:
             return f"/* Mock {file_type} code */\n"
 
-    def analyze_prompt(self, prompt: str) -> Dict[str, Any]:
+    def analyze_prompt(self, prompt: str) -> dict[str, Any]:
         """Analyze user prompt to extract requirements.
 
         Args:

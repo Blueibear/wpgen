@@ -7,7 +7,7 @@ Supports environment variable overrides for key settings.
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -29,7 +29,7 @@ class OpenAIConfig(BaseModel):
     model: str = Field(default="gpt-4-turbo-preview", description="OpenAI model name")
     max_tokens: int = Field(default=4096, ge=1, le=128000)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    api_key: Optional[str] = Field(default=None, description="API key (from env OPENAI_API_KEY)")
+    api_key: str | None = Field(default=None, description="API key (from env OPENAI_API_KEY)")
 
     @model_validator(mode='after')
     def load_from_env(self):
@@ -44,7 +44,7 @@ class AnthropicConfig(BaseModel):
     model: str = Field(default="claude-3-5-sonnet-20241022", description="Anthropic model name")
     max_tokens: int = Field(default=4096, ge=1, le=200000)
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
-    api_key: Optional[str] = Field(default=None, description="API key (from env ANTHROPIC_API_KEY)")
+    api_key: str | None = Field(default=None, description="API key (from env ANTHROPIC_API_KEY)")
 
     @model_validator(mode='after')
     def load_from_env(self):
@@ -58,8 +58,8 @@ class LocalLLMConfig(BaseModel):
     """Local LLM provider configuration (LM Studio or Ollama)."""
     brains_model: str = Field(..., description="Brains model name for text-only reasoning")
     brains_base_url: str = Field(..., description="Brains model base URL")
-    vision_model: Optional[str] = Field(default=None, description="Vision model name for image analysis")
-    vision_base_url: Optional[str] = Field(default=None, description="Vision model base URL")
+    vision_model: str | None = Field(default=None, description="Vision model name for image analysis")
+    vision_base_url: str | None = Field(default=None, description="Vision model base URL")
     max_tokens: int = Field(default=2048, ge=1, le=128000)
     temperature: float = Field(default=0.4, ge=0.0, le=2.0)
     timeout: int = Field(default=60, ge=10, le=600, description="Request timeout in seconds")
@@ -68,14 +68,14 @@ class LocalLLMConfig(BaseModel):
 class LLMConfig(BaseModel):
     """LLM configuration."""
     provider: LLMProviderEnum = Field(default=LLMProviderEnum.OPENAI)
-    openai: Optional[OpenAIConfig] = Field(default_factory=OpenAIConfig)
-    anthropic: Optional[AnthropicConfig] = Field(default_factory=AnthropicConfig)
-    local_lmstudio: Optional[LocalLLMConfig] = Field(
+    openai: OpenAIConfig | None = Field(default_factory=OpenAIConfig)
+    anthropic: AnthropicConfig | None = Field(default_factory=AnthropicConfig)
+    local_lmstudio: LocalLLMConfig | None = Field(
         default=None,
         alias="local-lmstudio",
         description="LM Studio configuration"
     )
-    local_ollama: Optional[LocalLLMConfig] = Field(
+    local_ollama: LocalLLMConfig | None = Field(
         default=None,
         alias="local-ollama",
         description="Ollama configuration"
@@ -140,7 +140,7 @@ class GitHubConfig(BaseModel):
     auto_create: bool = Field(default=True)
     private: bool = Field(default=False)
     default_branch: str = Field(default="main")
-    token: Optional[str] = Field(default=None, description="GitHub token (from env GITHUB_TOKEN)")
+    token: str | None = Field(default=None, description="GitHub token (from env GITHUB_TOKEN)")
 
     @model_validator(mode='after')
     def load_from_env(self):
@@ -216,7 +216,7 @@ class WebConfig(BaseModel):
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=5000, ge=1, le=65535)
     debug: bool = Field(default=False)
-    secret_key: Optional[str] = Field(default=None)
+    secret_key: str | None = Field(default=None)
     cors_enabled: bool = Field(default=False, description="Enable CORS for cross-origin requests")
     cors_origins: str = Field(default="*", description="Allowed CORS origins (comma-separated or *)")
 
@@ -237,9 +237,9 @@ class DeploymentConfig(BaseModel):
 class WordPressAPIConfig(BaseModel):
     """WordPress REST API configuration."""
     enabled: bool = Field(default=False)
-    site_url: Optional[str] = Field(default=None, description="WordPress site URL (from env WP_SITE_URL)")
-    username: Optional[str] = Field(default=None, description="WordPress username (from env WP_USERNAME)")
-    app_password: Optional[str] = Field(default=None, description="WordPress app password (from env WP_APP_PASSWORD)")
+    site_url: str | None = Field(default=None, description="WordPress site URL (from env WP_SITE_URL)")
+    username: str | None = Field(default=None, description="WordPress username (from env WP_USERNAME)")
+    app_password: str | None = Field(default=None, description="WordPress app password (from env WP_APP_PASSWORD)")
     auto_deploy: bool = Field(default=False)
     auto_activate: bool = Field(default=False)
 
@@ -270,7 +270,7 @@ class ValidationConfig(BaseModel):
     """Code validation configuration."""
     enabled: bool = Field(default=True)
     strict: bool = Field(default=False, description="Fail on warnings in addition to errors")
-    php_path: Optional[str] = Field(default="php", description="Path to PHP binary")
+    php_path: str | None = Field(default="php", description="Path to PHP binary")
 
 
 class WPGenConfig(BaseModel):
@@ -333,7 +333,7 @@ def load_and_validate_config(config_path: str = "config.yaml") -> WPGenConfig:
         )
 
 
-def get_redacted_config_summary(config: WPGenConfig) -> Dict[str, Any]:
+def get_redacted_config_summary(config: WPGenConfig) -> dict[str, Any]:
     """Get a summary of configuration with secrets redacted.
 
     Args:

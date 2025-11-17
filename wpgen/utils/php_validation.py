@@ -8,7 +8,6 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from .logger import get_logger
 
@@ -119,7 +118,7 @@ class PHPValidator:
             logger.warning(f"PHP CLI not available at '{self.php_path}'")
             return False
 
-    def validate_php_syntax(self, php_code: str, filename: str = "generated.php") -> Tuple[bool, Optional[str]]:
+    def validate_php_syntax(self, php_code: str, filename: str = "generated.php") -> tuple[bool, str | None]:
         """Validate PHP syntax using PHP CLI if available.
 
         Args:
@@ -160,7 +159,7 @@ class PHPValidator:
             logger.warning(f"PHP validation failed: {e}, falling back to Python validation")
             return self._python_based_validation(php_code, filename)
 
-    def _python_based_validation(self, php_code: str, filename: str) -> Tuple[bool, Optional[str]]:
+    def _python_based_validation(self, php_code: str, filename: str) -> tuple[bool, str | None]:
         """Python-based PHP validation when PHP CLI is unavailable.
 
         Args:
@@ -197,7 +196,7 @@ class PHPValidator:
         logger.debug(f"✓ Python-based validation passed: {filename}")
         return True, None
 
-    def check_brace_matching(self, php_code: str, filename: str = "file.php") -> Tuple[bool, Optional[str]]:
+    def check_brace_matching(self, php_code: str, filename: str = "file.php") -> tuple[bool, str | None]:
         """Check if braces {} are balanced inside PHP blocks.
 
         Args:
@@ -223,7 +222,7 @@ class PHPValidator:
 
         return True, None
 
-    def check_php_tags(self, php_code: str, filename: str = "file.php") -> Tuple[bool, Optional[str]]:
+    def check_php_tags(self, php_code: str, filename: str = "file.php") -> tuple[bool, str | None]:
         """Check if PHP tags are properly matched.
 
         Args:
@@ -253,7 +252,7 @@ class PHPValidator:
 
         return True, None
 
-    def check_stray_braces(self, php_code: str, filename: str = "file.php") -> Tuple[bool, Optional[str]]:
+    def check_stray_braces(self, php_code: str, filename: str = "file.php") -> tuple[bool, str | None]:
         """Check for stray closing braces outside PHP blocks.
 
         Args:
@@ -274,7 +273,7 @@ class PHPValidator:
 
         return True, None
 
-    def _extract_php_blocks(self, php_code: str) -> List[str]:
+    def _extract_php_blocks(self, php_code: str) -> list[str]:
         """Extract all PHP code blocks from a file.
 
         Args:
@@ -297,7 +296,7 @@ class PHPValidator:
 
         return blocks
 
-    def auto_fix_braces(self, php_code: str, filename: str = "file.php") -> Tuple[str, List[str]]:
+    def auto_fix_braces(self, php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
         """Auto-fix brace mismatches in PHP code.
 
         Args:
@@ -339,7 +338,7 @@ class PHPValidator:
 
         return fixed_code, fixes
 
-    def check_required_structure(self, php_code: str, file_type: str, filename: str = "file.php") -> Tuple[bool, List[str]]:
+    def check_required_structure(self, php_code: str, file_type: str, filename: str = "file.php") -> tuple[bool, list[str]]:
         """Check if PHP file has required WordPress structures.
 
         Args:
@@ -394,7 +393,7 @@ class PHPValidator:
 
         return True, []
 
-    def validate_wordpress_functions(self, php_code: str, filename: str = "file.php") -> Tuple[List[str], List[str]]:
+    def validate_wordpress_functions(self, php_code: str, filename: str = "file.php") -> tuple[list[str], list[str]]:
         """Check for hallucinated or invalid WordPress functions.
 
         Args:
@@ -424,7 +423,7 @@ class PHPValidator:
 
         return hallucinated, warnings
 
-    def remove_hallucinated_functions(self, php_code: str, filename: str = "file.php") -> Tuple[str, List[str]]:
+    def remove_hallucinated_functions(self, php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
         """Remove hallucinated functions from PHP code.
 
         Args:
@@ -452,7 +451,7 @@ def validate_and_fix_php(
     file_type: str = 'template',
     filename: str = 'file.php',
     auto_fix: bool = True
-) -> Tuple[str, bool, List[str]]:
+) -> tuple[str, bool, list[str]]:
     """Comprehensive PHP validation and auto-fixing.
 
     Args:

@@ -9,7 +9,6 @@ import platform
 import stat
 import tempfile
 from pathlib import Path
-from typing import Dict, Optional
 
 from ..utils.logger import get_logger
 
@@ -26,10 +25,10 @@ class SecureCredentialHelper:
             token: GitHub personal access token or credentials
         """
         self.token = token
-        self._askpass_script: Optional[Path] = None
-        self._temp_dir: Optional[str] = None
+        self._askpass_script: Path | None = None
+        self._temp_dir: str | None = None
 
-    def build_askpass_env(self) -> Dict[str, str]:
+    def build_askpass_env(self) -> dict[str, str]:
         """Build environment variables for secure Git authentication.
 
         Creates a temporary askpass script that provides credentials without
@@ -110,7 +109,7 @@ class SecureCredentialHelper:
         self.cleanup()
 
 
-def build_askpass_env(token: str) -> Dict[str, str]:
+def build_askpass_env(token: str) -> dict[str, str]:
     """Build environment variables for secure Git authentication.
 
     Convenience function that creates a temporary askpass script and returns
