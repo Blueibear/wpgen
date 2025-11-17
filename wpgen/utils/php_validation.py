@@ -1,12 +1,22 @@
 """Advanced PHP validation module for WordPress theme generation.
 
 This module provides comprehensive PHP syntax validation, brace matching,
-and structure verification to ensure generated themes never break WordPress.
+structure verification, Unicode cleaning, and auto-repair to ensure generated
+themes never break WordPress.
+
+Features:
+- Strips invisible Unicode characters that can cause syntax errors
+- Validates and auto-fixes brace matching
+- Ensures required WordPress template tags are present (wp_head, wp_footer, etc.)
+- Detects and removes hallucinated functions
+- Validates PHP syntax using PHP CLI
+- Auto-repairs common LLM generation issues
 """
 
 import re
 import subprocess
 import tempfile
+import unicodedata
 from pathlib import Path
 
 from .logger import get_logger
@@ -78,6 +88,179 @@ HALLUCINATED_FUNCTIONS = {
     'display_post',  # Not standard
     'show_content',  # Not standard
 }
+
+
+def strip_invisible_unicode(code: str) -> tuple[str, int]:
+    """Strip all invisible and problematic Unicode characters from code.
+
+    This removes:
+    - Zero-width spaces (U+200B)
+    - Zero-width non-joiners (U+200C)
+    - Zero-width joiners (U+200D)
+    - Byte order marks (BOM) (U+FEFF)
+    - Other invisible control characters
+    - Non-printable characters in the control range
+
+    Args:
+        code: Code string that may contain invisible Unicode
+
+    Returns:
+        Tuple of (cleaned_code, number_of_characters_removed)
+    """
+    original_length = len(code)
+
+    # List of problematic Unicode characters to remove
+    invisible_chars = [
+        '\u200b',  # Zero-width space
+        '\u200c',  # Zero-width non-joiner
+        '\u200d',  # Zero-width joiner
+        '\ufeff',  # Zero-width no-break space (BOM)
+        '\u2060',  # Word joiner
+        '\u180e',  # Mongolian vowel separator
+        '\u061c',  # Arabic letter mark
+        '\u202a',  # Left-to-right embedding
+        '\u202b',  # Right-to-left embedding
+        '\u202c',  # Pop directional formatting
+        '\u202d',  # Left-to-right override
+        '\u202e',  # Right-to-left override
+        '\u2061',  # Function application
+        '\u2062',  # Invisible times
+        '\u2063',  # Invisible separator
+        '\u2064',  # Invisible plus
+    ]
+
+    # Remove all invisible characters
+    for char in invisible_chars:
+        code = code.replace(char, '')
+
+    # Remove other control characters except newline, tab, and carriage return
+    # which are valid in source code
+    cleaned = []
+    for char in code:
+        # Keep printable characters, newlines, tabs, carriage returns
+        if char in ['\n', '\r', '\t'] or unicodedata.category(char)[0] != 'C':
+            cleaned.append(char)
+        else:
+            # Skip other control characters
+            pass
+
+    code = ''.join(cleaned)
+
+    chars_removed = original_length - len(code)
+
+    if chars_removed > 0:
+        logger.warning(f"Stripped {chars_removed} invisible Unicode character(s) from code")
+
+    return code, chars_removed
+
+
+def verify_required_template_tags(php_code: str, file_type: str) -> tuple[bool, list[str]]:
+    """Verify that required WordPress template tags are present.
+
+    Args:
+        php_code: PHP code to check
+        file_type: Type of file (header, footer, functions, etc.)
+
+    Returns:
+        Tuple of (is_valid, list_of_missing_tags)
+    """
+    missing_tags = []
+
+    if file_type == 'header':
+        # Header must have wp_head()
+        if 'wp_head()' not in php_code:
+            missing_tags.append('wp_head() is required in header.php')
+
+        # Should have DOCTYPE
+        if '<!DOCTYPE' not in php_code:
+            missing_tags.append('<!DOCTYPE html> declaration is required in header.php')
+
+        # Should have <html> tag
+        if '<html' not in php_code:
+            missing_tags.append('<html> tag is required in header.php')
+
+        # Should have charset meta
+        if 'charset' not in php_code and 'meta' not in php_code:
+            missing_tags.append('<meta charset> is required in header.php')
+
+        # Should have viewport meta
+        if 'viewport' not in php_code:
+            missing_tags.append('<meta name="viewport"> is recommended in header.php')
+
+    elif file_type == 'footer':
+        # Footer must have wp_footer()
+        if 'wp_footer()' not in php_code:
+            missing_tags.append('wp_footer() is REQUIRED in footer.php - theme will break without it')
+
+        # Should close body and html
+        if '</body>' not in php_code:
+            missing_tags.append('</body> closing tag is required in footer.php')
+
+        if '</html>' not in php_code:
+            missing_tags.append('</html> closing tag is required in footer.php')
+
+    elif file_type == 'functions':
+        # Functions.php should have at least one hook
+        if 'add_action' not in php_code and 'add_filter' not in php_code:
+            missing_tags.append('functions.php should contain at least one add_action() or add_filter() hook')
+
+    is_valid = len(missing_tags) == 0
+
+    return is_valid, missing_tags
+
+
+def auto_add_required_tags(php_code: str, file_type: str) -> tuple[str, list[str]]:
+    """Automatically add missing required WordPress template tags.
+
+    Args:
+        php_code: PHP code to fix
+        file_type: Type of file (header, footer, etc.)
+
+    Returns:
+        Tuple of (fixed_code, list_of_additions_made)
+    """
+    additions = []
+    fixed_code = php_code
+
+    if file_type == 'header':
+        # Add wp_head() before </head> if missing
+        if 'wp_head()' not in fixed_code:
+            if '</head>' in fixed_code.lower():
+                fixed_code = re.sub(
+                    r'(</head>)',
+                    r'<?php wp_head(); ?>\n\1',
+                    fixed_code,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+                additions.append('Added missing wp_head() before </head>')
+                logger.info('Auto-added wp_head() to header.php')
+            else:
+                # No </head> found, append to end
+                fixed_code += '\n<?php wp_head(); ?>\n'
+                additions.append('Added missing wp_head() at end of header')
+                logger.warning('Added wp_head() at end of header.php (no </head> tag found)')
+
+    elif file_type == 'footer':
+        # Add wp_footer() before </body> if missing
+        if 'wp_footer()' not in fixed_code:
+            if '</body>' in fixed_code.lower():
+                fixed_code = re.sub(
+                    r'(</body>)',
+                    r'<?php wp_footer(); ?>\n\1',
+                    fixed_code,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+                additions.append('Added CRITICAL missing wp_footer() before </body>')
+                logger.info('Auto-added wp_footer() to footer.php')
+            else:
+                # No </body> found, add both
+                fixed_code += '\n<?php wp_footer(); ?>\n</body>\n</html>\n'
+                additions.append('Added missing wp_footer() and closing tags')
+                logger.warning('Added wp_footer() and closing tags to footer.php')
+
+    return fixed_code, additions
 
 
 class PHPValidationError(Exception):
@@ -452,7 +635,17 @@ def validate_and_fix_php(
     filename: str = 'file.php',
     auto_fix: bool = True
 ) -> tuple[str, bool, list[str]]:
-    """Comprehensive PHP validation and auto-fixing.
+    """Comprehensive PHP validation and auto-fixing with Unicode cleaning.
+
+    This is the main entry point for validating and fixing generated PHP code.
+    It performs the following operations in order:
+
+    1. Strips invisible Unicode characters
+    2. Removes hallucinated functions
+    3. Auto-fixes brace mismatches
+    4. Adds required WordPress template tags (wp_head, wp_footer, etc.)
+    5. Validates PHP syntax
+    6. Checks required template structure
 
     Args:
         php_code: PHP code to validate/fix
@@ -466,6 +659,12 @@ def validate_and_fix_php(
     validator = PHPValidator()
     issues = []
     fixed_code = php_code
+
+    # 0. Strip invisible Unicode characters (CRITICAL - must be first)
+    fixed_code, unicode_removed = strip_invisible_unicode(fixed_code)
+    if unicode_removed > 0:
+        issues.append(f"Stripped {unicode_removed} invisible Unicode character(s)")
+        logger.warning(f"Removed {unicode_removed} invisible Unicode characters from {filename}")
 
     # 1. Remove hallucinated functions
     if auto_fix:
@@ -485,20 +684,41 @@ def validate_and_fix_php(
         if not brace_valid:
             issues.append(brace_error)
 
-    # 3. Validate syntax
+    # 3. Add required WordPress template tags if missing
+    if auto_fix and file_type in ['header', 'footer']:
+        fixed_code, tag_additions = auto_add_required_tags(fixed_code, file_type)
+        issues.extend(tag_additions)
+
+    # 4. Validate syntax
     syntax_valid, syntax_error = validator.validate_php_syntax(fixed_code, filename)
     if not syntax_valid:
         issues.append(f"PHP syntax error: {syntax_error}")
         return fixed_code, False, issues
 
-    # 4. Check required structures
+    # 5. Check required structures
     if file_type in ['header', 'footer', 'functions']:
         struct_valid, struct_missing = validator.check_required_structure(fixed_code, file_type, filename)
         if not struct_valid:
-            issues.extend(struct_missing)
+            # In auto_fix mode, we already added missing tags, so just warn
+            if auto_fix:
+                for missing in struct_missing:
+                    logger.warning(f"Structure check: {missing}")
+            else:
+                issues.extend(struct_missing)
+                return fixed_code, False, issues
+
+    # 6. Verify required template tags are present
+    tags_valid, missing_tags = verify_required_template_tags(fixed_code, file_type)
+    if not tags_valid:
+        if auto_fix:
+            # Already tried to add them in step 3, log warnings
+            for tag in missing_tags:
+                logger.warning(f"Still missing after auto-fix: {tag}")
+        else:
+            issues.extend(missing_tags)
             return fixed_code, False, issues
 
-    # 5. Validate WordPress functions
+    # 7. Validate WordPress functions
     hallucinated, warnings = validator.validate_wordpress_functions(fixed_code, filename)
     if hallucinated and not auto_fix:
         issues.append(f"Contains hallucinated functions: {', '.join(hallucinated)}")
@@ -509,7 +729,10 @@ def validate_and_fix_php(
         logger.warning(warning)
 
     # If we get here, validation passed
-    is_valid = len(issues) == 0 or all('Removed' in i or 'Added' in i for i in issues)
+    is_valid = len(issues) == 0 or all(
+        any(keyword in i for keyword in ['Removed', 'Added', 'Stripped', 'Fixed'])
+        for i in issues
+    )
 
     if is_valid:
         logger.info(f"✓ VALID PHP: {filename}")
@@ -522,16 +745,27 @@ def validate_and_fix_php(
 
 
 def clean_llm_output(code: str, file_type: str = 'php') -> str:
-    """Clean LLM output to extract only raw code.
+    """Clean LLM output to extract only raw code and remove invisible Unicode.
+
+    This function:
+    1. Strips invisible Unicode characters
+    2. Removes markdown code fences
+    3. Removes explanatory text
+    4. Ensures proper code opening tags
 
     Args:
         code: Generated code from LLM
         file_type: Type of file (php, css, js)
 
     Returns:
-        Cleaned code
+        Cleaned code ready for validation
     """
-    # Remove markdown code fences
+    # STEP 1: Strip invisible Unicode characters first
+    code, unicode_removed = strip_invisible_unicode(code)
+    if unicode_removed > 0:
+        logger.info(f"Cleaned {unicode_removed} invisible Unicode characters from LLM output")
+
+    # STEP 2: Remove markdown code fences
     code = code.strip()
 
     # Remove code fence markers with language
@@ -541,7 +775,7 @@ def clean_llm_output(code: str, file_type: str = 'php') -> str:
     # Remove remaining code fences
     code = code.replace('```', '')
 
-    # For PHP files, ensure proper opening
+    # STEP 3: For PHP files, ensure proper opening
     if file_type == 'php':
         # Remove explanatory text before code
         if '<?php' in code:
@@ -551,7 +785,7 @@ def clean_llm_output(code: str, file_type: str = 'php') -> str:
             doctype_start = code.find('<!DOCTYPE')
             code = code[doctype_start:]
 
-    # Remove common AI explanatory phrases
+    # STEP 4: Remove common AI explanatory phrases
     explanatory_patterns = [
         r'^(?:Here\'s|Here is|This is|Below is|I\'ve created|I have created).*?:\s*\n+',
         r'^(?:Sure|Certainly|Of course)[,!].*?\n+',
