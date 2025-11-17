@@ -1303,3 +1303,298 @@ def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
                 repairs.append("Replaced empty footer with safe default content")
 
     return php_code, repairs
+
+
+def validate_and_fix_template_structure(theme_dir: Path) -> dict[str, Any]:
+    """
+    Validate and auto-correct template structure issues to prevent white screens.
+
+    This enforces:
+    - header.php must contain <header>, site-branding, nav, and opening <main id="content">
+    - footer.php must contain closing </main> and <footer>
+    - index.php must include a loop and get_footer()
+    - No unmatched braces, missing tags, or broken PHP blocks
+
+    Args:
+        theme_dir: Path to theme directory
+
+    Returns:
+        Dictionary with validation results and repairs made
+    """
+    logger.info("Validating and fixing template structure")
+    results = {
+        'valid': True,
+        'errors': [],
+        'warnings': [],
+        'repairs': [],
+    }
+
+    # Define required structure for each template
+    template_requirements = {
+        'header.php': {
+            'must_contain': ['<header', 'wp_head()', '<main'],
+            'must_not_contain': ['</main>'],  # Should NOT close main
+            'should_contain': ['wp_nav_menu', 'bloginfo'],
+            'php_required': True,
+        },
+        'footer.php': {
+            'must_contain': ['</main>', '<footer', 'wp_footer()'],
+            'must_not_contain': [],
+            'should_contain': ['</body>', '</html>'],
+            'php_required': True,
+        },
+        'index.php': {
+            'must_contain': ['get_header()', 'get_footer()', 'have_posts'],
+            'must_not_contain': [],
+            'should_contain': ['the_post()', 'the_content'],
+            'php_required': True,
+        },
+        'functions.php': {
+            'must_contain': ['<?php'],
+            'must_not_contain': [],
+            'should_contain': ['function', 'add_action', 'add_theme_support'],
+            'php_required': True,
+        },
+    }
+
+    # Validate and fix each template
+    for template_name, requirements in template_requirements.items():
+        template_path = theme_dir / template_name
+
+        if not template_path.exists():
+            results['warnings'].append(f"Template not found: {template_name}")
+            continue
+
+        try:
+            with open(template_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+            original_content = content
+            content_lower = content.lower()
+            repairs_made = []
+
+            # Check for required elements
+            for required in requirements['must_contain']:
+                if required.lower() not in content_lower:
+                    content, repair_msg = _add_missing_element(
+                        content, template_name, required
+                    )
+                    if repair_msg:
+                        repairs_made.append(repair_msg)
+                        results['repairs'].append(f"{template_name}: {repair_msg}")
+
+            # Check for prohibited elements
+            for prohibited in requirements['must_not_contain']:
+                if prohibited.lower() in content_lower:
+                    content, repair_msg = _remove_element(
+                        content, template_name, prohibited
+                    )
+                    if repair_msg:
+                        repairs_made.append(repair_msg)
+                        results['repairs'].append(f"{template_name}: {repair_msg}")
+
+            # Validate PHP syntax
+            is_valid, error_msg = validate_php_syntax(content)
+            if not is_valid:
+                logger.warning(f"PHP syntax error in {template_name}: {error_msg}")
+                # Try to fix
+                content, php_repairs = repair_wordpress_code(content, template_name)
+                repairs_made.extend(php_repairs)
+                for repair in php_repairs:
+                    results['repairs'].append(f"{template_name}: {repair}")
+
+                # Validate again
+                is_valid, error_msg = validate_php_syntax(content)
+                if not is_valid:
+                    results['errors'].append(f"{template_name}: {error_msg}")
+                    results['valid'] = False
+
+            # Check for unmatched braces/tags
+            brace_issues = _check_balanced_braces(content)
+            if brace_issues:
+                for issue in brace_issues:
+                    results['errors'].append(f"{template_name}: {issue}")
+                results['valid'] = False
+
+            # Write repaired content if changed
+            if content != original_content:
+                with open(template_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                logger.info(f"Auto-repaired {template_name} ({len(repairs_made)} fixes)")
+
+        except Exception as e:
+            logger.error(f"Error validating {template_name}: {e}")
+            results['errors'].append(f"{template_name}: Validation error - {str(e)}")
+            results['valid'] = False
+
+    return results
+
+
+def _add_missing_element(content: str, template_name: str, element: str) -> tuple[str, str]:
+    """Add a missing required element to a template."""
+    repair_msg = ""
+
+    if template_name == 'header.php':
+        if element == '<header':
+            # Add header tag after body
+            if '<body' in content.lower():
+                content = re.sub(
+                    r'(<body[^>]*>)',
+                    r'\1\n<header class="site-header">\n    <!-- Header content -->\n</header>\n',
+                    content,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+                repair_msg = "Added missing <header> tag"
+
+        elif element == 'wp_head()':
+            # Add wp_head() before </head>
+            if '</head>' in content.lower():
+                content = re.sub(
+                    r'(</head>)',
+                    r'<?php wp_head(); ?>\n\1',
+                    content,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+                repair_msg = "Added missing wp_head() call"
+
+        elif element == '<main':
+            # Add opening main tag at the end
+            if '</header>' in content.lower():
+                content = re.sub(
+                    r'(</header>)',
+                    r'\1\n<main id="content" class="site-main">\n',
+                    content,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+            else:
+                content += '\n<main id="content" class="site-main">\n'
+            repair_msg = "Added opening <main id=\"content\"> tag"
+
+    elif template_name == 'footer.php':
+        if element == '</main>':
+            # Add closing main tag at the beginning
+            content = '</main><!-- .site-main -->\n\n' + content
+            repair_msg = "Added closing </main> tag"
+
+        elif element == '<footer':
+            # Add footer tag
+            if 'wp_footer()' in content:
+                content = re.sub(
+                    r'(<\?php\s+wp_footer\(\);?\s*\?>)',
+                    r'<footer class="site-footer">\n    <div class="footer-content">\n        <p>&copy; <?php echo date(\'Y\'); ?> <?php bloginfo(\'name\'); ?></p>\n    </div>\n</footer>\n\n\1',
+                    content,
+                    count=1
+                )
+            else:
+                content = '<footer class="site-footer">\n    <div class="footer-content">\n        <p>&copy; <?php echo date(\'Y\'); ?> <?php bloginfo(\'name\'); ?></p>\n    </div>\n</footer>\n' + content
+            repair_msg = "Added <footer> tag"
+
+        elif element == 'wp_footer()':
+            # Add wp_footer() before </body>
+            if '</body>' in content.lower():
+                content = re.sub(
+                    r'(</body>)',
+                    r'<?php wp_footer(); ?>\n\1',
+                    content,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+            else:
+                content += '\n<?php wp_footer(); ?>\n</body>\n</html>\n'
+            repair_msg = "Added wp_footer() call"
+
+    elif template_name == 'index.php':
+        if element == 'get_header()':
+            # Add get_header() at the beginning
+            if not content.startswith('<?php'):
+                content = '<?php get_header(); ?>\n\n' + content
+            else:
+                content = re.sub(
+                    r'(<\?php)',
+                    r'\1 get_header(); ?>',
+                    content,
+                    count=1
+                )
+            repair_msg = "Added get_header() call"
+
+        elif element == 'get_footer()':
+            # Add get_footer() at the end
+            if '?>' in content:
+                content = re.sub(
+                    r'(\?>)(?!.*\?>)',
+                    r'<?php get_footer(); \1',
+                    content,
+                    flags=re.DOTALL
+                )
+            else:
+                content += '\n<?php get_footer(); ?>\n'
+            repair_msg = "Added get_footer() call"
+
+        elif element == 'have_posts':
+            # Add basic WordPress loop
+            loop_code = """
+if ( have_posts() ) :
+    while ( have_posts() ) :
+        the_post();
+        the_content();
+    endwhile;
+endif;
+"""
+            # Insert after get_header if present
+            if 'get_header()' in content:
+                content = re.sub(
+                    r'(get_header\(\);?\s*\?>)',
+                    r'\1\n\n<?php\n' + loop_code + '\n?>',
+                    content,
+                    count=1
+                )
+            else:
+                content += '\n<?php\n' + loop_code + '\n?>\n'
+            repair_msg = "Added WordPress loop"
+
+    return content, repair_msg
+
+
+def _remove_element(content: str, template_name: str, element: str) -> tuple[str, str]:
+    """Remove a prohibited element from a template."""
+    repair_msg = ""
+
+    if template_name == 'header.php' and element == '</main>':
+        # Remove closing main tag from header
+        content = re.sub(
+            r'</main[^>]*>',
+            '',
+            content,
+            flags=re.IGNORECASE
+        )
+        repair_msg = "Removed incorrect </main> tag (should be in footer.php)"
+
+    return content, repair_msg
+
+
+def _check_balanced_braces(content: str) -> list[str]:
+    """Check for unmatched braces and tags."""
+    issues = []
+
+    # Remove PHP strings and comments to avoid false positives
+    cleaned = re.sub(r"'[^']*'", '', content)
+    cleaned = re.sub(r'"[^"]*"', '', cleaned)
+    cleaned = re.sub(r'//.*?$', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)
+
+    # Check PHP braces
+    php_open = cleaned.count('{')
+    php_close = cleaned.count('}')
+    if php_open != php_close:
+        issues.append(f"Unmatched braces: {php_open} opening, {php_close} closing")
+
+    # Check PHP tags
+    php_tag_open = len(re.findall(r'<\?php', cleaned, re.IGNORECASE))
+    php_tag_close = cleaned.count('?>')
+    if php_tag_open != php_tag_close:
+        issues.append(f"Unmatched PHP tags: {php_tag_open} <?php, {php_tag_close} ?>")
+
+    return issues

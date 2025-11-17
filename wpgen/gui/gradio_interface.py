@@ -90,9 +90,10 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
     ):
         try:
             if not prompt or not prompt.strip():
-                return "❌ Error: Please provide a description of your website.", "", ""
+                return "**Status:** ❌ Error - No prompt provided", "❌ Error: Please provide a description of your website.", "", ""
 
             # IMMEDIATE FEEDBACK: Show generation started banner within 100ms
+            progress_msg = "**Status:** 🚀 Generation Started!\n\n⏳ Generating your WordPress theme... This may take 2-3 minutes."
             status = """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚀 THEME GENERATION STARTED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -102,13 +103,14 @@ STATUS: GENERATING
 
 PROGRESS:
 """
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             # Check for vision model requirement early (for local providers with images)
             is_local = llm_provider_choice in ["local-lmstudio", "local-ollama"]
             has_images = bool(image_files)
 
             if is_local and has_images and not llm_vision_model:
+                progress_error = "**Status:** ❌ Error - Vision model required"
                 error_msg = (
                     "❌ Error: Vision model required for image analysis\n\n"
                     "You have uploaded images but no vision model is configured.\n\n"
@@ -117,7 +119,7 @@ PROGRESS:
                     "2. Remove the uploaded images to use text-only generation\n\n"
                     "Vision models are required for analyzing design references and mockups."
                 )
-                yield error_msg, "", ""
+                yield progress_error, error_msg, "", ""
                 return
 
             # Apply LLM provider overrides from GUI
@@ -138,6 +140,7 @@ PROGRESS:
                     if llm_vision_base_url:
                         config_copy["llm"]["vision_base_url"] = llm_vision_base_url
 
+            progress_msg = "**Status:** ⚙️ Step 1/6 - Initializing AI Provider..."
             status += "┌─ STEP 1/6: Initialize AI Provider\n"
             status += f"│  🤖 Provider: {llm_provider_choice}\n"
             if is_local:
@@ -146,14 +149,15 @@ PROGRESS:
                 else:
                     status += f"│  ✓ Brains model: {llm_brains_model or 'default'} (vision disabled)\n"
             status += "└─ ✓ Provider initialized\n\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             llm_provider = get_llm_provider(config_copy)
             nonlocal image_analyzer
             image_analyzer = ImageAnalyzer(llm_provider)
 
+            progress_msg = "**Status:** 📄 Step 2/6 - Processing Uploaded Files..."
             status += "┌─ STEP 2/6: Process Uploaded Files\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             # Gradio with type="filepath" returns a list of string paths
             image_paths = image_files or []
@@ -168,7 +172,7 @@ PROGRESS:
             if image_paths and not processed_files["images"]:
                 logger.warning(f"User uploaded {len(image_paths)} image(s) but none were successfully processed!")
                 status += f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be processed. Generation will continue without image analysis.\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
             image_summaries = None
             if processed_files["images"]:
@@ -176,7 +180,7 @@ PROGRESS:
                     "🖼️  Analyzing "
                     f"{len(processed_files['images'])} design reference(s) with AI vision...\n"
                 )
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
                 # Use LLM vision for detailed analysis of uploaded images
                 try:
@@ -190,13 +194,13 @@ PROGRESS:
                     status += f"  ⚠️  Could not analyze images (will use for screenshot only): {str(e)}\n"
                     image_summaries = None
 
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
             text_content = None
             file_descriptions = []
             if text_paths:
                 status += f"📄 Processing {len(text_paths)} content file(s)...\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
                 batch_result = text_processor.batch_process_files(text_paths)
                 text_content = batch_result["combined_content"]
@@ -212,11 +216,11 @@ PROGRESS:
                         file_descriptions.append(filename)
 
                 status += f"  ✓ Extracted {batch_result['total_size']} characters from documents\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
             if image_summaries or text_content:
                 status += "📋 Creating structured context from all inputs...\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
                 structured_context = text_processor.create_structured_context(
                     user_prompt=prompt,
@@ -226,7 +230,7 @@ PROGRESS:
                 )
 
                 status += "  ✓ Combined user prompt, image analysis, and file content\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
             else:
                 structured_context = None
 
@@ -234,7 +238,7 @@ PROGRESS:
             guided_brief_md = ""
             if any([gm_site_name, gm_tagline, gm_palette, gm_pages, gm_components]):
                 status += "🎯 Applying Guided Mode specifications...\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
                 # Handle None values from components
                 gm_pages = gm_pages or []
@@ -275,14 +279,14 @@ PROGRESS:
                 guided_brief_md += f"- Performance: LCP≤{int(gm_perf_lcp)}ms\n"
 
                 status += "  ✓ Guided specifications added to context\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
             # Build Optional Features brief
             blocks_enabled = blocks_enabled or []
             options_brief_md = ""
             if any([woo_enabled, blocks_enabled, darkmode_enabled, preloader_enabled]):
                 status += "✨ Adding optional features...\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
                 options_brief_md = "## Build Options\n"
                 options_brief_md += f"- WooCommerce: {woo_enabled}\n"
@@ -293,10 +297,10 @@ PROGRESS:
                 options_brief_md += "- Thumb-friendly Mobile Nav: True (always on)\n"
 
                 status += "  ✓ Optional features configured\n"
-                yield status, "", ""
+                yield progress_msg, status, "", ""
 
             status += "🔍 Analyzing requirements with AI...\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             parser = PromptParser(llm_provider)
 
@@ -331,9 +335,10 @@ PROGRESS:
             status += f"  ✓ Features: {', '.join(features[:5])}\n"
             if "design_notes" in requirements and requirements["design_notes"]:
                 status += "  ✓ Design insights extracted from images\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             # Generate theme
+            progress_msg = "**Status:** 🛠️ Step 4/6 - Generating Theme Files...\n\n⚠️ This may take 2-3 minutes"
             status += "└─ ✓ Requirements analyzed\n\n"
             status += "┌─ STEP 4/6: Generate Theme Files\n"
             status += "│  STATUS: BUILDING\n"
@@ -341,7 +346,7 @@ PROGRESS:
                 status += f"│  🖼️  Using {len(processed_files['images'])} design reference(s)\n"
             status += "│  ⏳ Generating PHP templates, CSS, JavaScript...\n"
             status += "│  ⚠️  This step may take 2-3 minutes. Please wait...\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
             generator = WordPressGenerator(llm_provider, output_dir, config.get("wordpress", {}))
@@ -352,6 +357,7 @@ PROGRESS:
                 images=processed_files["images"] if processed_files["images"] else None,
             )
 
+            progress_msg = "**Status:** ✅ Step 5/6 - Validating & Packaging..."
             status += f"└─ ✓ Theme generated: {theme_dir}\n\n"
             status += "┌─ STEP 5/6: Validate & Package\n"
             status += "│  STATUS: VALIDATING\n"
@@ -359,7 +365,7 @@ PROGRESS:
             status += "│  ✓ WordPress structure verified\n"
             status += "│  ✓ Theme packaged successfully\n"
             status += "└─ ✓ Validation complete\n\n"
-            yield status, "", ""
+            yield progress_msg, status, "", ""
 
             # Ensure all list items are strings for safe display
             features_list = [str(f) for f in requirements.get('features', [])]
@@ -389,10 +395,10 @@ PROGRESS:
                 github_token = os.getenv("GITHUB_TOKEN")
                 if not github_token:
                     status += "⚠️  GITHUB_TOKEN not found, skipping GitHub push\n"
-                    yield status, theme_info, file_tree
+                    yield progress_msg, status, theme_info, file_tree
                 else:
                     status += "📤 Pushing to GitHub...\n"
-                    yield status, theme_info, file_tree
+                    yield progress_msg, status, theme_info, file_tree
 
                     try:
                         github = GitHubIntegration(github_token, config.get("github", {}))
@@ -409,7 +415,7 @@ PROGRESS:
                         status += "  ℹ️  Theme was generated successfully and saved locally.\n"
                         logger.error(f"GitHub push failed: {e}")
 
-                    yield status, theme_info, file_tree
+                    yield progress_msg, status, theme_info, file_tree
 
             # Deploy to WordPress if requested
             if deploy_to_wordpress:
@@ -417,7 +423,7 @@ PROGRESS:
 
                 if not wp_config.get("enabled", False):
                     status += "⚠️  WordPress API not enabled in config.yaml\n"
-                    yield status, theme_info, file_tree
+                    yield progress_msg, status, theme_info, file_tree
                 else:
                     # Get WordPress credentials from environment
                     wp_site_url = os.getenv("WP_SITE_URL", wp_config.get("site_url", ""))
@@ -431,11 +437,11 @@ PROGRESS:
                             "⚠️  WordPress credentials not configured. "
                             "Set WP_SITE_URL, WP_USERNAME, and WP_APP_PASSWORD in .env\n"
                         )
-                        yield status, theme_info, file_tree
+                        yield progress_msg, status, theme_info, file_tree
                     else:
                         try:
                             status += "🚀 Deploying to WordPress site...\n"
-                            yield status, theme_info, file_tree
+                            yield progress_msg, status, theme_info, file_tree
 
                             # Initialize WordPress API
                             wp_api = WordPressAPI(
@@ -452,7 +458,7 @@ PROGRESS:
                                 "  ✓ Connected to: "
                                 f"{connection_info.get('site_name', 'WordPress Site')}\n"
                             )
-                            yield status, theme_info, file_tree
+                            yield progress_msg, status, theme_info, file_tree
 
                             # Deploy theme
                             deploy_result = wp_api.deploy_theme(theme_dir)
@@ -482,15 +488,15 @@ PROGRESS:
                                     f"\n**WordPress Site:** [{wp_site_url}]({wp_site_url})\n"
                                 )
 
-                                yield status, theme_info, file_tree
+                                yield progress_msg, status, theme_info, file_tree
                             else:
                                 status += "  ⚠️  Deployment prepared (manual upload required)\n"
-                                yield status, theme_info, file_tree
+                                yield progress_msg, status, theme_info, file_tree
 
                         except Exception as e:
                             logger.error(f"WordPress deployment failed: {str(e)}")
                             status += f"  ❌ WordPress deployment failed: {str(e)}\n"
-                            yield status, theme_info, file_tree
+                            yield progress_msg, status, theme_info, file_tree
 
             status += "┌─ STEP 6/6: Finalize\n"
             status += "│  STATUS: COMPLETE\n"
@@ -500,12 +506,16 @@ PROGRESS:
             status += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             status += "✅ THEME GENERATION COMPLETE!\n"
             status += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            yield status, theme_info, file_tree
+
+            # Final completion progress indicator
+            progress_complete = "**Status:** ✅ Generation Complete!\n\n🎉 Your WordPress theme is ready!"
+            yield progress_complete, status, theme_info, file_tree
 
         except Exception as e:
             error_msg = f"❌ Error: {str(e)}\n"
             logger.error(f"Theme generation failed: {str(e)}")
-            yield error_msg, "", ""
+            progress_error = "**Status:** ❌ Generation Failed"
+            yield progress_error, error_msg, "", ""
 
     def generate_file_tree(
         path: Path, prefix: str = "", max_depth: int = 3, current_depth: int = 0
@@ -855,6 +865,13 @@ PROGRESS:
                 )
 
             with gr.Column(scale=2):
+                # Immediate visual feedback section
+                gr.Markdown("### 🎯 Generation Progress")
+                progress_indicator = gr.Markdown(
+                    value="**Status:** Waiting to start...",
+                    visible=True
+                )
+
                 gr.Markdown("### 📊 Generation Status")
                 status_output = gr.Textbox(
                     label="Status", lines=15, max_lines=20, interactive=False
@@ -926,7 +943,7 @@ PROGRESS:
                 darkmode_checkbox,
                 preloader_checkbox,
             ],
-            outputs=[status_output, theme_info_output, file_tree_output],
+            outputs=[progress_indicator, status_output, theme_info_output, file_tree_output],
         )
 
     return interface
