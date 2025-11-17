@@ -364,7 +364,9 @@ Tags: {tags_str}
         if design_profile:
             context["design_profile"] = design_profile
 
-        description = f"""Create a modern, visually attractive, production-ready CSS stylesheet for a WordPress theme.
+        description = f"""IMPORTANT: Respond ONLY with valid CSS code. No explanations, no markdown, no comments outside the CSS.
+
+Create a modern, visually attractive, production-ready CSS stylesheet for a WordPress theme.
 This should be a COMPLETE, FULLY-STYLED theme - not a minimal boilerplate.
 
 """
@@ -582,7 +584,9 @@ The theme should look modern, professional, and visually impressive when activat
             "integrations": requirements.get("integrations", []),
         }
 
-        description = f"""Create a complete, modern functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
+        description = f"""IMPORTANT: Respond ONLY with valid PHP code for functions.php. No explanations, no markdown code fences, no comments before the code. Start directly with <?php.
+
+Create a complete, modern functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
 
 CRITICAL REQUIREMENTS:
 1. Use proper PHP function naming - replace hyphens with underscores in function names
@@ -668,24 +672,12 @@ Note: theme-base-layout provides structural CSS and must load first."""
 
             logger.info(f"Injected plugin compatibility layer: {', '.join(injected_items)}")
 
-            # Automatically repair common WordPress code issues
-            php_code, repairs = repair_wordpress_code(php_code, requirements["theme_name"])
-            if repairs:
-                logger.info(f"Auto-repaired functions.php: {', '.join(repairs)}")
-
             # Remove require/include statements for non-existent files
             php_code = remove_nonexistent_requires(php_code, theme_dir)
 
-            # Validate PHP syntax
-            is_valid, error_msg = validate_php_syntax(php_code)
-            if not is_valid:
-                logger.error(f"Generated functions.php has syntax errors: {error_msg}")
-                logger.warning("Using fallback functions.php template")
-                php_code = get_fallback_functions_php(requirements["theme_name"])
-
-            functions_file = theme_dir / "functions.php"
-            functions_file.write_text(php_code, encoding="utf-8")
-            logger.info("Generated functions.php successfully")
+            # Use comprehensive validation with fallback
+            fallback_code = get_fallback_functions_php(requirements["theme_name"])
+            self._validate_and_write_php(theme_dir, "functions.php", php_code, fallback_code)
 
         except Exception as e:
             logger.error(f"Failed to generate functions.php: {str(e)}")
@@ -722,7 +714,7 @@ Note: theme-base-layout provides structural CSS and must load first."""
     def _validate_and_write_php(
         self, theme_dir: Path, filename: str, php_code: str, fallback_code: Optional[str] = None
     ) -> None:
-        """Validate PHP code and write to file with fallback.
+        """Validate PHP code and write to file with comprehensive validation and fallback.
 
         Args:
             theme_dir: Theme directory path
@@ -730,6 +722,8 @@ Note: theme-base-layout provides structural CSS and must load first."""
             php_code: Generated PHP code
             fallback_code: Optional fallback code if validation fails
         """
+        from ..utils.code_validator import validate_and_repair_php_file
+
         # Ensure PHP opening tag
         if not php_code.strip().startswith("<?php") and not php_code.strip().startswith("<!DOCTYPE"):
             php_code = "<?php\n" + php_code
@@ -737,30 +731,55 @@ Note: theme-base-layout provides structural CSS and must load first."""
         # Get theme name from theme_dir
         theme_name = theme_dir.name
 
-        # Automatically repair common WordPress code issues
-        php_code, repairs = repair_wordpress_code(php_code, theme_name)
-        if repairs:
-            logger.info(f"Auto-repaired {filename}: {', '.join(repairs)}")
+        # Determine file type for structure validation
+        file_type = 'template'
+        if filename == 'header.php':
+            file_type = 'header'
+        elif filename == 'footer.php':
+            file_type = 'footer'
+        elif filename == 'functions.php':
+            file_type = 'functions'
 
-        # For footer.php, apply additional footer-specific repairs
-        if filename == "footer.php":
-            php_code, footer_repairs = repair_footer_php(php_code)
-            if footer_repairs:
-                logger.info(f"Auto-repaired footer.php structure: {', '.join(footer_repairs)}")
+        # Use comprehensive validation and repair (with up to 2 retry attempts)
+        final_code, is_valid, log_messages = validate_and_repair_php_file(
+            php_code,
+            file_type=file_type,
+            filename=filename,
+            max_retries=2
+        )
 
-        # Validate PHP syntax
-        is_valid, error_msg = validate_php_syntax(php_code)
-        if not is_valid:
-            logger.error(f"Generated {filename} has syntax errors: {error_msg}")
-            if fallback_code:
-                logger.warning(f"Using fallback {filename} template")
-                php_code = fallback_code
+        # Log all validation messages
+        for msg in log_messages:
+            if '✓' in msg:
+                logger.info(msg)
+            elif '✗' in msg:
+                logger.error(msg)
             else:
-                logger.warning(f"No fallback available for {filename}, using generated code anyway")
+                logger.warning(msg)
 
+        # If validation still failed after retries, use fallback
+        if not is_valid:
+            if fallback_code:
+                logger.warning(f"→ USING FALLBACK: {filename}")
+                final_code = fallback_code
+
+                # Validate the fallback too
+                fallback_valid, fallback_msg = validate_php_syntax(fallback_code)
+                if not fallback_valid:
+                    logger.error(f"⚠ FALLBACK {filename} ALSO HAS ERRORS: {fallback_msg}")
+                else:
+                    logger.info(f"✓ Fallback {filename} validated successfully")
+            else:
+                logger.error(f"⚠ No fallback available for {filename}, using best-effort repaired code")
+
+        # Write the file
         file_path = theme_dir / filename
-        file_path.write_text(php_code, encoding="utf-8")
-        logger.info(f"Written {filename} successfully")
+        file_path.write_text(final_code, encoding="utf-8")
+
+        if is_valid or fallback_code:
+            logger.info(f"✓ Written {filename} successfully")
+        else:
+            logger.warning(f"⚠ Written {filename} (may have issues)")
 
     def _generate_index_php(self, theme_dir: Path, requirements: Dict[str, Any]) -> None:
         """Generate index.php template file.
@@ -836,7 +855,9 @@ Use modern WordPress template tags and best practices."""
             "navigation": requirements.get("navigation", []),
         }
 
-        description = f"""Create a modern, fully-featured header.php template for WordPress theme.
+        description = f"""IMPORTANT: Respond ONLY with valid PHP/HTML code for header.php. No explanations, no markdown code fences, no comments before the code.
+
+Create a modern, fully-featured header.php template for WordPress theme.
 
 HEADER DESIGN PATTERN:
 
@@ -1005,7 +1026,9 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
 
         context = {"theme_name": requirements["theme_name"]}
 
-        description = f"""Create a modern, fully-featured footer.php template for WordPress theme.
+        description = f"""IMPORTANT: Respond ONLY with valid PHP/HTML code for footer.php. No explanations, no markdown code fences, no comments before the code.
+
+Create a modern, fully-featured footer.php template for WordPress theme.
 
 FOOTER DESIGN PATTERN:
 

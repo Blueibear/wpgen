@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from .logger import get_logger
+from .php_validation import (
+    validate_and_fix_php,
+    clean_llm_output,
+    PHPValidator,
+)
 
 logger = get_logger(__name__)
 
@@ -384,28 +389,11 @@ def clean_generated_code(code: str, file_type: str) -> str:
     Returns:
         Cleaned code
     """
-    # Remove markdown code blocks
-    code = code.strip()
+    # Use the comprehensive cleaner from php_validation module
+    code = clean_llm_output(code, file_type)
 
-    # Remove code fence markers with language
-    code = re.sub(r'^```(?:php|css|javascript|js|html)?\s*\n', '', code, flags=re.MULTILINE)
-    code = re.sub(r'\n```\s*$', '', code)
-
-    # Remove remaining code fences
-    code = code.replace('```', '')
-
-    # For PHP files, ensure proper opening tag
+    # Additional PHP-specific validation
     if file_type == 'php':
-        # Remove any explanatory text before <?php or <!DOCTYPE
-        if '<?php' in code:
-            # Find first occurrence of <?php
-            php_start = code.find('<?php')
-            code = code[php_start:]
-        elif '<!DOCTYPE' in code:
-            # HTML template with <!DOCTYPE (like header.php)
-            doctype_start = code.find('<!DOCTYPE')
-            code = code[doctype_start:]
-
         # Check for Python-like placeholders that weren't evaluated
         if '{theme_name.' in code or '.replace(' in code:
             logger.error("CRITICAL: Found unevaluated Python expression in generated PHP code!")
@@ -417,27 +405,61 @@ def clean_generated_code(code: str, file_type: str) -> str:
             logger.warning("Found markdown code fences in PHP, removing")
             code = code.replace('```php', '').replace('```', '')
 
-        # Remove any text after the last PHP closing tag (if it exists)
-        if '?>' in code:
-            # Find last occurrence of ?>
-            php_end = code.rfind('?>')
-            # Check if there's only whitespace after
-            after_close = code[php_end + 2:].strip()
-            if after_close and not after_close.startswith('<?'):
-                # There's non-whitespace content after ?>, keep it
-                pass
-            else:
-                code = code[:php_end + 2]
-
-    # Remove common AI explanatory phrases at the start
-    explanatory_patterns = [
-        r'^(?:Here\'s|Here is|This is|Below is|I\'ve created|I have created).*?:\s*\n+',
-        r'^(?:Sure|Certainly|Of course)[,!].*?\n+',
-    ]
-    for pattern in explanatory_patterns:
-        code = re.sub(pattern, '', code, flags=re.IGNORECASE)
-
     return code.strip()
+
+
+def validate_and_repair_php_file(
+    php_code: str,
+    file_type: str,
+    filename: str,
+    max_retries: int = 2
+) -> Tuple[str, bool, List[str]]:
+    """Validate and repair a PHP file with retry logic.
+
+    Args:
+        php_code: PHP code to validate
+        file_type: Type of file (header, footer, functions, template)
+        filename: Filename for logging
+        max_retries: Maximum number of repair attempts
+
+    Returns:
+        Tuple of (final_code, is_valid, log_messages)
+    """
+    log_messages = []
+    current_code = php_code
+
+    for attempt in range(max_retries + 1):
+        # Validate and attempt auto-fix
+        fixed_code, is_valid, issues = validate_and_fix_php(
+            current_code,
+            file_type=file_type,
+            filename=filename,
+            auto_fix=True
+        )
+
+        if is_valid:
+            if attempt > 0:
+                log_messages.append(f"✓ REGENERATED: {filename} (fixed on attempt {attempt + 1})")
+                logger.info(f"✓ Successfully repaired {filename} on attempt {attempt + 1}")
+            else:
+                log_messages.append(f"✓ VALID PHP: {filename}")
+                logger.info(f"✓ {filename} passed validation")
+            return fixed_code, True, log_messages
+
+        # Log the issues
+        log_messages.append(f"✗ INVALID PHP: {filename} (attempt {attempt + 1}/{max_retries + 1})")
+        for issue in issues:
+            log_messages.append(f"  - {issue}")
+            logger.error(f"  {issue}")
+
+        # Update for next iteration
+        current_code = fixed_code
+
+    # If we get here, all attempts failed
+    log_messages.append(f"✗ VALIDATION FAILED: {filename} after {max_retries + 1} attempts")
+    logger.error(f"✗ Failed to repair {filename} after {max_retries + 1} attempts")
+
+    return current_code, False, log_messages
 
 
 def get_fallback_functions_php(theme_name: str) -> str:
