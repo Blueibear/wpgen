@@ -263,6 +263,161 @@ def auto_add_required_tags(php_code: str, file_type: str) -> tuple[str, list[str
     return fixed_code, additions
 
 
+def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
+    """Sanitize unquoted barewords in PHP arrays and function calls.
+
+    This function fixes the critical bug where LLMs generate PHP code with unquoted
+    string values that should be quoted, such as:
+        'height' => auto,      # WRONG - causes PHP error
+        'height' => 'auto',    # CORRECT
+
+    Common barewords that need quoting:
+    - CSS values: auto, none, center, left, right, top, bottom, cover, contain, inherit
+    - Layout values: full, wide, narrow, boxed
+    - Color names: red, blue, green, black, white
+    - Any other string that's not a PHP keyword, boolean, number, or constant
+
+    Args:
+        php_code: PHP code to sanitize
+        filename: Filename for logging
+
+    Returns:
+        Tuple of (sanitized_code, list_of_fixes_applied)
+    """
+    fixes = []
+    sanitized = php_code
+
+    # Valid PHP keywords that should NOT be quoted
+    valid_keywords = {
+        'true', 'false', 'null', 'TRUE', 'FALSE', 'NULL',
+        '__FILE__', '__LINE__', '__DIR__', '__FUNCTION__', '__CLASS__',
+        '__METHOD__', '__NAMESPACE__', '__TRAIT__',
+        'self', 'parent', 'static',
+    }
+
+    # Valid WordPress constants that should NOT be quoted
+    valid_constants = {
+        'ABSPATH', 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY',
+        'WP_CONTENT_DIR', 'WP_CONTENT_URL', 'WP_PLUGIN_DIR', 'WP_PLUGIN_URL',
+        'WPINC', 'WP_LANG_DIR', 'WP_MEMORY_LIMIT', 'WP_MAX_MEMORY_LIMIT',
+    }
+
+    # Pattern to find array assignments: 'key' => value, or "key" => value,
+    # Captures the key, arrow, and value
+    array_pattern = r'''
+        (['"])([^'"]+)\1           # Quoted key: 'key' or "key"
+        \s*=>\s*                   # Arrow with optional whitespace
+        ([a-zA-Z_][a-zA-Z0-9_-]*)  # Bareword value (identifier-like)
+        \s*([,\)])                 # Followed by comma or closing paren
+    '''
+
+    def should_quote_value(value: str) -> bool:
+        """Check if a value should be quoted."""
+        # Don't quote PHP keywords
+        if value in valid_keywords:
+            return False
+
+        # Don't quote WordPress constants
+        if value in valid_constants:
+            return False
+
+        # Don't quote if it looks like a number
+        if value.isdigit() or re.match(r'^\d+\.\d+$', value):
+            return False
+
+        # Don't quote if it's a WordPress function call pattern
+        # (though this pattern shouldn't match function calls)
+        if '(' in value or ')' in value:
+            return False
+
+        # Everything else should be quoted
+        return True
+
+    # Find and fix barewords in array assignments
+    def fix_bareword(match):
+        quote_char = match.group(1)  # Single or double quote from key
+        key = match.group(2)         # The key name
+        value = match.group(3)       # The bareword value
+        terminator = match.group(4)  # Comma or closing paren
+
+        if should_quote_value(value):
+            fixes.append(f"Quoted bareword '{value}' in array key '{key}'")
+            # Use single quotes for the value
+            return f"{quote_char}{key}{quote_char} => '{value}'{terminator}"
+        else:
+            # Keep as-is (valid keyword/constant)
+            return match.group(0)
+
+    # Apply the fix
+    sanitized = re.sub(
+        array_pattern,
+        fix_bareword,
+        sanitized,
+        flags=re.VERBOSE | re.MULTILINE
+    )
+
+    # Also check for function arguments with barewords
+    # Pattern: function_name( bareword ) or function_name( 'key', bareword )
+    func_arg_pattern = r'''
+        (\w+)\s*\(               # Function name and opening paren
+        ([^)]*?)                 # Capture everything inside parens
+        \)                       # Closing paren
+    '''
+
+    def fix_function_args(match):
+        func_name = match.group(1)
+        args_str = match.group(2)
+
+        if not args_str.strip():
+            return match.group(0)
+
+        # Split arguments by comma
+        args = [arg.strip() for arg in args_str.split(',')]
+        fixed_args = []
+        local_fixes = []
+
+        for arg in args:
+            # Skip if already quoted or is a number or looks like an expression
+            if (arg.startswith(("'", '"')) or
+                arg.isdigit() or
+                arg in valid_keywords or
+                arg in valid_constants or
+                '(' in arg or
+                '$' in arg or
+                '::' in arg or
+                '->' in arg):
+                fixed_args.append(arg)
+            else:
+                # Check if it's a bareword that needs quoting
+                # Look for standalone identifiers that aren't function calls
+                bareword_match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_-]*)$', arg)
+                if bareword_match and should_quote_value(arg):
+                    fixed_args.append(f"'{arg}'")
+                    local_fixes.append(f"Quoted bareword '{arg}' in {func_name}()")
+                else:
+                    fixed_args.append(arg)
+
+        if local_fixes:
+            fixes.extend(local_fixes)
+            return f"{func_name}({', '.join(fixed_args)})"
+        else:
+            return match.group(0)
+
+    sanitized = re.sub(
+        func_arg_pattern,
+        fix_function_args,
+        sanitized,
+        flags=re.VERBOSE | re.MULTILINE
+    )
+
+    if fixes:
+        logger.info(f"Sanitized {len(fixes)} bareword(s) in {filename}")
+        for fix in fixes:
+            logger.debug(f"  - {fix}")
+
+    return sanitized, fixes
+
+
 class PHPValidationError(Exception):
     """Exception raised when PHP validation fails."""
     pass
@@ -635,17 +790,18 @@ def validate_and_fix_php(
     filename: str = 'file.php',
     auto_fix: bool = True
 ) -> tuple[str, bool, list[str]]:
-    """Comprehensive PHP validation and auto-fixing with Unicode cleaning.
+    """Comprehensive PHP validation and auto-fixing with Unicode cleaning and bareword sanitization.
 
     This is the main entry point for validating and fixing generated PHP code.
     It performs the following operations in order:
 
     1. Strips invisible Unicode characters
-    2. Removes hallucinated functions
-    3. Auto-fixes brace mismatches
-    4. Adds required WordPress template tags (wp_head, wp_footer, etc.)
-    5. Validates PHP syntax
-    6. Checks required template structure
+    2. Sanitizes unquoted barewords (auto, center, etc.) - CRITICAL FIX
+    3. Removes hallucinated functions
+    4. Auto-fixes brace mismatches
+    5. Adds required WordPress template tags (wp_head, wp_footer, etc.)
+    6. Validates PHP syntax
+    7. Checks required template structure
 
     Args:
         php_code: PHP code to validate/fix
@@ -666,7 +822,14 @@ def validate_and_fix_php(
         issues.append(f"Stripped {unicode_removed} invisible Unicode character(s)")
         logger.warning(f"Removed {unicode_removed} invisible Unicode characters from {filename}")
 
-    # 1. Remove hallucinated functions
+    # 1. Sanitize barewords (CRITICAL - prevents 'height' => auto, errors)
+    if auto_fix:
+        fixed_code, bareword_fixes = sanitize_barewords(fixed_code, filename)
+        if bareword_fixes:
+            issues.extend(bareword_fixes)
+            logger.warning(f"Fixed {len(bareword_fixes)} unquoted bareword(s) in {filename}")
+
+    # 2. Remove hallucinated functions
     if auto_fix:
         fixed_code, removals = validator.remove_hallucinated_functions(fixed_code, filename)
         issues.extend(removals)
@@ -675,7 +838,7 @@ def validate_and_fix_php(
         if hallucinated:
             issues.append(f"Contains hallucinated functions: {', '.join(hallucinated)}")
 
-    # 2. Auto-fix brace mismatches
+    # 3. Auto-fix brace mismatches
     if auto_fix:
         fixed_code, brace_fixes = validator.auto_fix_braces(fixed_code, filename)
         issues.extend(brace_fixes)
@@ -684,18 +847,18 @@ def validate_and_fix_php(
         if not brace_valid:
             issues.append(brace_error)
 
-    # 3. Add required WordPress template tags if missing
+    # 4. Add required WordPress template tags if missing
     if auto_fix and file_type in ['header', 'footer']:
         fixed_code, tag_additions = auto_add_required_tags(fixed_code, file_type)
         issues.extend(tag_additions)
 
-    # 4. Validate syntax
+    # 5. Validate syntax
     syntax_valid, syntax_error = validator.validate_php_syntax(fixed_code, filename)
     if not syntax_valid:
         issues.append(f"PHP syntax error: {syntax_error}")
         return fixed_code, False, issues
 
-    # 5. Check required structures
+    # 6. Check required structures
     if file_type in ['header', 'footer', 'functions']:
         struct_valid, struct_missing = validator.check_required_structure(fixed_code, file_type, filename)
         if not struct_valid:
@@ -707,18 +870,18 @@ def validate_and_fix_php(
                 issues.extend(struct_missing)
                 return fixed_code, False, issues
 
-    # 6. Verify required template tags are present
+    # 7. Verify required template tags are present
     tags_valid, missing_tags = verify_required_template_tags(fixed_code, file_type)
     if not tags_valid:
         if auto_fix:
-            # Already tried to add them in step 3, log warnings
+            # Already tried to add them in step 4, log warnings
             for tag in missing_tags:
                 logger.warning(f"Still missing after auto-fix: {tag}")
         else:
             issues.extend(missing_tags)
             return fixed_code, False, issues
 
-    # 7. Validate WordPress functions
+    # 8. Validate WordPress functions
     hallucinated, warnings = validator.validate_wordpress_functions(fixed_code, filename)
     if hallucinated and not auto_fix:
         issues.append(f"Contains hallucinated functions: {', '.join(hallucinated)}")
