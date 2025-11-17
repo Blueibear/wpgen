@@ -275,6 +275,21 @@ class WordPressGenerator:
             _ensure_screenshot(str(theme_dir), requirements, images)
             logger.info("✓ Theme thumbnail prepared (screenshot.png)")
 
+            # Validate and auto-fix template structure
+            logger.info("Validating and fixing template structure...")
+            from ..utils.code_validator import validate_and_fix_template_structure
+            structure_validation = validate_and_fix_template_structure(theme_dir)
+
+            if structure_validation['repairs']:
+                logger.info(f"✓ Auto-repaired {len(structure_validation['repairs'])} template issues:")
+                for repair in structure_validation['repairs']:
+                    logger.info(f"  - {repair}")
+
+            if structure_validation['errors']:
+                logger.warning(f"⚠️ Template structure validation found {len(structure_validation['errors'])} errors:")
+                for error in structure_validation['errors'][:5]:
+                    logger.warning(f"  - {error}")
+
             # Final WordPress safety validation
             logger.info("Performing final WordPress safety validation...")
             from ..utils.code_validator import validate_theme_for_wordpress_safety

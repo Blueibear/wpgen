@@ -8,7 +8,7 @@ complete pipeline from prompt to deployed theme.
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -20,6 +20,8 @@ from .utils.image_analysis import ImageAnalyzer
 from .utils.text_utils import TextProcessor
 from .wordpress import WordPressAPI
 from .design_profiles import get_design_profile, get_profile_names
+from .optimizer import PromptOptimizer
+from .blueprints import get_blueprint
 
 logger = get_logger(__name__)
 
@@ -145,10 +147,27 @@ class ThemeGenerationService:
             # Process images and documents if provided
             enhanced_prompt = self._enhance_prompt(request, llm_provider)
 
-            # Parse prompt to extract requirements
-            self.logger.info("Parsing prompt to extract requirements")
+            # PROMPT OPTIMIZATION LAYER - Rewrite prompt for better LLM output
+            self.logger.info("Optimizing prompt for domain-specific generation")
+            optimizer = PromptOptimizer()
+            optimization_result = optimizer.optimize(enhanced_prompt)
+
+            self.logger.info(f"Detected domain: {optimization_result.detected_domain}")
+            if optimization_result.woocommerce_detected:
+                self.logger.info("WooCommerce functionality detected - applying ecommerce blueprint")
+            if optimization_result.blueprint_name:
+                self.logger.info(f"Applying blueprint: {optimization_result.blueprint_name}")
+
+            # Parse optimized prompt to extract requirements
+            self.logger.info("Parsing optimized prompt to extract requirements")
             parser = PromptParser(llm_provider)
-            requirements = parser.parse(enhanced_prompt)
+            requirements = parser.parse(optimization_result.optimized_prompt)
+
+            # Inject blueprint requirements into the requirements dict
+            requirements['_blueprint_name'] = optimization_result.blueprint_name
+            requirements['_blueprint_requirements'] = optimization_result.injected_requirements
+            requirements['_domain'] = optimization_result.detected_domain
+            requirements['_woocommerce_required'] = optimization_result.woocommerce_detected
 
             self.logger.info(f"Theme: {requirements['theme_display_name']}")
             self.logger.info(f"Features: {', '.join(requirements.get('features', []))}")
