@@ -862,6 +862,146 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
     return is_safe, issues
 
 
+def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
+    """Get strict structurally-guaranteed fallback header.php template.
+
+    This header template GUARANTEES the following structure in exact order:
+    1. <!DOCTYPE html>
+    2. <html> with language_attributes()
+    3. <head> with charset and viewport
+    4. wp_head() hook
+    5. <body> with body_class()
+    6. wp_body_open() hook
+    7. <header class="site-header">
+    8. Logo and navigation
+    9. Opens <main id="content"> (closed in footer.php)
+
+    Args:
+        theme_name: Theme name for text domain
+        requirements: Optional theme requirements dict
+
+    Returns:
+        Guaranteed-safe header.php code
+    """
+    site_name = requirements.get('theme_display_name', 'My WordPress Site') if requirements else 'My WordPress Site'
+
+    return f"""<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="profile" href="https://gmpg.org/xfn/11">
+    <?php wp_head(); ?>
+</head>
+
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+
+<div id="page" class="site">
+    <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', '{theme_name}' ); ?></a>
+
+    <header class="site-header">
+        <div class="header-inner container">
+            <div class="site-branding">
+                <?php
+                if ( has_custom_logo() ) {{
+                    the_custom_logo();
+                }} else {{
+                    ?>
+                    <h1 class="site-title">
+                        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
+                            <?php bloginfo( 'name' ); ?>
+                        </a>
+                    </h1>
+                    <?php
+                    $description = get_bloginfo( 'description', 'display' );
+                    if ( $description || is_customize_preview() ) {{
+                        ?>
+                        <p class="site-description"><?php echo esc_html( $description ); ?></p>
+                        <?php
+                    }}
+                }}
+                ?>
+            </div><!-- .site-branding -->
+
+            <nav class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_name}' ); ?>">
+                <?php
+                wp_nav_menu(
+                    array(
+                        'theme_location' => 'primary',
+                        'menu_class'     => 'primary-menu',
+                        'container'      => false,
+                        'fallback_cb'    => false,
+                    )
+                );
+                ?>
+            </nav><!-- .main-navigation -->
+        </div><!-- .header-inner -->
+    </header><!-- .site-header -->
+
+    <main id="content" class="site-main">
+"""
+
+
+def get_fallback_footer_php(theme_name: str) -> str:
+    """Get strict structurally-guaranteed fallback footer.php template.
+
+    This footer template GUARANTEES the following structure in exact order:
+    1. Closes </main> (opened in header.php)
+    2. <footer class="site-footer">
+    3. Footer widgets and content
+    4. wp_footer() hook
+    5. Closes </body>
+    6. Closes </html>
+
+    Args:
+        theme_name: Theme name for text domain
+
+    Returns:
+        Guaranteed-safe footer.php code
+    """
+    return f"""    </main><!-- #content .site-main -->
+
+    <footer class="site-footer">
+        <div class="footer-inner container">
+            <div class="footer-widgets">
+                <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                    <div class="footer-widget-area footer-widget-1">
+                        <?php dynamic_sidebar( 'footer-1' ); ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
+                    <div class="footer-widget-area footer-widget-2">
+                        <?php dynamic_sidebar( 'footer-2' ); ?>
+                    </div>
+                <?php endif; ?>
+            </div><!-- .footer-widgets -->
+
+            <div class="site-info">
+                <p>
+                    &copy; <?php echo date( 'Y' ); ?>
+                    <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+                        <?php bloginfo( 'name' ); ?>
+                    </a>
+                    <?php
+                    /* translators: WordPress credit */
+                    printf( esc_html__( ' | Powered by %s', '{theme_name}' ), '<a href="https://wordpress.org/">WordPress</a>' );
+                    ?>
+                </p>
+            </div><!-- .site-info -->
+        </div><!-- .footer-inner -->
+    </footer><!-- .site-footer -->
+
+</div><!-- #page .site -->
+
+<?php wp_footer(); ?>
+
+</body>
+</html>
+"""
+
+
 def get_fallback_template(template_name: str, theme_name: str) -> str:
     """Get fallback template for various WordPress template files.
 
@@ -872,6 +1012,12 @@ def get_fallback_template(template_name: str, theme_name: str) -> str:
     Returns:
         Fallback template code
     """
+    # Return strict structural templates for header/footer
+    if template_name == 'header.php':
+        return get_fallback_header_php(theme_name)
+    elif template_name == 'footer.php':
+        return get_fallback_footer_php(theme_name)
+
     templates = {
         'single.php': """<?php
 /**
@@ -1598,3 +1744,149 @@ def _check_balanced_braces(content: str) -> list[str]:
         issues.append(f"Unmatched PHP tags: {php_tag_open} <?php, {php_tag_close} ?>")
 
     return issues
+
+
+def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
+    """Sanitize theme filenames to prevent duplicates and invalid extensions.
+
+    Fixes common LLM-generated filename errors:
+    - page-header.php.php → header.php
+    - page-style.css.php → style.css
+    - page-index.php.php → index.php
+    - footer.php.css → footer.php
+    - header.html.php → header.php
+
+    Args:
+        filename: Original filename
+
+    Returns:
+        Tuple of (sanitized_filename, list_of_changes_made)
+    """
+    changes = []
+    original = filename
+
+    # Strip any leading "page-" prefix that LLMs sometimes add
+    if filename.startswith('page-'):
+        filename = filename[5:]  # Remove "page-"
+        changes.append(f"Removed 'page-' prefix")
+
+    # Remove duplicate extensions (.php.php, .css.css, etc.)
+    while True:
+        # Check for double .php
+        if filename.endswith('.php.php'):
+            filename = filename[:-4]  # Remove one .php
+            changes.append("Removed duplicate .php extension")
+        # Check for .css.php (wrong extension)
+        elif filename.endswith('.css.php'):
+            filename = filename[:-4]  # Remove .php, keep .css
+            changes.append("Removed incorrect .php extension from CSS file")
+        # Check for .html.php (wrong extension)
+        elif filename.endswith('.html.php'):
+            filename = filename[:-5]  # Remove .html
+            changes.append("Removed .html extension from PHP file")
+        # Check for .js.php (wrong extension)
+        elif filename.endswith('.js.php'):
+            filename = filename[:-4]  # Remove .php, keep .js
+            changes.append("Removed incorrect .php extension from JS file")
+        # Check for any other double extension
+        elif re.search(r'\.\w+\.\w+$', filename):
+            # Keep only the last extension
+            parts = filename.rsplit('.', 2)
+            if len(parts) >= 3:
+                filename = parts[0] + '.' + parts[2]
+                changes.append(f"Removed duplicate extension .{parts[1]}")
+        else:
+            break
+
+    # Ensure PHP template files have .php extension only
+    php_templates = [
+        'header', 'footer', 'index', 'functions', 'single', 'page',
+        'archive', 'search', '404', 'sidebar', 'front-page',
+        'home', 'category', 'tag', 'author', 'date', 'attachment'
+    ]
+
+    base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    if base_name in php_templates:
+        if not filename.endswith('.php'):
+            filename = base_name + '.php'
+            changes.append(f"Corrected extension to .php for template file")
+
+    # Ensure style.css is exactly that
+    if 'style' in filename.lower() and filename != 'style.css':
+        if not filename.startswith('_') and not filename.startswith('.'):
+            filename = 'style.css'
+            changes.append("Normalized to 'style.css'")
+
+    # Prevent common hallucinated filenames
+    invalid_patterns = {
+        r'^template-.*\.php$': None,  # template-header.php → header.php
+        r'^wp-.*\.php$': None,  # wp-header.php → header.php
+        r'^theme-.*\.php$': None,  # theme-header.php → header.php
+    }
+
+    for pattern, replacement in invalid_patterns.items():
+        if re.match(pattern, filename):
+            # Extract the core name (e.g., "header" from "template-header.php")
+            match = re.search(r'-([\w-]+)\.php$', filename)
+            if match:
+                core_name = match.group(1)
+                if core_name in php_templates:
+                    filename = f"{core_name}.php"
+                    changes.append(f"Removed invalid prefix from filename")
+
+    if changes:
+        logger.info(f"Sanitized filename: '{original}' → '{filename}'")
+        for change in changes:
+            logger.debug(f"  - {change}")
+
+    return filename, changes
+
+
+def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
+    """Validate and sanitize all filenames in a theme directory.
+
+    Args:
+        theme_dir: Path to theme directory
+
+    Returns:
+        Dictionary with validation results and renames performed
+    """
+    results = {
+        'valid': True,
+        'renames': [],
+        'errors': [],
+    }
+
+    theme_dir = Path(theme_dir)
+
+    if not theme_dir.exists():
+        results['valid'] = False
+        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        return results
+
+    # Check all files in theme directory (non-recursive for now, just top-level templates)
+    for file_path in theme_dir.iterdir():
+        if file_path.is_file():
+            original_name = file_path.name
+            sanitized_name, changes = sanitize_theme_filename(original_name)
+
+            if changes:
+                # Rename the file
+                new_path = theme_dir / sanitized_name
+
+                # Check if target already exists
+                if new_path.exists() and new_path != file_path:
+                    logger.warning(f"Cannot rename {original_name} to {sanitized_name}: target already exists")
+                    results['errors'].append(f"Rename conflict: {original_name} → {sanitized_name} (target exists)")
+                    results['valid'] = False
+                else:
+                    try:
+                        file_path.rename(new_path)
+                        results['renames'].append(f"{original_name} → {sanitized_name}")
+                        logger.info(f"Renamed file: {original_name} → {sanitized_name}")
+                    except Exception as e:
+                        logger.error(f"Failed to rename {original_name}: {e}")
+                        results['errors'].append(f"Failed to rename {original_name}: {str(e)}")
+                        results['valid'] = False
+
+    return results

@@ -275,6 +275,21 @@ class WordPressGenerator:
             _ensure_screenshot(str(theme_dir), requirements, images)
             logger.info("✓ Theme thumbnail prepared (screenshot.png)")
 
+            # Sanitize filenames to prevent duplicates and invalid extensions
+            logger.info("Sanitizing theme filenames...")
+            from ..utils.code_validator import validate_theme_filenames
+            filename_results = validate_theme_filenames(theme_dir)
+
+            if filename_results['renames']:
+                logger.info(f"✓ Sanitized {len(filename_results['renames'])} filename(s):")
+                for rename in filename_results['renames']:
+                    logger.info(f"  - {rename}")
+
+            if filename_results['errors']:
+                logger.warning(f"⚠️ Filename validation found {len(filename_results['errors'])} errors:")
+                for error in filename_results['errors']:
+                    logger.warning(f"  - {error}")
+
             # Validate and auto-fix template structure
             logger.info("Validating and fixing template structure...")
             from ..utils.code_validator import validate_and_fix_template_structure
