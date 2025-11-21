@@ -395,7 +395,9 @@ def clean_generated_code(code: str, file_type: str) -> str:
     # Additional PHP-specific validation
     if file_type == 'php':
         # Check for Python-like placeholders that weren't evaluated
-        if '{theme_name.' in code or '.replace(' in code:
+        # We check for both bracket notation and dot notation that might be left over
+        # Use regex to catch {theme_name}, {theme_name.replace...}, {requirements...}
+        if re.search(r'\{theme_name[\.\}]|\{requirements', code):
             logger.error("CRITICAL: Found unevaluated Python expression in generated PHP code!")
             logger.error(f"Code snippet: {code[:200]}")
             raise ValueError("Generated code contains unevaluated Python expressions")

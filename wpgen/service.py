@@ -18,6 +18,8 @@ from .parsers import PromptParser
 from .utils import get_llm_provider, get_logger
 from .utils.image_analysis import ImageAnalyzer
 from .utils.text_utils import TextProcessor
+from .utils.code_validator import CodeValidator
+from .utils.theme_validator import ThemeValidator
 from .wordpress import WordPressAPI
 from .design_profiles import get_design_profile, get_profile_names
 from .optimizer import PromptOptimizer
@@ -387,9 +389,6 @@ class ThemeGenerationService:
         warnings = []
 
         try:
-            from .utils.code_validator import CodeValidator
-            from .utils.theme_validator import ThemeValidator
-
             # Validate code
             code_validator = CodeValidator(strict=strict)
             code_results = code_validator.validate_directory(theme_dir)

@@ -71,8 +71,8 @@ class TestGitHubIntegration:
         assert repo_name == "my-theme-wp"
 
     @pytest.mark.integration
-    @patch("wpgen.github.integration.requests.post")
-    def test_create_repository_success(self, mock_post, github_integration):
+    @patch("wpgen.github.integration.requests.request")
+    def test_create_repository_success(self, mock_request, github_integration):
         """Test successful repository creation."""
         mock_response = Mock()
         mock_response.status_code = 201
@@ -80,20 +80,20 @@ class TestGitHubIntegration:
             "html_url": "https://github.com/user/test-repo",
             "clone_url": "https://github.com/user/test-repo.git",
         }
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = github_integration.create_repository("test-repo", "Test description")
 
         assert result["html_url"] == "https://github.com/user/test-repo"
-        mock_post.assert_called_once()
+        mock_request.assert_called_once()
 
     @pytest.mark.integration
-    @patch("wpgen.github.integration.requests.post")
-    def test_create_repository_already_exists(self, mock_post, github_integration):
+    @patch("wpgen.github.integration.requests.request")
+    def test_create_repository_already_exists(self, mock_request, github_integration):
         """Test repository creation when repo already exists."""
         mock_response = Mock()
         mock_response.status_code = 422
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         # Mock get_repository to return existing repo
         with patch.object(github_integration, "get_repository") as mock_get:
