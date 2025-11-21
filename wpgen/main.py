@@ -87,6 +87,8 @@ def cli():
     default=None,
     help="Design profile for theme styling (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)",
 )
+@click.option("--strict", is_flag=True, help="Enable strict validation mode (warnings = errors)")
+@click.option("--json-logs", is_flag=True, help="Output logs in JSON format to stdout")
 def generate(
     prompt: str | None,
     config_path: str,
@@ -97,6 +99,8 @@ def generate(
     provider: str | None,
     model: str | None,
     design_profile: str | None,
+    strict: bool,
+    json_logs: bool,
 ):
     """Generate a WordPress theme from a description.
 
@@ -131,6 +135,7 @@ def generate(
             format_type=log_config.get("format", "text"),
             colored_console=log_config.get("colored_console", True),
             console_output=log_config.get("console_output", True),
+            json_logs=json_logs,
         )
 
         logger.info("Starting WPGen theme generation")
@@ -151,6 +156,12 @@ def generate(
         click.echo(f"🤖 Using LLM provider: {provider_name}")
         llm_provider = get_llm_provider(cfg)
         logger.info(f"Initialized LLM provider: {provider_name}")
+
+        # Check model deprecation
+        from wpgen.utils.model_deprecation import log_model_deprecation_warning
+        model_name = cfg.get("llm", {}).get(provider_name, {}).get("model")
+        if model_name:
+            log_model_deprecation_warning(model_name, provider_name)
 
         # Parse prompt
         click.echo("🔍 Parsing requirements...")
@@ -177,6 +188,19 @@ def generate(
         theme_dir = generator.generate(requirements)
 
         click.echo(f"✅ Theme generated successfully: {theme_dir}\n")
+
+        # Validate theme
+        from wpgen.utils.code_validator import CodeValidator
+        from wpgen.utils.validation_report import print_validation_summary_table
+
+        click.echo("🔍 Validating generated theme...")
+        validator = CodeValidator(strict=strict)
+        results = validator.validate_directory(theme_dir)
+        print_validation_summary_table(results, strict=strict)
+
+        if strict and (results.get('errors') or results.get('warnings')):
+            click.echo("❌ Validation failed in strict mode", err=True)
+            sys.exit(1)
 
         # Push to GitHub
         if push:

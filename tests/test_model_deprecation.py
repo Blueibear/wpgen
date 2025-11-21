@@ -59,7 +59,7 @@ def test_pattern_match_preview_suffix():
 
 def test_pattern_match_dated_snapshot():
     """Test pattern matching for dated snapshot models."""
-    is_dep, warning, suggested = check_model_deprecation("gpt-3.5-turbo-0125", "openai")
+    is_dep, warning, suggested = check_model_deprecation("gpt-3.5-turbo-0999", "openai")
 
     assert is_dep is True
     assert "dated" in warning.lower() or "snapshot" in warning.lower()

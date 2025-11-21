@@ -204,6 +204,24 @@ class TestWordPressSafetyValidation:
         (theme_dir / "style.css").write_text("/* Theme Name: Test Theme */")
         (theme_dir / "index.php").write_text("<?php\nget_header();\nget_footer();")
         (theme_dir / "functions.php").write_text(get_fallback_functions_php("test-theme"))
+        (theme_dir / "header.php").write_text("""<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head><meta charset="<?php bloginfo( 'charset' ); ?>"><?php wp_head(); ?></head>
+<body <?php body_class(); ?>>
+<header class="site-header">
+<div class="site-branding"><?php the_custom_logo(); ?></div>
+<nav class="main-navigation"></nav>
+</header>
+<main id="content">""")
+        (theme_dir / "footer.php").write_text("""</main>
+<footer class="site-footer"></footer>
+<?php wp_footer(); ?>
+</body></html>""")
+
+        # Create assets/css/style.css
+        assets_css_dir = theme_dir / "assets" / "css"
+        assets_css_dir.mkdir(parents=True)
+        (assets_css_dir / "style.css").write_text("/* Base Layout */\n.site-header {}\n.site-branding img {}")
 
         return theme_dir
 

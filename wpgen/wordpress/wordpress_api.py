@@ -23,6 +23,7 @@ from tenacity import (
 )
 
 from ..utils.logger import get_logger
+from ..utils.http_errors import handle_http_error
 
 logger = get_logger(__name__)
 
@@ -134,7 +135,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"WordPress API connection failed: {str(e)}")
-            raise Exception(f"Failed to connect to WordPress API: {str(e)}")
+            raise handle_http_error(e, "GET", "/wp-json", "WordPress connection test")
 
     def deploy_theme(self, theme_path: str) -> dict[str, Any]:
         """Deploy WordPress theme to the site.
@@ -281,7 +282,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Page creation failed: {str(e)}")
-            raise Exception(f"Failed to create page: {str(e)}")
+            raise handle_http_error(e, "POST", "/pages", "Page creation")
 
     def update_page(
         self, page_id: int, title: str | None = None, content: str | None = None, **kwargs
@@ -330,7 +331,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Page update failed: {str(e)}")
-            raise Exception(f"Failed to update page: {str(e)}")
+            raise handle_http_error(e, "POST", f"/pages/{page_id}", "Page update")
 
     @get_retry_decorator()
     def get_pages(self, **params) -> list[dict[str, Any]]:
@@ -370,7 +371,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get pages: {str(e)}")
-            return []
+            raise handle_http_error(e, "GET", "/pages", "Get pages")
 
     def delete_page(self, page_id: int, force: bool = False) -> dict[str, Any]:
         """Delete a page.
@@ -400,7 +401,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Page deletion failed: {str(e)}")
-            raise Exception(f"Failed to delete page: {str(e)}")
+            raise handle_http_error(e, "DELETE", f"/pages/{page_id}", "Page deletion")
 
     def create_post(
         self, title: str, content: str, status: str = "publish", **kwargs
@@ -443,7 +444,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Post creation failed: {str(e)}")
-            raise Exception(f"Failed to create post: {str(e)}")
+            raise handle_http_error(e, "POST", "/posts", "Post creation")
 
     @get_retry_decorator()
     def get_posts(self, **params) -> list[dict[str, Any]]:
@@ -483,7 +484,7 @@ class WordPressAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get posts: {str(e)}")
-            return []
+            raise handle_http_error(e, "GET", "/posts", "Get posts")
 
     def upload_media(
         self, file_path: str, title: str | None = None, alt_text: str | None = None
@@ -558,7 +559,7 @@ class WordPressAPI:
 
         except Exception as e:
             logger.error(f"Media upload failed: {str(e)}")
-            raise Exception(f"Failed to upload media: {str(e)}")
+            raise handle_http_error(e, "POST", "/media", "Media upload")
 
     def get_plugins(self) -> list[dict[str, Any]]:
         """Get list of installed plugins.
