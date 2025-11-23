@@ -685,10 +685,13 @@ IMPORTANT: Always enqueue these assets in the correct order:
 
 Note: theme-base-layout provides structural CSS and must load first.
 
-CRITICAL: Front-end vs Editor Asset Separation
-- wp_enqueue_scripts hook: ONLY front-end assets (NO React, NO @wordpress/*, NO Jetpack)
-- enqueue_block_editor_assets hook: ONLY editor assets (React, Gutenberg, @wordpress/* packages)
-- Never mix editor dependencies with front-end code - this breaks the Customizer and causes conflicts."""
+CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
+- wp_enqueue_scripts hook: ONLY front-end assets (NO React, NO @wordpress/*, NO Jetpack, NO wp-element, NO wp-blocks, NO wp-data)
+- enqueue_block_editor_assets hook: ONLY editor assets (React, Gutenberg, @wordpress/* packages, Jetpack blocks)
+- customize_preview_init hook: NO editor/Gutenberg/Jetpack packages (use vanilla JS only)
+- NEVER load these on front-end: react, react-dom, @wordpress/blocks, @wordpress/element, @wordpress/data, wp-blocks, wp-element, jetpack-*
+- Violating this will cause white Customizer screen, React errors, and Jetpack store conflicts.
+- If you need interactivity on front-end, use vanilla JavaScript or jQuery (already available in WordPress)."""
 
         try:
             # Pass design images for visual reference
@@ -846,26 +849,35 @@ CRITICAL: Front-end vs Editor Asset Separation
         }
 
         description = """Create the main index.php template file for WordPress.
-This is the fallback template.
+This is the fallback template that MUST display content in ALL cases (Customizer preview, empty site, etc.).
 
-CRITICAL REQUIREMENTS:
-1. MUST start with get_header()
-2. MUST end with get_footer()
-3. Use ONLY the standard WordPress loop:
-   if ( have_posts() ) :
-       while ( have_posts() ) : the_post();
-           // Post markup here
-       endwhile;
-   endif;
+CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
+1. MUST start with <?php get_header(); ?>
+2. MUST end with <?php get_footer(); ?>
+3. MUST use the standard WordPress loop - EXACTLY like this:
+   <?php if ( have_posts() ) : ?>
+       <?php while ( have_posts() ) : the_post(); ?>
+           <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+               <?php the_content(); ?>
+           </article>
+       <?php endwhile; ?>
+   <?php else : ?>
+       <article class="no-content">
+           <h1><?php esc_html_e('Nothing to display yet', 'theme'); ?></h1>
+           <p><?php esc_html_e('Add a page or post to see live preview here.', 'theme'); ?></p>
+       </article>
+   <?php endif; ?>
 4. NEVER use undefined functions like post_loop()
 5. Use standard WordPress functions: the_title(), the_content(), the_excerpt(), the_permalink(), etc.
+6. ALWAYS include an 'else' clause with visible fallback content for empty sites (Customizer will be blank without this!)
 
 Include:
+- <main id="site-content" class="site-content"> wrapper
 - get_header() call at the top
 - The WordPress loop with have_posts() and the_post()
+- Visible fallback content in the else clause (NO blank screen in Customizer!)
 - Post title, content, meta (using standard WP functions)
 - Pagination using the_posts_pagination() or the_posts_navigation()
-- get_sidebar() if applicable
 - get_footer() call at the bottom
 
 Use modern WordPress template tags and best practices."""

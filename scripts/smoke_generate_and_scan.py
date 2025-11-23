@@ -186,6 +186,62 @@ def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
     return passed, errors
 
 
+def check_wordpress_loop(theme_dir: Path) -> tuple[bool, list[str]]:
+    """Check that index.php and other templates have the WordPress Loop."""
+    print_header("Checking WordPress Loop in Templates")
+
+    errors = []
+    passed = True
+
+    # Templates that should have a Loop
+    templates_to_check = ['index.php', 'front-page.php', 'single.php', 'page.php', 'archive.php']
+
+    for template_name in templates_to_check:
+        template_file = theme_dir / template_name
+        if not template_file.exists():
+            continue  # Skip if template doesn't exist
+
+        print_info(f"Checking {template_name}...")
+        content = template_file.read_text(encoding='utf-8')
+
+        # Check for required Loop components
+        has_have_posts = 'have_posts()' in content
+        has_the_post = 'the_post()' in content
+        has_get_header = 'get_header()' in content
+        has_get_footer = 'get_footer()' in content
+
+        if has_have_posts and has_the_post:
+            print_success(f"  Has WordPress Loop (have_posts/the_post)")
+        else:
+            print_error(f"  Missing WordPress Loop")
+            errors.append(f"{template_name} missing WordPress Loop (have_posts/the_post)")
+            passed = False
+
+        if has_get_header and has_get_footer:
+            print_success(f"  Calls get_header() and get_footer()")
+        else:
+            if not has_get_header:
+                print_error(f"  Missing get_header()")
+                errors.append(f"{template_name} missing get_header()")
+                passed = False
+            if not has_get_footer:
+                print_error(f"  Missing get_footer()")
+                errors.append(f"{template_name} missing get_footer()")
+                passed = False
+
+        # Check for else clause (fallback content for empty sites/Customizer)
+        if template_name == 'index.php':
+            # index.php should have fallback content for Customizer preview
+            has_else_clause = ('else' in content and
+                             ('no-content' in content or 'Nothing' in content or 'not found' in content.lower()))
+            if has_else_clause:
+                print_success(f"  Has fallback content for empty sites")
+            else:
+                print_warning(f"  Missing fallback content (Customizer may show blank)")
+
+    return passed, errors
+
+
 def check_block_categories(theme_dir: Path) -> tuple[bool, list[str]]:
     """Check that block.json files use valid core categories."""
     print_header("Checking Block Categories")
@@ -284,17 +340,22 @@ def main():
         all_passed = all_passed and passed
         all_errors.extend(errors)
 
-        # 2. Check mixed-content
+        # 2. Check WordPress Loop in templates
+        passed, errors = check_wordpress_loop(theme_dir)
+        all_passed = all_passed and passed
+        all_errors.extend(errors)
+
+        # 3. Check mixed-content
         passed, errors = check_mixed_content(theme_dir)
         all_passed = all_passed and passed
         all_errors.extend(errors)
 
-        # 3. Check enqueue separation
+        # 4. Check enqueue separation
         passed, errors = check_enqueue_separation(theme_dir)
         all_passed = all_passed and passed
         all_errors.extend(errors)
 
-        # 4. Check block categories
+        # 5. Check block categories
         passed, errors = check_block_categories(theme_dir)
         all_passed = all_passed and passed
         all_errors.extend(errors)
