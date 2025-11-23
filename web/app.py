@@ -67,7 +67,18 @@ def create_app(config: dict = None, validate_config: bool = True):
         try:
             from flask_cors import CORS
             cors_origins = config.get("web", {}).get("cors_origins", "*")
-            CORS(app, origins=cors_origins)
+
+            # Hardened CORS configuration with explicit, non-overlapping resources
+            # This prevents CVE-2024-6839 (overlapping regex vulnerability)
+            cors_resources = {
+                # Health and version endpoints - public access
+                r"/health": {"origins": ["*"]},
+                r"/version": {"origins": ["*"]},
+                # API endpoints - controlled access
+                r"/api/*": {"origins": cors_origins},
+            }
+
+            CORS(app, resources=cors_resources, supports_credentials=False)
             print(f"✓ CORS enabled for origins: {cors_origins}")
         except ImportError:
             print("⚠ flask-cors not installed, CORS disabled", file=sys.stderr)

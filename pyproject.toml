@@ -59,6 +59,7 @@ dependencies = [
 [project.optional-dependencies]
 ui = [
     "Flask>=3.0.0",
+    "flask-cors>=6.0.1",
     "Werkzeug>=3.0.6",
     "gradio>=4.44,<5",
     "huggingface_hub<0.26",
