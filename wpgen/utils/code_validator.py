@@ -517,7 +517,10 @@ function {safe_function_name}_setup() {{
 add_action( 'after_setup_theme', '{safe_function_name}_setup' );
 
 /**
- * Enqueue scripts and styles.
+ * Enqueue scripts and styles for front-end.
+ *
+ * CRITICAL: NO editor dependencies here (@wordpress/*, react, jetpack).
+ * Editor scripts go in enqueue_block_editor_assets ONLY.
  */
 function {safe_function_name}_scripts() {{
     // Enqueue base layout stylesheet (structural styles)
@@ -526,7 +529,7 @@ function {safe_function_name}_scripts() {{
     // Enqueue main theme stylesheet
     wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array( 'theme-base-layout' ), wp_get_theme()->get( 'Version' ) );
 
-    // Enqueue wpgen-ui assets
+    // Enqueue wpgen-ui assets (front-end only, no editor deps)
     wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
     wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
 }}
