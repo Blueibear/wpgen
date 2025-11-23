@@ -1,5 +1,6 @@
 # Core dependencies
 Flask==3.0.0
+flask-cors==5.0.0
 Werkzeug==3.0.6
 
 # LLM APIs

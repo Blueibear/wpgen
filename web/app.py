@@ -12,13 +12,11 @@ from flask import Flask, jsonify, render_template, request
 from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
 
-from wpgen import (
-    GitHubIntegration,
-    PromptParser,
-    WordPressGenerator,
-    get_llm_provider as get_provider,
-    setup_logger,
-)
+from wpgen.github.integration import GitHubIntegration
+from wpgen.parsers.prompt_parser import PromptParser
+from wpgen.generators.wordpress_generator import WordPressGenerator
+from wpgen.utils.config import get_llm_provider as get_provider
+from wpgen.utils.logger import setup_logger
 from wpgen.config_schema import load_and_validate_config, get_redacted_config_summary
 
 
