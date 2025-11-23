@@ -533,6 +533,25 @@ function {safe_function_name}_scripts() {{
 add_action( 'wp_enqueue_scripts', '{safe_function_name}_scripts' );
 
 /**
+ * Enqueue block editor assets.
+ *
+ * IMPORTANT: Editor scripts (React, Gutenberg, Jetpack) should ONLY be enqueued here,
+ * never in wp_enqueue_scripts. This prevents conflicts and duplicate registrations
+ * that can break the Customizer and block editor.
+ */
+function {safe_function_name}_editor_assets() {{
+    // Example: Uncomment to add custom editor scripts
+    // wp_enqueue_script(
+    //     '{theme_name}-editor',
+    //     get_template_directory_uri() . '/assets/js/editor.js',
+    //     array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-data', 'wp-edit-post' ),
+    //     wp_get_theme()->get( 'Version' ),
+    //     true
+    // );
+}}
+add_action( 'enqueue_block_editor_assets', '{safe_function_name}_editor_assets' );
+
+/**
  * Register widget areas.
  */
 function {safe_function_name}_widgets_init() {{
@@ -1890,5 +1909,97 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
                         logger.error(f"Failed to rename {original_name}: {e}")
                         results['errors'].append(f"Failed to rename {original_name}: {str(e)}")
                         results['valid'] = False
+
+    return results
+
+
+def scan_mixed_content(theme_dir: Path, enforce_https: bool = True) -> dict[str, Any]:
+    """Scan generated theme files for mixed-content (http://) URLs.
+
+    This scanner helps ensure themes don't have insecure HTTP URLs that would
+    cause mixed-content warnings on HTTPS sites.
+
+    Args:
+        theme_dir: Path to theme directory to scan
+        enforce_https: If True, fail generation when http:// URLs are found (default: True)
+
+    Returns:
+        Dictionary with scan results:
+        {
+            'valid': bool,
+            'http_urls': list of dicts with {'file': str, 'line': int, 'url': str},
+            'errors': list of error messages
+        }
+    """
+    results = {
+        'valid': True,
+        'http_urls': [],
+        'errors': [],
+    }
+
+    theme_dir = Path(theme_dir)
+
+    if not theme_dir.exists():
+        results['valid'] = False
+        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        return results
+
+    # Allowed HTTP patterns that are safe (localhost, local development)
+    allowed_patterns = [
+        r'http://localhost',
+        r'http://127\.0\.0\.1',
+        r'http://\[::1\]',
+        r'http://.*\.local',
+        r'http://schemas\.wp\.org',  # WordPress JSON schemas
+        r'http://www\.w3\.org',      # W3C standards (DTDs, etc.)
+        r'http://gmpg\.org/xfn',     # XFN profile (legacy but standard)
+    ]
+
+    # File extensions to scan
+    extensions = ['.php', '.js', '.css', '.json', '.html', '.htm']
+
+    # Recursively scan all files
+    for file_path in theme_dir.rglob('*'):
+        if not file_path.is_file():
+            continue
+
+        if file_path.suffix not in extensions:
+            continue
+
+        try:
+            content = file_path.read_text(encoding='utf-8', errors='ignore')
+            lines = content.split('\n')
+
+            for line_num, line in enumerate(lines, 1):
+                # Find all http:// URLs
+                http_urls = re.findall(r'http://[^\s\'"<>]+', line)
+
+                for url in http_urls:
+                    # Check if URL matches any allowed pattern
+                    is_allowed = any(re.match(pattern, url) for pattern in allowed_patterns)
+
+                    if not is_allowed:
+                        relative_path = file_path.relative_to(theme_dir)
+                        results['http_urls'].append({
+                            'file': str(relative_path),
+                            'line': line_num,
+                            'url': url,
+                            'context': line.strip()[:100]  # First 100 chars for context
+                        })
+
+        except Exception as e:
+            logger.warning(f"Error scanning {file_path}: {e}")
+            continue
+
+    # If enforce_https is True and we found insecure URLs, mark as invalid
+    if enforce_https and results['http_urls']:
+        results['valid'] = False
+        error_msg = f"Found {len(results['http_urls'])} insecure HTTP URL(s) in theme:"
+        results['errors'].append(error_msg)
+
+        for item in results['http_urls']:
+            results['errors'].append(f"  {item['file']}:{item['line']} → {item['url']}")
+
+        results['errors'].append("\nTo fix: Use https:// or WordPress helpers like get_template_directory_uri()")
 
     return results

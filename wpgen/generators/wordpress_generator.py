@@ -325,6 +325,21 @@ class WordPressGenerator:
             else:
                 logger.info("✓ Theme passed WordPress safety validation")
 
+            # Scan for mixed-content (insecure http:// URLs)
+            from ..utils.code_validator import scan_mixed_content
+            scan_results = scan_mixed_content(theme_dir, enforce_https=True)
+
+            if not scan_results['valid']:
+                logger.warning("⚠️  Mixed-content scan found insecure HTTP URLs:")
+                for error in scan_results['errors']:
+                    logger.warning(f"  {error}")
+                logger.warning("These URLs may cause mixed-content warnings on HTTPS sites")
+                # Note: We log as warning but don't fail generation since HTTP might be intentional
+                # for local development. Production sites should use HTTPS.
+
+            else:
+                logger.info("✓ No mixed-content (insecure HTTP URLs) detected")
+
             logger.info(f"Successfully generated theme: {theme_name}")
             return str(theme_dir)
 
@@ -668,7 +683,12 @@ IMPORTANT: Always enqueue these assets in the correct order:
    wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
    wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true);
 
-Note: theme-base-layout provides structural CSS and must load first."""
+Note: theme-base-layout provides structural CSS and must load first.
+
+CRITICAL: Front-end vs Editor Asset Separation
+- wp_enqueue_scripts hook: ONLY front-end assets (NO React, NO @wordpress/*, NO Jetpack)
+- enqueue_block_editor_assets hook: ONLY editor assets (React, Gutenberg, @wordpress/* packages)
+- Never mix editor dependencies with front-end code - this breaks the Customizer and causes conflicts."""
 
         try:
             # Pass design images for visual reference
