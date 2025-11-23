@@ -8,21 +8,7 @@ __author__ = "WPGen"
 __license__ = "MIT"
 
 # Minimal imports to avoid import-time SDK hard dependencies
-# Heavy SDK imports (openai, anthropic) are lazy-loaded when needed
+# Heavy SDK imports (openai, anthropic, git, requests) are lazy-loaded when needed
+# Do not re-export subpackage components to prevent forcing heavy imports
 
-# Re-export commonly used components for convenience
-from .github.integration import GitHubIntegration
-from .parsers.prompt_parser import PromptParser
-from .generators.wordpress_generator import WordPressGenerator
-from .utils.logger import get_logger, setup_logger
-from .utils.config import get_llm_provider
-
-__all__ = [
-    "__version__",
-    "GitHubIntegration",
-    "PromptParser",
-    "WordPressGenerator",
-    "setup_logger",
-    "get_logger",
-    "get_llm_provider",
-]
+__all__ = ["__version__"]
