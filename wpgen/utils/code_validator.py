@@ -2006,3 +2006,263 @@ def scan_mixed_content(theme_dir: Path, enforce_https: bool = True) -> dict[str,
         results['errors'].append("\nTo fix: Use https:// or WordPress helpers like get_template_directory_uri()")
 
     return results
+
+
+def check_forbidden_config_directives(theme_dir: Path) -> dict[str, Any]:
+    """Scan generated theme files for forbidden WordPress config directives.
+
+    Themes should NEVER define WP_DEBUG, error_reporting, or ini_set directives
+    as these should only appear in wp-config.php, not in theme files.
+
+    Args:
+        theme_dir: Path to theme directory to scan
+
+    Returns:
+        Dictionary with scan results:
+        {
+            'valid': bool,
+            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'errors': list of error messages
+        }
+    """
+    results = {
+        'valid': True,
+        'violations': [],
+        'errors': [],
+    }
+
+    theme_dir = Path(theme_dir)
+
+    if not theme_dir.exists():
+        results['valid'] = False
+        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        return results
+
+    # Forbidden patterns that should never appear in theme files
+    forbidden_patterns = [
+        (r"define\s*\(\s*['\"]WP_DEBUG['\"]", "define('WP_DEBUG', ...)"),
+        (r"define\s*\(\s*['\"]WP_DEBUG_LOG['\"]", "define('WP_DEBUG_LOG', ...)"),
+        (r"define\s*\(\s*['\"]WP_DEBUG_DISPLAY['\"]", "define('WP_DEBUG_DISPLAY', ...)"),
+        (r"ini_set\s*\(\s*['\"]display_errors['\"]", "ini_set('display_errors', ...)"),
+        (r"ini_set\s*\(\s*['\"]error_reporting['\"]", "ini_set('error_reporting', ...)"),
+        (r"\berror_reporting\s*\(", "error_reporting(...)"),
+    ]
+
+    # File extensions to scan (PHP files only)
+    extensions = ['.php']
+
+    # Recursively scan all PHP files
+    for file_path in theme_dir.rglob('*'):
+        if not file_path.is_file():
+            continue
+
+        if file_path.suffix not in extensions:
+            continue
+
+        # Skip wp-config-sample.php (legitimate place for WP_DEBUG)
+        if file_path.name == 'wp-config-sample.php' or file_path.name == 'wp-config.php':
+            continue
+
+        try:
+            content = file_path.read_text(encoding='utf-8', errors='ignore')
+            lines = content.split('\n')
+
+            for line_num, line in enumerate(lines, 1):
+                for pattern_regex, pattern_name in forbidden_patterns:
+                    if re.search(pattern_regex, line, re.IGNORECASE):
+                        relative_path = file_path.relative_to(theme_dir)
+                        results['violations'].append({
+                            'file': str(relative_path),
+                            'line': line_num,
+                            'pattern': pattern_name,
+                            'context': line.strip()[:150]  # First 150 chars for context
+                        })
+
+        except Exception as e:
+            logger.warning(f"Error scanning {file_path}: {e}")
+            continue
+
+    # Mark as invalid if violations found
+    if results['violations']:
+        results['valid'] = False
+        error_msg = f"Found {len(results['violations'])} forbidden config directive(s) in theme files:"
+        results['errors'].append(error_msg)
+
+        for violation in results['violations']:
+            results['errors'].append(
+                f"  {violation['file']}:{violation['line']} → {violation['pattern']}"
+            )
+            results['errors'].append(f"    Context: {violation['context']}")
+
+        results['errors'].append(
+            "\nThemes must NOT define WP_DEBUG, error_reporting, or ini_set directives."
+        )
+        results['errors'].append("These belong in wp-config.php, not theme files.")
+
+    return results
+
+
+def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
+    """Scan generated theme files for invalid PHP patterns that cause parse errors.
+
+    Detects patterns like:
+    - <?= ; ?> (empty short echo)
+    - <?php ; ?> (empty PHP block)
+    - if (...); { (semicolon before brace)
+    - foreach (...); { (semicolon before brace)
+    - function name(); (function declaration with semicolon instead of brace)
+
+    Args:
+        theme_dir: Path to theme directory to scan
+
+    Returns:
+        Dictionary with scan results:
+        {
+            'valid': bool,
+            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'errors': list of error messages
+        }
+    """
+    results = {
+        'valid': True,
+        'violations': [],
+        'errors': [],
+    }
+
+    theme_dir = Path(theme_dir)
+
+    if not theme_dir.exists():
+        results['valid'] = False
+        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        return results
+
+    # Invalid PHP patterns to detect
+    # Each pattern includes regex and description
+    invalid_patterns = [
+        (r"<\?=\s*;?\s*\?>", "Empty short echo: <?= ; ?> or <?= ?>"),
+        (r"<\?php\s*;+\s*\?>", "Empty PHP block with semicolon: <?php ; ?>"),
+        (r"\bif\s*\([^)]*\)\s*;", "if statement with trailing semicolon: if (...);"),
+        (r"\bforeach\s*\([^)]*\)\s*;", "foreach with trailing semicolon: foreach (...);"),
+        (r"\bwhile\s*\([^)]*\)\s*;", "while with trailing semicolon: while (...);"),
+        (r"\bfor\s*\([^)]*\)\s*;", "for with trailing semicolon: for (...);"),
+        (r"\bfunction\s+\w+\s*\([^)]*\)\s*;", "Function declaration with semicolon: function name();"),
+    ]
+
+    # File extensions to scan (PHP files only)
+    extensions = ['.php']
+
+    # Recursively scan all PHP files
+    for file_path in theme_dir.rglob('*'):
+        if not file_path.is_file():
+            continue
+
+        if file_path.suffix not in extensions:
+            continue
+
+        try:
+            content = file_path.read_text(encoding='utf-8', errors='ignore')
+            lines = content.split('\n')
+
+            for line_num, line in enumerate(lines, 1):
+                for pattern_regex, pattern_name in invalid_patterns:
+                    match = re.search(pattern_regex, line)
+                    if match:
+                        relative_path = file_path.relative_to(theme_dir)
+
+                        # Extract the matched text for better error messages
+                        matched_text = match.group(0)
+
+                        results['violations'].append({
+                            'file': str(relative_path),
+                            'line': line_num,
+                            'pattern': pattern_name,
+                            'matched': matched_text,
+                            'context': line.strip()[:150]  # First 150 chars for context
+                        })
+
+        except Exception as e:
+            logger.warning(f"Error scanning {file_path}: {e}")
+            continue
+
+    # Mark as invalid if violations found
+    if results['violations']:
+        results['valid'] = False
+        error_msg = f"Found {len(results['violations'])} invalid PHP pattern(s) in theme files:"
+        results['errors'].append(error_msg)
+
+        for violation in results['violations']:
+            results['errors'].append(
+                f"  {violation['file']}:{violation['line']} → {violation['pattern']}"
+            )
+            results['errors'].append(f"    Matched: '{violation['matched']}'")
+            results['errors'].append(f"    Context: {violation['context']}")
+
+        results['errors'].append("\nSuggested fixes:")
+        results['errors'].append("  - Remove empty PHP blocks: <?= ; ?> → (remove entirely)")
+        results['errors'].append("  - Remove semicolons before braces: if (...); { → if (...) {")
+        results['errors'].append("  - Use braces for functions: function name(); → function name() {")
+
+    return results
+
+
+def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]:
+    """Comprehensive post-render scan of generated theme to catch forbidden patterns.
+
+    This is the master scanner that runs all checks:
+    1. Forbidden config directives (WP_DEBUG, error_reporting, ini_set)
+    2. Invalid PHP patterns (<?= ; ?>, if (...);, etc.)
+    3. Mixed content (optional, based on strict flag)
+
+    Args:
+        theme_dir: Path to generated theme directory
+        strict: If True, fail on any violations (default: True)
+
+    Returns:
+        Dictionary with combined scan results:
+        {
+            'valid': bool (True if all checks pass),
+            'config_check': dict (results from check_forbidden_config_directives),
+            'php_check': dict (results from check_invalid_php_patterns),
+            'mixed_content_check': dict (results from scan_mixed_content, if strict),
+            'all_errors': list of all error messages combined
+        }
+    """
+    logger.info(f"Running post-render scan on theme directory: {theme_dir}")
+
+    # Run all checks
+    config_check = check_forbidden_config_directives(theme_dir)
+    php_check = check_invalid_php_patterns(theme_dir)
+
+    # Collect all errors
+    all_errors = []
+    all_errors.extend(config_check['errors'])
+    all_errors.extend(php_check['errors'])
+
+    # Determine overall validity
+    is_valid = config_check['valid'] and php_check['valid']
+
+    results = {
+        'valid': is_valid,
+        'config_check': config_check,
+        'php_check': php_check,
+        'all_errors': all_errors,
+    }
+
+    # If strict mode, also check mixed content
+    if strict:
+        mixed_content_check = scan_mixed_content(theme_dir, enforce_https=True)
+        results['mixed_content_check'] = mixed_content_check
+        all_errors.extend(mixed_content_check['errors'])
+        is_valid = is_valid and mixed_content_check['valid']
+        results['valid'] = is_valid
+        results['all_errors'] = all_errors
+
+    # Log summary
+    if is_valid:
+        logger.info("✓ Theme passed all post-render checks")
+    else:
+        logger.error(f"✗ Theme failed post-render checks with {len(all_errors)} error(s)")
+        for error in all_errors:
+            logger.error(f"  {error}")
+
+    return results

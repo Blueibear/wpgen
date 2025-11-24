@@ -364,6 +364,25 @@ class WordPressGenerator:
             else:
                 logger.info("✓ No mixed-content (insecure HTTP URLs) detected")
 
+            # Post-render scan: Check for forbidden patterns (WP_DEBUG, invalid PHP)
+            logger.info("Running post-render scan for forbidden patterns...")
+            from ..utils.code_validator import scan_generated_theme
+            scan_results = scan_generated_theme(theme_dir, strict=False)
+
+            if not scan_results['valid']:
+                logger.error("✗ Post-render scan FAILED - theme contains forbidden patterns:")
+                for error in scan_results['all_errors']:
+                    logger.error(f"  {error}")
+
+                # Fail generation if forbidden patterns found
+                raise ValueError(
+                    f"Generated theme contains forbidden patterns. "
+                    f"Found {len(scan_results['all_errors'])} issue(s). "
+                    f"See errors above for details."
+                )
+            else:
+                logger.info("✓ Post-render scan passed - no forbidden patterns detected")
+
             logger.info(f"Successfully generated theme: {theme_name}")
             return str(theme_dir)
 
