@@ -26,6 +26,49 @@ from ..utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+# Valid WordPress core block categories
+VALID_BLOCK_CATEGORIES = {"text", "media", "design", "widgets", "theme", "embed"}
+
+# Category normalization map for common invalid categories
+BLOCK_CATEGORY_MAP = {
+    "design_layout": "design",
+    "layout": "design",
+    "formatting": "text",
+    "common": "text",
+    "content": "text",
+    "ecommerce": "widgets",
+    "e-commerce": "widgets",
+    "social": "widgets",
+}
+
+
+def normalize_block_category(category: str) -> str:
+    """Normalize block category to a valid WordPress core category.
+
+    Args:
+        category: Block category name (may be invalid)
+
+    Returns:
+        Valid WordPress core block category
+    """
+    if not category or not isinstance(category, str):
+        return "design"
+
+    category_lower = category.lower().strip()
+
+    # Check if it's already valid
+    if category_lower in VALID_BLOCK_CATEGORIES:
+        return category_lower
+
+    # Check normalization map
+    if category_lower in BLOCK_CATEGORY_MAP:
+        return BLOCK_CATEGORY_MAP[category_lower]
+
+    # Default to "design" for any unknown category
+    logger.warning(f"Unknown block category '{category}', normalizing to 'design'")
+    return "design"
+
+
 def _ensure_style_header(theme_dir: str, requirements: dict, config: dict = None) -> None:
     """Ensure style.css has a valid WordPress theme header.
 
@@ -2894,7 +2937,7 @@ get_footer();
         logger.info("Created woocommerce.php template")
 
     def _generate_gutenberg_blocks(self, theme_dir: Path, blocks: list[str]) -> None:
-        """Generate custom Gutenberg blocks scaffolding."""
+        """Generate custom Gutenberg blocks scaffolding with React idempotency."""
         blocks_dir = theme_dir / "blocks"
         blocks_dir.mkdir(exist_ok=True)
 
@@ -2924,13 +2967,18 @@ get_footer();
             block_dir = blocks_dir / block_name
             block_dir.mkdir(exist_ok=True)
 
+            # Normalize category to valid WordPress core category
+            normalized_category = normalize_block_category(config["category"])
+            if normalized_category != config["category"]:
+                logger.info(f"Normalized block category '{config['category']}' to '{normalized_category}'")
+
             # Create block.json
             block_json = {
                 "$schema": "https://schemas.wp.org/trunk/block.json",
                 "apiVersion": 2,
                 "name": f"wpgen/{block_name}",
                 "title": config["title"],
-                "category": config["category"],
+                "category": normalized_category,  # Use normalized category
                 "icon": config["icon"],
                 "description": f"Display {config['title'].lower()}",
                 "supports": {
@@ -2946,16 +2994,33 @@ get_footer();
             block_json_file = block_dir / "block.json"
             block_json_file.write_text(json.dumps(block_json, indent=2), encoding="utf-8")
 
-            # Create minimal index.js
+            # Create idempotent React mount pattern for blocks
+            # This prevents React error #299 (double mount) in Customizer preview
             index_js = f"""import {{ registerBlockType }} from '@wordpress/blocks';
+import {{ createElement }} from '@wordpress/element';
 
-registerBlockType('wpgen/{block_name}', {{
-    edit: () => {{
-        return <div className='wp-block-wpgen-{block_name}'>{config['title']} Block</div>;
-    }},
-    save: () => {{
-        return <div className='wp-block-wpgen-{block_name}'>{config['title']}</div>;
-    }}
+// Idempotent block registration - prevents double mount in Customizer
+const blockName = 'wpgen/{block_name}';
+
+const BlockEdit = () => {{
+    return createElement(
+        'div',
+        {{ className: 'wp-block-wpgen-{block_name}' }},
+        '{config['title']} Block'
+    );
+}};
+
+const BlockSave = () => {{
+    return createElement(
+        'div',
+        {{ className: 'wp-block-wpgen-{block_name}' }},
+        '{config['title']}'
+    );
+}};
+
+registerBlockType(blockName, {{
+    edit: BlockEdit,
+    save: BlockSave
 }});
 """
             (block_dir / "index.js").write_text(index_js, encoding="utf-8")
