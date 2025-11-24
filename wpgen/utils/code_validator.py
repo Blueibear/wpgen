@@ -2205,13 +2205,73 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
     return results
 
 
+def check_block_categories(theme_dir: Path) -> dict[str, Any]:
+    """Scan block.json files for invalid WordPress block categories.
+
+    Valid categories are: text, media, design, widgets, theme, embed
+
+    Args:
+        theme_dir: Path to theme directory to scan
+
+    Returns:
+        Dictionary with scan results:
+        {
+            'valid': bool,
+            'violations': list of dicts with {'file': str, 'category': str},
+            'errors': list of error messages
+        }
+    """
+    results = {
+        'valid': True,
+        'violations': [],
+        'errors': [],
+    }
+
+    theme_dir = Path(theme_dir)
+
+    if not theme_dir.exists():
+        results['valid'] = False
+        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        return results
+
+    # Valid WordPress core block categories
+    valid_categories = {"text", "media", "design", "widgets", "theme", "embed"}
+
+    # Find all block.json files
+    for file_path in theme_dir.rglob('block.json'):
+        try:
+            import json
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                block_data = json.load(f)
+
+            category = block_data.get('category', '')
+            if category and category not in valid_categories:
+                relative_path = file_path.relative_to(theme_dir)
+                results['valid'] = False
+                results['violations'].append({
+                    'file': str(relative_path),
+                    'category': category
+                })
+                results['errors'].append(
+                    f"Invalid block category '{category}' in {relative_path}. "
+                    f"Must be one of: {', '.join(sorted(valid_categories))}"
+                )
+        except Exception as e:
+            # If we can't parse the JSON, skip it (will be caught by other validators)
+            logger.debug(f"Could not parse {file_path}: {e}")
+            continue
+
+    return results
+
+
 def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]:
     """Comprehensive post-render scan of generated theme to catch forbidden patterns.
 
     This is the master scanner that runs all checks:
     1. Forbidden config directives (WP_DEBUG, error_reporting, ini_set)
     2. Invalid PHP patterns (<?= ; ?>, if (...);, etc.)
-    3. Mixed content (optional, based on strict flag)
+    3. Block category validation
+    4. Mixed content (optional, based on strict flag)
 
     Args:
         theme_dir: Path to generated theme directory
@@ -2223,6 +2283,7 @@ def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]
             'valid': bool (True if all checks pass),
             'config_check': dict (results from check_forbidden_config_directives),
             'php_check': dict (results from check_invalid_php_patterns),
+            'block_check': dict (results from check_block_categories),
             'mixed_content_check': dict (results from scan_mixed_content, if strict),
             'all_errors': list of all error messages combined
         }
@@ -2232,19 +2293,22 @@ def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]
     # Run all checks
     config_check = check_forbidden_config_directives(theme_dir)
     php_check = check_invalid_php_patterns(theme_dir)
+    block_check = check_block_categories(theme_dir)
 
     # Collect all errors
     all_errors = []
     all_errors.extend(config_check['errors'])
     all_errors.extend(php_check['errors'])
+    all_errors.extend(block_check['errors'])
 
     # Determine overall validity
-    is_valid = config_check['valid'] and php_check['valid']
+    is_valid = config_check['valid'] and php_check['valid'] and block_check['valid']
 
     results = {
         'valid': is_valid,
         'config_check': config_check,
         'php_check': php_check,
+        'block_check': block_check,
         'all_errors': all_errors,
     }
 
