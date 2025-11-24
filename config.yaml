@@ -85,6 +85,12 @@ wordpress:
   # Default theme author
   author: "WPGen"
 
+  # Default theme author URI (will be derived from GitHub repo if not set)
+  author_uri: ""
+
+  # Default theme URI (will be derived from GitHub repo if not set)
+  theme_uri: ""
+
   # Default theme license
   license: "GPL-2.0-or-later"
 
@@ -130,8 +136,8 @@ web:
   # Debug mode
   debug: false
 
-  # Secret key for sessions (change in production!)
-  secret_key: "change-me-in-production"
+  # Secret key for sessions (REQUIRED: set WPGEN_SECRET_KEY environment variable)
+  # secret_key: ""  # Removed for security - load from WPGEN_SECRET_KEY env var
 
 # Deployment Settings
 deployment:

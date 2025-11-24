@@ -444,6 +444,8 @@ Return ONLY valid JSON, no other text."""
         - Plain JSON
         - JSON wrapped in markdown code blocks (```json, ```)
         - JSON with extra text before/after
+        - JSON with comments (// or /* */)
+        - Multiple JSON objects (returns first valid one)
 
         Args:
             text: Response text from LLM
@@ -454,11 +456,25 @@ Return ONLY valid JSON, no other text."""
         Raises:
             json.JSONDecodeError: If no valid JSON found
         """
+        import re
+
         text = text.strip()
 
         # Try direct parsing first
         try:
             return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Remove common comment patterns before parsing
+        # Remove single-line comments
+        text_no_comments = re.sub(r'//.*?$', '', text, flags=re.MULTILINE)
+        # Remove multi-line comments
+        text_no_comments = re.sub(r'/\*.*?\*/', '', text_no_comments, flags=re.DOTALL)
+
+        # Try parsing without comments
+        try:
+            return json.loads(text_no_comments.strip())
         except json.JSONDecodeError:
             pass
 
@@ -471,7 +487,7 @@ Return ONLY valid JSON, no other text."""
                 if i % 2 == 1:  # Inside code block
                     # Remove language identifier if present
                     lines = part.strip().split("\n", 1)
-                    if lines[0].strip().lower() in ["json", ""]:
+                    if lines[0].strip().lower() in ["json", "javascript", "js", ""]:
                         json_text = lines[1] if len(lines) > 1 else lines[0]
                     else:
                         json_text = part
@@ -487,17 +503,47 @@ Return ONLY valid JSON, no other text."""
         if start != -1:
             # Find matching closing brace
             depth = 0
+            in_string = False
+            escape_next = False
+
             for i in range(start, len(text)):
-                if text[i] == "{":
-                    depth += 1
-                elif text[i] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        try:
-                            return json.loads(text[start : i + 1])
-                        except json.JSONDecodeError:
-                            pass
-                        break
+                char = text[i]
+
+                # Handle string escaping
+                if escape_next:
+                    escape_next = False
+                    continue
+
+                if char == '\\':
+                    escape_next = True
+                    continue
+
+                # Toggle string mode on unescaped quotes
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+
+                # Only count braces outside of strings
+                if not in_string:
+                    if char == "{":
+                        depth += 1
+                    elif char == "}":
+                        depth -= 1
+                        if depth == 0:
+                            try:
+                                candidate = text[start : i + 1]
+                                # Remove comments from candidate
+                                candidate = re.sub(r'//.*?$', '', candidate, flags=re.MULTILINE)
+                                candidate = re.sub(r'/\*.*?\*/', '', candidate, flags=re.DOTALL)
+                                return json.loads(candidate)
+                            except json.JSONDecodeError:
+                                # Try to find next JSON object
+                                start = text.find("{", i + 1)
+                                if start == -1:
+                                    break
+                                i = start - 1
+                                depth = 0
+                                continue
 
         # If all else fails, raise the original error
         raise json.JSONDecodeError("No valid JSON found in response", text, 0)
