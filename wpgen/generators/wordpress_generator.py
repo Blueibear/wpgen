@@ -1416,7 +1416,14 @@ Create a complete, production-ready footer that will NEVER cause layout collapse
             logger.error(f"Failed to generate footer.php: {str(e)}")
             logger.info("Using enhanced fallback footer with visible content")
             # Enhanced fallback with visible content to prevent empty footers
-            fallback = """</main><!-- .site-main -->
+            fallback = """<?php
+/**
+ * Footer Template
+ *
+ * @package {theme_name}
+ */
+?>
+</main><!-- .site-main -->
 
 <footer class="site-footer">
     <div class="footer-widgets container">
