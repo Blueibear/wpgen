@@ -89,6 +89,7 @@ def cli():
 )
 @click.option("--strict", is_flag=True, help="Enable strict validation mode (warnings = errors)")
 @click.option("--json-logs", is_flag=True, help="Output logs in JSON format to stdout")
+@click.option("--skip-dep-check", is_flag=True, help="Skip dependency checks on startup")
 def generate(
     prompt: str | None,
     config_path: str,
@@ -101,6 +102,7 @@ def generate(
     design_profile: str | None,
     strict: bool,
     json_logs: bool,
+    skip_dep_check: bool,
 ):
     """Generate a WordPress theme from a description.
 
@@ -139,6 +141,11 @@ def generate(
         )
 
         logger.info("Starting WPGen theme generation")
+
+        # Check dependencies
+        if not skip_dep_check:
+            from wpgen.utils.dependency_checks import check_dependencies
+            check_dependencies(strict=strict)
 
         # Get prompt
         if interactive or not prompt:
@@ -366,6 +373,39 @@ def validate(theme_path: str):
 
 
 @cli.command()
+def check_deps():
+    """Check runtime dependencies.
+
+    Verify that all required and optional dependencies are installed.
+    """
+    try:
+        from wpgen.utils.dependency_checks import check_dependencies
+
+        click.echo("\n🔍 Checking runtime dependencies...\n")
+
+        results = check_dependencies(strict=False)
+
+        # Display results
+        all_ok = all(results.values())
+
+        if all_ok:
+            click.echo("✅ All dependencies are available\n")
+        else:
+            click.echo("⚠ Some dependencies are missing (see warnings above)\n")
+
+        # Show individual results
+        for dep, available in results.items():
+            status = "✓" if available else "✗"
+            click.echo(f"  {status} {dep}")
+
+        click.echo()
+
+    except Exception as e:
+        click.echo(f"\n❌ Error: {str(e)}\n", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 def init():
     """Initialize WPGen configuration.
 
@@ -379,6 +419,10 @@ def init():
             return
 
     env_content = """# WPGen Environment Configuration
+
+# Web UI Secret Key (REQUIRED for production)
+# Generate with: python -c 'import secrets; print(secrets.token_hex(32))'
+WPGEN_SECRET_KEY=your_secret_key_here
 
 # LLM Provider API Keys
 # Get OpenAI key from: https://platform.openai.com/api-keys

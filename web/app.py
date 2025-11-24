@@ -59,7 +59,26 @@ def create_app(config: dict = None, validate_config: bool = True):
                 config = {}
 
     app.config["WPGEN_CONFIG"] = config
-    app.config["SECRET_KEY"] = config.get("web", {}).get("secret_key", "dev-secret-key")
+
+    # Security: Load secret key from environment variable
+    secret_key = os.getenv("WPGEN_SECRET_KEY", config.get("web", {}).get("secret_key", ""))
+
+    # Fail startup if secret key is insecure in production mode
+    debug_mode = config.get("web", {}).get("debug", False)
+    insecure_keys = ["change-me-in-production", "dev-secret-key", ""]
+
+    if not debug_mode and secret_key in insecure_keys:
+        print("❌ SECURITY ERROR: Insecure or missing secret key detected!", file=sys.stderr)
+        print("Set WPGEN_SECRET_KEY environment variable to a secure random value.", file=sys.stderr)
+        print("Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'", file=sys.stderr)
+        sys.exit(1)
+
+    # In debug mode, use a development key if not set
+    if debug_mode and not secret_key:
+        secret_key = "dev-secret-key-DO-NOT-USE-IN-PRODUCTION"
+        print("⚠ Warning: Using development secret key. Set WPGEN_SECRET_KEY for production.", file=sys.stderr)
+
+    app.config["SECRET_KEY"] = secret_key
 
     # Setup CORS if enabled
     cors_enabled = config.get("web", {}).get("cors_enabled", False)

@@ -1,28 +1,28 @@
 # Core dependencies
-Flask==3.0.0
+Flask~=3.0.0
 flask-cors>=6.0.1
-Werkzeug==3.0.6
+Werkzeug~=3.0.6
 
 # LLM APIs
 anthropic>=0.34,<1
 openai>=1.30,<2
 
 # Git operations
-GitPython==3.1.41
+GitPython~=3.1.41
 
 # Configuration
-PyYAML==6.0.1
-python-dotenv==1.0.1
+PyYAML~=6.0.1
+python-dotenv~=1.0.1
 
 # HTTP requests
-requests==2.32.4
+requests~=2.32.4
 
 # CLI tools
-click==8.1.7
-colorama==0.4.6
+click~=8.1.7
+colorama~=0.4.6
 
 # Logging
-python-json-logger==2.0.7
+python-json-logger~=2.0.7
 
 # Configuration validation
 pydantic>=2.0,<3
@@ -35,7 +35,7 @@ gradio>=4.44,<5
 huggingface_hub<0.26
 
 # File handling
-PyPDF2==3.0.1
+PyPDF2~=3.0.1
 
 # Image processing and analysis
 Pillow>=10.0,<12
@@ -45,4 +45,4 @@ Pillow>=10.0,<12
 #   Ubuntu/Debian: sudo apt-get install tesseract-ocr
 #   macOS: brew install tesseract
 #   Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
-pytesseract==0.3.10
+pytesseract~=0.3.10
