@@ -367,7 +367,7 @@ class WordPressGenerator:
             # Post-render scan: Check for forbidden patterns (WP_DEBUG, invalid PHP)
             logger.info("Running post-render scan for forbidden patterns...")
             from ..utils.code_validator import scan_generated_theme
-            scan_results = scan_generated_theme(theme_dir, strict=False)
+            scan_results = scan_generated_theme(theme_dir, strict=True)
 
             if not scan_results['valid']:
                 logger.error("✗ Post-render scan FAILED - theme contains forbidden patterns:")
@@ -389,6 +389,72 @@ class WordPressGenerator:
         except Exception as e:
             logger.error(f"Failed to generate theme: {str(e)}")
             raise
+
+    # Inline guards for preventing forbidden patterns during file write
+    FORBIDDEN_DEBUG_TOKENS = (
+        "define('WP_DEBUG'", 'define("WP_DEBUG"',
+        "define('WP_DEBUG_LOG'", 'define("WP_DEBUG_LOG"',
+        "define('WP_DEBUG_DISPLAY'", 'define("WP_DEBUG_DISPLAY"',
+        "ini_set('display_errors'", 'ini_set("display_errors"',
+        "ini_set('error_reporting'", 'ini_set("error_reporting"',
+        "error_reporting(",
+    )
+
+    BAD_PHP_PATTERNS = [
+        (re.compile(r"<\?=\s*;?\s*\?>"), "<?= ; ?> or <?= ?> (empty short echo)"),
+        (re.compile(r"<\?php\s*;+\s*\?>"), "<?php ; ?> (empty PHP block with semicolon)"),
+        (re.compile(r"\bif\s*\([^)]*\)\s*;"), "if (...); (stray semicolon after condition)"),
+        (re.compile(r"\bforeach\s*\([^)]*\)\s*;"), "foreach (...); (stray semicolon)"),
+        (re.compile(r"\bwhile\s*\([^)]*\)\s*;"), "while (...); (stray semicolon)"),
+        (re.compile(r"\bfor\s*\([^)]*\)\s*;"), "for (...); (stray semicolon)"),
+        (re.compile(r"\bfunction\s+\w+\s*\([^)]*\)\s*;"), "function name(); (semicolon instead of brace)"),
+    ]
+
+    def _assert_no_debug_directives(self, text: str, path: str) -> None:
+        """Assert that code contains no forbidden debug directives.
+
+        Args:
+            text: PHP code to check
+            path: File path for error messages
+
+        Raises:
+            RuntimeError: If forbidden directive found
+        """
+        for i, line in enumerate(text.splitlines(), 1):
+            for tok in self.FORBIDDEN_DEBUG_TOKENS:
+                if tok in line:
+                    raise RuntimeError(
+                        f"Forbidden debug directive in {path}:{i}\n"
+                        f"  Line: {line.strip()}\n"
+                        f"  Pattern: {tok}\n"
+                        f"Themes must NOT define WP_DEBUG, error_reporting, or ini_set.\n"
+                        f"These belong in wp-config.php, not theme files."
+                    )
+
+    def _assert_no_bad_php(self, text: str, path: str) -> None:
+        """Assert that code contains no invalid PHP patterns.
+
+        Args:
+            text: PHP code to check
+            path: File path for error messages
+
+        Raises:
+            RuntimeError: If invalid pattern found
+        """
+        for rx, description in self.BAD_PHP_PATTERNS:
+            m = rx.search(text)
+            if m:
+                # Find line number
+                start = text.rfind("\n", 0, m.start()) + 1
+                line_num = text[:m.start()].count("\n") + 1
+                end = text.find("\n", m.end())
+                snippet = text[start:(len(text) if end == -1 else end)]
+                raise RuntimeError(
+                    f"Invalid PHP pattern in {path}:{line_num}\n"
+                    f"  Line: {snippet.strip()}\n"
+                    f"  Pattern: {description}\n"
+                    f"  Matched: '{m.group(0)}'"
+                )
 
     def _generate_style_css(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate style.css file with theme header and styles.
@@ -887,6 +953,13 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                     logger.info(f"✓ Fallback {filename} validated successfully")
             else:
                 logger.error(f"⚠ No fallback available for {filename}, using best-effort repaired code")
+
+        # Inline guard: Check for forbidden debug directives (except in wp-config files)
+        if filename not in ['wp-config-sample.php', 'wp-config.php']:
+            self._assert_no_debug_directives(final_code, filename)
+
+        # Inline guard: Check for invalid PHP patterns
+        self._assert_no_bad_php(final_code, filename)
 
         # Write the file
         file_path = theme_dir / filename
