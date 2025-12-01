@@ -39,6 +39,7 @@ def test_front_page_has_required_elements(tmp_path):
     mock_llm = MagicMock()
     generator = WordPressGenerator(llm_provider=mock_llm, output_dir=str(tmp_path))
 
+    theme_dir = None  # Initialize to prevent UnboundLocalError
     try:
         theme_path = generator.generate(requirements)
         theme_dir = Path(theme_path)
@@ -77,7 +78,7 @@ def test_front_page_has_required_elements(tmp_path):
 
     finally:
         # Cleanup
-        if theme_dir.exists():
+        if theme_dir and theme_dir.exists():
             shutil.rmtree(theme_dir, ignore_errors=True)
 
 
@@ -138,6 +139,7 @@ def test_index_php_has_loop(tmp_path):
     mock_llm = MagicMock()
     generator = WordPressGenerator(llm_provider=mock_llm, output_dir=str(tmp_path))
 
+    theme_dir = None  # Initialize to prevent UnboundLocalError
     try:
         theme_path = generator.generate(requirements)
         theme_dir = Path(theme_path)
@@ -171,7 +173,7 @@ def test_index_php_has_loop(tmp_path):
 
     finally:
         # Cleanup
-        if theme_dir.exists():
+        if theme_dir and theme_dir.exists():
             shutil.rmtree(theme_dir, ignore_errors=True)
 
 

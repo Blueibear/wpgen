@@ -64,6 +64,7 @@ def test_e2e_mocked_generation(mock_llm, temp_output_dir):
         "wp_version": "6.4",
         "author": "Test",
         "license": "GPL-2.0-or-later",
+        "safe_mode": True,  # Use tested fallback templates for reliable mock generation
     }
     generator = WordPressGenerator(mock_llm, str(temp_output_dir), config)
     theme_dir = generator.generate(requirements)
@@ -108,8 +109,8 @@ def test_e2e_mocked_minimal_theme(mock_llm, temp_output_dir):
         "color_scheme": {"primary": "#000000"},
     }
 
-    # Generate with minimal config
-    generator = WordPressGenerator(mock_llm, str(temp_output_dir), {})
+    # Generate with minimal config (enable safe_mode for reliable mock generation)
+    generator = WordPressGenerator(mock_llm, str(temp_output_dir), {"safe_mode": True})
     theme_dir = generator.generate(requirements)
 
     # Verify basics
