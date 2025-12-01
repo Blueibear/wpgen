@@ -9,7 +9,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .utils.logger import get_logger
 
@@ -286,9 +286,9 @@ class WPGenConfig(BaseModel):
     wordpress_api: WordPressAPIConfig = Field(default_factory=WordPressAPIConfig)
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
 
-    class Config:
-        """Pydantic configuration."""
-        populate_by_name = True  # Allow field aliases
+    model_config = ConfigDict(
+        populate_by_name=True  # Allow field aliases
+    )
 
 
 def load_and_validate_config(config_path: str = "config.yaml") -> WPGenConfig:
