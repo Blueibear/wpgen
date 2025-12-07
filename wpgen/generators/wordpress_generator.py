@@ -966,11 +966,13 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
             file_type = 'functions'
 
         # Use comprehensive validation and repair (with up to 2 retry attempts)
+        # For footer.php, pass theme_dir to enable PHP syntax validation
         final_code, is_valid, log_messages = validate_and_repair_php_file(
             php_code,
             file_type=file_type,
             filename=filename,
-            max_retries=2
+            max_retries=2,
+            theme_dir=theme_dir
         )
 
         # Log all validation messages
@@ -1410,76 +1412,18 @@ Create a complete, production-ready footer that will NEVER cause layout collapse
             # - wp_footer() hook (if missing, will be added)
             # - Proper closing tags (will be added if missing)
             # - Visible content (empty footers will be replaced)
-            self._validate_and_write_php(theme_dir, "footer.php", php_code)
+            # - PHP syntax validation with php -l
+            # If all validation fails, use template-based fallback (NOT LLM regeneration)
+            from ..utils.code_validator import get_fallback_footer_php
+            fallback = get_fallback_footer_php(requirements["theme_name"])
+            self._validate_and_write_php(theme_dir, "footer.php", php_code, fallback_code=fallback)
 
         except Exception as e:
             logger.error(f"Failed to generate footer.php: {str(e)}")
-            logger.info("Using enhanced fallback footer with visible content")
-            # Enhanced fallback with visible content to prevent empty footers
-            fallback = """<?php
-/**
- * Footer Template
- *
- * @package {theme_name}
- */
-?>
-</main><!-- .site-main -->
-
-<footer class="site-footer">
-    <div class="footer-widgets container">
-        <div class="footer-widgets-inner">
-            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
-                <div class="footer-widget-area footer-widget-1">
-                    <?php dynamic_sidebar( 'footer-1' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-1">
-                    <h3 class="widget-title">About</h3>
-                    <p>Welcome to <?php bloginfo( 'name' ); ?>. Visit us to learn more.</p>
-                </div>
-            <?php endif; ?>
-
-            <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
-                <div class="footer-widget-area footer-widget-2">
-                    <?php dynamic_sidebar( 'footer-2' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-2">
-                    <h3 class="widget-title">Quick Links</h3>
-                    <ul>
-                        <li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a></li>
-                        <li><a href="<?php echo esc_url( home_url( '/about' ) ); ?>">About</a></li>
-                        <li><a href="<?php echo esc_url( home_url( '/contact' ) ); ?>">Contact</a></li>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
-            <?php if ( is_active_sidebar( 'footer-3' ) ) : ?>
-                <div class="footer-widget-area footer-widget-3">
-                    <?php dynamic_sidebar( 'footer-3' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-3">
-                    <h3 class="widget-title">Connect</h3>
-                    <p>Stay connected with us for updates and news.</p>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <div class="site-info">
-        <div class="container">
-            <p class="copyright">
-                &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
-            </p>
-        </div>
-    </div>
-</footer>
-
-<?php wp_footer(); ?>
-</body>
-</html>
-"""
+            logger.info("Using template-based fallback footer (NOT LLM-generated)")
+            # Use the guaranteed-safe template-based fallback
+            from ..utils.code_validator import get_fallback_footer_php
+            fallback = get_fallback_footer_php(requirements["theme_name"])
             self._validate_and_write_php(theme_dir, "footer.php", fallback)
 
     def _generate_sidebar_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:

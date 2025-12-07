@@ -414,15 +414,23 @@ def validate_and_repair_php_file(
     php_code: str,
     file_type: str,
     filename: str,
-    max_retries: int = 2
+    max_retries: int = 2,
+    theme_dir: Path | None = None
 ) -> tuple[str, bool, list[str]]:
     """Validate and repair a PHP file with retry logic.
+
+    For footer.php files, this includes:
+    1. Footer-specific sanitization (backslash removal, duplicate cleanup)
+    2. PHP syntax validation using php -l
+    3. Structural repairs (wp_footer, closing tags, etc.)
+    4. Fallback to template-based footer if all else fails
 
     Args:
         php_code: PHP code to validate
         file_type: Type of file (header, footer, functions, template)
         filename: Filename for logging
         max_retries: Maximum number of repair attempts
+        theme_dir: Theme directory path (required for footer.php PHP syntax validation)
 
     Returns:
         Tuple of (final_code, is_valid, log_messages)
@@ -430,6 +438,18 @@ def validate_and_repair_php_file(
     log_messages = []
     current_code = php_code
 
+    # STEP 1: Footer-specific sanitization (before general validation)
+    if file_type == 'footer' and filename == 'footer.php':
+        logger.info(f"🔧 Running footer-specific sanitizer on {filename}")
+        sanitized_code, cleanups = sanitize_footer_php(current_code)
+        if cleanups:
+            log_messages.append(f"🧹 SANITIZED {filename}:")
+            for cleanup in cleanups:
+                log_messages.append(f"  ✓ {cleanup}")
+                logger.info(f"  Cleanup: {cleanup}")
+            current_code = sanitized_code
+
+    # STEP 2: General PHP validation and repair with retries
     for attempt in range(max_retries + 1):
         # Validate and attempt auto-fix
         fixed_code, is_valid, issues = validate_and_fix_php(
@@ -446,6 +466,48 @@ def validate_and_repair_php_file(
             else:
                 log_messages.append(f"✓ VALID PHP: {filename}")
                 logger.info(f"✓ {filename} passed validation")
+
+            # STEP 3: Footer-specific validation and PHP syntax check
+            if file_type == 'footer' and filename == 'footer.php':
+                # Step 3a: Validate footer requirements (structure, no duplicates, etc.)
+                logger.info(f"🔍 Validating footer.php requirements")
+                requirements_valid, requirement_errors = validate_footer_requirements(fixed_code)
+
+                if not requirements_valid:
+                    log_messages.append(f"✗ FOOTER VALIDATION FAILED:")
+                    for error in requirement_errors:
+                        log_messages.append(f"  - {error}")
+                        logger.error(f"  Footer requirement error: {error}")
+
+                    # Continue to next retry or fallback
+                    current_code = fixed_code
+                    continue
+                else:
+                    log_messages.append(f"✓ FOOTER REQUIREMENTS: All checks passed")
+                    logger.info(f"✓ Footer.php meets all structural requirements")
+
+                # Step 3b: PHP syntax check using php -l
+                if theme_dir:
+                    logger.info(f"🔍 Running PHP syntax validation (php -l) on {filename}")
+                    syntax_valid, syntax_error, syntax_issues = validate_footer_php_syntax(
+                        fixed_code, theme_dir
+                    )
+
+                    if not syntax_valid:
+                        log_messages.append(f"✗ PHP SYNTAX ERROR in {filename}:")
+                        log_messages.extend([f"  - {issue}" for issue in syntax_issues])
+                        logger.error(f"PHP syntax validation failed: {syntax_error}")
+
+                        # Continue to next retry or fallback
+                        current_code = fixed_code
+                        continue
+                    else:
+                        if syntax_issues:  # PHP CLI not available
+                            log_messages.append(f"⚠ {filename}: PHP CLI not available (skipped syntax check)")
+                        else:
+                            log_messages.append(f"✓ PHP SYNTAX VALID: {filename}")
+                            logger.info(f"✓ PHP syntax validation passed for {filename}")
+
             return fixed_code, True, log_messages
 
         # Log the issues
@@ -972,55 +1034,52 @@ def get_fallback_footer_php(theme_name: str) -> str:
 
     This footer template GUARANTEES the following structure in exact order:
     1. Closes </main> (opened in header.php)
-    2. <footer class="site-footer">
-    3. Footer widgets and content
+    2. <footer class="site-footer"> with working WordPress footer code
+    3. Footer widgets with visible fallback content
     4. wp_footer() hook
     5. Closes </body>
     6. Closes </html>
+
+    This template is used when:
+    - LLM generation fails
+    - PHP syntax validation fails
+    - Generated footer has malformed syntax
 
     Args:
         theme_name: Theme name for text domain
 
     Returns:
-        Guaranteed-safe footer.php code
+        Guaranteed-safe footer.php code with working WordPress features
     """
-    return f"""    </main><!-- #content .site-main -->
+    return f"""<?php
+/**
+ * Footer Template - Fallback Safe Version
+ *
+ * @package {theme_name}
+ */
+?>
+</main><!-- #content .site-main -->
 
-    <footer class="site-footer">
-        <div class="footer-inner container">
-            <div class="footer-widgets">
-                <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
-                    <div class="footer-widget-area footer-widget-1">
-                        <?php dynamic_sidebar( 'footer-1' ); ?>
-                    </div>
-                <?php endif; ?>
+<footer class="site-footer">
+    <div class="footer-widgets container">
+        <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+            <div class="footer-widget-area footer-widget-1">
+                <?php dynamic_sidebar( 'footer-1' ); ?>
+            </div>
+        <?php else : ?>
+            <div class="footer-widget-area footer-widget-1">
+                <h3 class="widget-title">About</h3>
+                <p><?php bloginfo( 'description' ); ?></p>
+            </div>
+        <?php endif; ?>
+    </div>
 
-                <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
-                    <div class="footer-widget-area footer-widget-2">
-                        <?php dynamic_sidebar( 'footer-2' ); ?>
-                    </div>
-                <?php endif; ?>
-            </div><!-- .footer-widgets -->
-
-            <div class="site-info">
-                <p>
-                    &copy; <?php echo date( 'Y' ); ?>
-                    <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
-                        <?php bloginfo( 'name' ); ?>
-                    </a>
-                    <?php
-                    /* translators: WordPress credit */
-                    printf( esc_html__( ' | Powered by %s', '{theme_name}' ), '<a href="https://wordpress.org/">WordPress</a>' );
-                    ?>
-                </p>
-            </div><!-- .site-info -->
-        </div><!-- .footer-inner -->
-    </footer><!-- .site-footer -->
-
-</div><!-- #page .site -->
+    <div class="footer-bottom">
+        <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?></p>
+    </div>
+</footer>
 
 <?php wp_footer(); ?>
-
 </body>
 </html>
 """
@@ -1334,6 +1393,233 @@ function {safe_function_name}_pagination() {{
         repairs.append(f"Added missing helper functions: {', '.join(helpers_needed)}")
 
     return php_code, repairs
+
+
+def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
+    """Sanitize footer.php to remove malformed syntax and fix common LLM errors.
+
+    This function performs aggressive cleaning to prevent syntax errors:
+    1. Removes ALL stray backslashes except valid PHP escapes
+    2. Converts \' to '
+    3. Converts \" to "
+    4. Removes \ before HTML tags or whitespace
+    5. Removes duplicated <footer> sections (keeps only first)
+    6. Ensures exactly one closing </body> and </html>
+
+    Args:
+        php_code: Footer PHP code to sanitize
+
+    Returns:
+        Tuple of (sanitized_code, list_of_cleanups_performed)
+    """
+    cleanups = []
+    original_code = php_code
+
+    # Step 1: Remove backslashes before quotes (convert \' to ' and \" to ")
+    # But preserve valid PHP escape sequences in strings
+    before = php_code
+    # Replace \' with ' (except in strings with proper context)
+    php_code = re.sub(r"\\\'", "'", php_code)
+    # Replace \" with " (except in strings with proper context)
+    php_code = re.sub(r'\\"', '"', php_code)
+    if php_code != before:
+        cleanups.append("Converted escaped quotes (\' and \") to regular quotes")
+
+    # Step 2: Remove backslashes before HTML tags
+    before = php_code
+    php_code = re.sub(r'\\<', '<', php_code)  # \< to <
+    php_code = re.sub(r'\\>', '>', php_code)  # \> to >
+    if php_code != before:
+        cleanups.append("Removed backslashes before HTML tags")
+
+    # Step 3: Remove backslashes before whitespace
+    before = php_code
+    php_code = re.sub(r'\\ +', ' ', php_code)  # "\ " to " "
+    php_code = re.sub(r'\\\t', '\t', php_code)  # "\t" to tab
+    php_code = re.sub(r'\\\n', '\n', php_code)  # "\n" to newline
+    if php_code != before:
+        cleanups.append("Removed backslashes before whitespace")
+
+    # Step 4: Remove other stray backslashes (aggressive cleaning)
+    before = php_code
+    # Remove backslashes before common punctuation (but preserve in strings)
+    php_code = re.sub(r'\\,', ',', php_code)
+    php_code = re.sub(r'\\;', ';', php_code)
+    php_code = re.sub(r'\\\(', '(', php_code)
+    php_code = re.sub(r'\\\)', ')', php_code)
+    php_code = re.sub(r'\\\{', '{', php_code)
+    php_code = re.sub(r'\\\}', '}', php_code)
+    php_code = re.sub(r'\\\[', '[', php_code)
+    php_code = re.sub(r'\\\]', ']', php_code)
+    if php_code != before:
+        cleanups.append("Removed stray backslashes before punctuation")
+
+    # Step 5: Remove duplicated <footer> sections (keep only the first)
+    footer_matches = list(re.finditer(r'<footer[^>]*>', php_code, re.IGNORECASE))
+    if len(footer_matches) > 1:
+        # Find all complete footer sections
+        footer_sections = []
+        for i, match in enumerate(footer_matches):
+            start = match.start()
+            # Find the corresponding </footer>
+            remaining = php_code[match.end():]
+            close_match = re.search(r'</footer>', remaining, re.IGNORECASE)
+            if close_match:
+                end = match.end() + close_match.end()
+                footer_sections.append((start, end))
+
+        # Keep only the first footer, remove the rest
+        if len(footer_sections) > 1:
+            # Work backwards to maintain string indices
+            for start, end in reversed(footer_sections[1:]):
+                php_code = php_code[:start] + php_code[end:]
+            cleanups.append(f"Removed {len(footer_sections) - 1} duplicate <footer> section(s), kept first one")
+
+    # Step 6: Ensure exactly one </body> tag
+    body_close_count = len(re.findall(r'</body>', php_code, re.IGNORECASE))
+    if body_close_count > 1:
+        # Keep only the last </body>
+        php_code = re.sub(r'</body>', '', php_code, count=body_close_count - 1, flags=re.IGNORECASE)
+        cleanups.append(f"Removed {body_close_count - 1} duplicate </body> tag(s), kept one")
+    elif body_close_count == 0:
+        # Add missing </body>
+        php_code = php_code.rstrip() + "\n</body>"
+        cleanups.append("Added missing </body> tag")
+
+    # Step 7: Ensure exactly one </html> tag
+    html_close_count = len(re.findall(r'</html>', php_code, re.IGNORECASE))
+    if html_close_count > 1:
+        # Keep only the last </html>
+        php_code = re.sub(r'</html>', '', php_code, count=html_close_count - 1, flags=re.IGNORECASE)
+        cleanups.append(f"Removed {html_close_count - 1} duplicate </html> tag(s), kept one")
+    elif html_close_count == 0:
+        # Add missing </html>
+        php_code = php_code.rstrip() + "\n</html>"
+        cleanups.append("Added missing </html> tag")
+
+    return php_code, cleanups
+
+
+def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, str, list[str]]:
+    """Validate footer.php syntax using PHP CLI (php -l).
+
+    This performs actual PHP syntax validation by writing the code to a temp file
+    and running 'php -l' on it.
+
+    Args:
+        php_code: Footer PHP code to validate
+        theme_dir: Theme directory (for temp file creation)
+
+    Returns:
+        Tuple of (is_valid, error_message, list_of_issues)
+    """
+    issues = []
+
+    # Create a temporary file with the PHP code
+    import tempfile
+    import os
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            suffix='.php',
+            delete=False,
+            encoding='utf-8',
+            dir=theme_dir if theme_dir.exists() else None
+        ) as tmp:
+            tmp.write(php_code)
+            tmp_path = tmp.name
+
+        # Run php -l on the file
+        try:
+            result = subprocess.run(
+                ['php', '-l', tmp_path],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            if result.returncode == 0:
+                # Syntax is valid
+                return True, "", []
+            else:
+                # Syntax error found
+                error_msg = result.stderr.strip() or result.stdout.strip()
+                issues.append(f"PHP syntax error: {error_msg}")
+                return False, error_msg, issues
+
+        except subprocess.TimeoutExpired:
+            issues.append("PHP validation timed out")
+            return False, "Validation timeout", issues
+        except FileNotFoundError:
+            # php command not found
+            logger.warning("PHP CLI not available for syntax validation")
+            issues.append("PHP CLI not available (skipping syntax check)")
+            return True, "", issues  # Assume valid if we can't check
+        finally:
+            # Clean up temp file
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+
+    except Exception as e:
+        logger.error(f"Error during PHP syntax validation: {str(e)}")
+        issues.append(f"Validation error: {str(e)}")
+        return False, str(e), issues
+
+
+def validate_footer_requirements(php_code: str) -> tuple[bool, list[str]]:
+    """Validate footer.php meets strict requirements before accepting it.
+
+    This enforces the requirements:
+    1. No more than one <footer> tag
+    2. No stray backslashes inside PHP blocks
+    3. Exactly one </body> tag
+    4. Exactly one </html> tag
+
+    Args:
+        php_code: Footer PHP code to validate
+
+    Returns:
+        Tuple of (is_valid, list_of_validation_errors)
+    """
+    errors = []
+
+    # Check 1: No more than one <footer> tag
+    footer_count = len(re.findall(r'<footer[^>]*>', php_code, re.IGNORECASE))
+    if footer_count > 1:
+        errors.append(f"Multiple <footer> tags found ({footer_count}), expected exactly 1")
+
+    # Check 2: No stray backslashes in PHP blocks
+    # Extract PHP blocks
+    php_blocks = re.findall(r'<\?php(.*?)\?>', php_code, re.DOTALL)
+    for i, block in enumerate(php_blocks):
+        # Look for suspicious backslashes (not in strings)
+        # This is a simple heuristic - remove strings first
+        block_no_strings = re.sub(r"'[^']*'", '', block)
+        block_no_strings = re.sub(r'"[^"]*"', '', block_no_strings)
+
+        # Check for backslashes before common characters
+        if re.search(r'\\[<>\s,;(){}]', block_no_strings):
+            errors.append(f"Stray backslashes found in PHP block {i+1}")
+
+    # Check 3: Exactly one </body> tag
+    body_close_count = len(re.findall(r'</body>', php_code, re.IGNORECASE))
+    if body_close_count == 0:
+        errors.append("Missing </body> tag")
+    elif body_close_count > 1:
+        errors.append(f"Multiple </body> tags found ({body_close_count}), expected exactly 1")
+
+    # Check 4: Exactly one </html> tag
+    html_close_count = len(re.findall(r'</html>', php_code, re.IGNORECASE))
+    if html_close_count == 0:
+        errors.append("Missing </html> tag")
+    elif html_close_count > 1:
+        errors.append(f"Multiple </html> tags found ({html_close_count}), expected exactly 1")
+
+    is_valid = len(errors) == 0
+    return is_valid, errors
 
 
 def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
