@@ -1006,14 +1006,65 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
         # Inline guard: Check for invalid PHP patterns
         self._assert_no_bad_php(final_code, filename)
 
-        # Write the file
+        # Write the file (INITIAL WRITE)
         file_path = theme_dir / filename
         file_path.write_text(final_code, encoding="utf-8")
+        logger.info(f"→ Written {filename} (initial)")
 
-        if is_valid or fallback_code:
-            logger.info(f"✓ Written {filename} successfully")
+        # ==============================================
+        # FINAL PASS: Post-write sanitization and validation
+        # This runs AFTER the file is written to disk
+        # ==============================================
+        from ..utils.code_validator import (
+            final_pass_sanitizer,
+            validate_footer_php_syntax,
+            get_minimal_fallback
+        )
+
+        # Step 1: Read the written file back from disk
+        written_content = file_path.read_text(encoding="utf-8")
+
+        # Step 2: Run final-pass sanitizer (aggressive backslash removal)
+        logger.info(f"🔧 FINAL PASS: Running aggressive sanitizer on {filename}")
+        sanitized_content, sanitizer_cleanups = final_pass_sanitizer(written_content, filename)
+
+        if sanitizer_cleanups:
+            logger.warning(f"🧹 FINAL PASS: Sanitized {filename}:")
+            for cleanup in sanitizer_cleanups:
+                logger.warning(f"  {cleanup}")
+
+        # Step 3: Validate with php -l AFTER sanitizing
+        logger.info(f"🔍 FINAL PASS: Validating {filename} with php -l")
+        syntax_valid, syntax_error, syntax_issues = validate_footer_php_syntax(
+            sanitized_content, theme_dir
+        )
+
+        # Step 4: If validation fails, use minimal fallback (NOT LLM regeneration)
+        if not syntax_valid and syntax_error:
+            logger.error(f"✗ FINAL PASS: {filename} still has PHP syntax errors after sanitization")
+            logger.error(f"  Error: {syntax_error}")
+            logger.warning(f"→ USING MINIMAL FALLBACK: {filename}")
+
+            # Use minimal non-breaking fallback
+            minimal_fallback = get_minimal_fallback(filename, theme_name)
+            sanitized_content = minimal_fallback
+
+            # Log the fallback usage
+            logger.warning(f"⚠ Replaced {filename} with guaranteed-safe minimal fallback")
+        elif syntax_issues and not syntax_error:
+            # PHP CLI not available, skip syntax check
+            logger.info(f"⚠ PHP CLI not available, skipping syntax validation for {filename}")
         else:
-            logger.warning(f"⚠ Written {filename} (may have issues)")
+            logger.info(f"✓ FINAL PASS: {filename} passed PHP syntax validation")
+
+        # Step 5: Rewrite the file with sanitized/fallback content
+        if sanitized_content != written_content:
+            file_path.write_text(sanitized_content, encoding="utf-8")
+            logger.info(f"✓ FINAL PASS: Rewrote {filename} with sanitized content")
+        else:
+            logger.info(f"✓ FINAL PASS: {filename} required no changes")
+
+        logger.info(f"✓ {filename} finalized and ready")
 
     def _generate_index_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate index.php template file.

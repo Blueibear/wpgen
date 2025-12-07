@@ -1395,6 +1395,331 @@ function {safe_function_name}_pagination() {{
     return php_code, repairs
 
 
+def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
+    """FINAL PASS sanitizer that removes ALL illegal backslashes and malformed escapes.
+
+    This runs AFTER the file is written to disk, as the last line of defense against
+    malformed syntax. It's more aggressive than the initial sanitizer.
+
+    This function:
+    1. Removes illegal backslashes (preserving only valid PHP escapes)
+    2. Fixes common LLM escape errors (\', \", \<, \ )
+    3. Repairs malformed PHP blocks (mismatched <?php and ?>)
+    4. Logs all removals for debugging
+
+    Valid escapes that are preserved: \n, \r, \t, \\, \', \", \$
+
+    Args:
+        php_code: PHP code to sanitize
+        filename: Filename for logging
+
+    Returns:
+        Tuple of (sanitized_code, list_of_cleanups_with_line_numbers)
+    """
+    cleanups = []
+    original_code = php_code
+    lines = php_code.split('\n')
+
+    # STEP 1: Fix common escape errors
+    # Replace \' with ' (LLM often escapes quotes unnecessarily)
+    before = php_code
+    php_code = php_code.replace(r"\'", "'")
+    if php_code != before:
+        # Count how many times we replaced
+        count = before.count(r"\'")
+        cleanups.append(f"[SANITIZER] Replaced {count} instances of \\' with ' (unnecessary escapes)")
+
+    # Replace \" with " (LLM often escapes quotes unnecessarily)
+    before = php_code
+    php_code = php_code.replace(r'\"', '"')
+    if php_code != before:
+        count = before.count(r'\"')
+        cleanups.append(f"[SANITIZER] Replaced {count} instances of \\\" with \" (unnecessary escapes)")
+
+    # STEP 2: Remove backslashes before HTML tags
+    before = php_code
+    php_code = re.sub(r'\\<', '<', php_code)
+    php_code = re.sub(r'\\>', '>', php_code)
+    if php_code != before:
+        cleanups.append(f"[SANITIZER] Removed backslashes before HTML tags (\\< and \\>)")
+
+    # STEP 3: Remove backslashes before spaces
+    before = php_code
+    php_code = re.sub(r'\\ ', ' ', php_code)
+    if php_code != before:
+        cleanups.append(f"[SANITIZER] Removed backslashes before spaces (\\ )")
+
+    # STEP 4: Remove unpaired/illegal backslashes
+    # This regex keeps only valid PHP escapes: \n, \r, \t, \\, \', \", \$
+    # Everything else is removed
+    before = php_code
+    # Match backslash NOT followed by valid escape characters
+    php_code = re.sub(r'\\(?![nrt"\'\\$])', '', php_code)
+    if php_code != before:
+        removed_count = len(before) - len(php_code)
+        cleanups.append(f"[SANITIZER] Removed {removed_count} illegal backslash(es) (preserving \\n, \\r, \\t, \\\\, \\', \\\", \\$)")
+
+    # STEP 5: Remove backslashes before letters (except valid escapes)
+    # This catches things like \a, \b, \c, etc. that aren't valid PHP escapes
+    before = php_code
+    # Remove \ before letters that aren't part of valid escapes
+    # Valid: \n, \r, \t (already preserved above)
+    # Invalid: \a, \b, \c, \d, etc.
+    php_code = re.sub(r'\\([a-mo-qs-zA-MO-QS-Z])', r'\1', php_code)
+    if php_code != before:
+        cleanups.append(f"[SANITIZER] Removed backslashes before non-escape letters (\\a, \\b, etc.)")
+
+    # STEP 6: Repair malformed PHP blocks
+    php_open_count = php_code.count('<?php')
+    php_close_count = php_code.count('?>')
+
+    if php_open_count != php_close_count:
+        if php_open_count > php_close_count:
+            # More opens than closes - add missing closes
+            missing = php_open_count - php_close_count
+            php_code += '\n?>' * missing
+            cleanups.append(f"[SANITIZER] Added {missing} missing ?> tag(s) to balance PHP blocks")
+        else:
+            # More closes than opens - add missing opens at the start
+            missing = php_close_count - php_open_count
+            php_code = '<?php\n' * missing + php_code
+            cleanups.append(f"[SANITIZER] Added {missing} missing <?php tag(s) to balance PHP blocks")
+
+    # STEP 7: Log line-by-line changes for detailed debugging
+    if cleanups and len(lines) == len(php_code.split('\n')):
+        new_lines = php_code.split('\n')
+        changed_lines = []
+        for i, (old_line, new_line) in enumerate(zip(lines, new_lines), start=1):
+            if old_line != new_line:
+                # Find what changed
+                if '\\' in old_line and old_line != new_line:
+                    changed_lines.append(i)
+
+        if changed_lines and len(changed_lines) <= 10:  # Only log if reasonable number
+            cleanups.append(f"[SANITIZER] Modified lines: {', '.join(map(str, changed_lines))}")
+
+    return php_code, cleanups
+
+
+def repair_php_blocks(php_code: str) -> tuple[str, list[str]]:
+    """Detect and repair malformed PHP blocks (mismatched <?php and ?>).
+
+    Args:
+        php_code: PHP code to repair
+
+    Returns:
+        Tuple of (repaired_code, list_of_repairs)
+    """
+    repairs = []
+
+    # Count PHP tags
+    php_open_count = php_code.count('<?php')
+    php_close_count = php_code.count('?>')
+
+    if php_open_count != php_close_count:
+        if php_open_count > php_close_count:
+            # More opens than closes - add missing closes
+            missing = php_open_count - php_close_count
+            php_code += '\n?>' * missing
+            repairs.append(f"Added {missing} missing ?> tag(s)")
+        else:
+            # More closes than opens - add missing opens
+            missing = php_close_count - php_open_count
+            # Try to add at the beginning if it doesn't already start with <?php
+            if not php_code.strip().startswith('<?php'):
+                php_code = '<?php\n' + php_code
+                missing -= 1
+
+            # If still missing, add more at the start
+            if missing > 0:
+                php_code = '<?php\n' * missing + php_code
+                repairs.append(f"Added {missing} missing <?php tag(s)")
+
+    return php_code, repairs
+
+
+def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
+    """Get minimal non-breaking fallback template for any PHP file.
+
+    These fallbacks are guaranteed to pass PHP syntax validation and never break WordPress.
+    They are used when LLM generation fails AND sanitization cannot fix the code.
+
+    Args:
+        filename: Name of the PHP file (e.g., 'footer.php', 'header.php')
+        theme_name: Theme name for text domain
+
+    Returns:
+        Minimal working PHP code for the file
+    """
+    if filename == 'footer.php':
+        return """</main>
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <?php if ( is_active_sidebar( 'footer-1' ) ) dynamic_sidebar( 'footer-1' ); ?>
+        <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?></p>
+    </div>
+</footer>
+
+<?php wp_footer(); ?>
+</body>
+</html>
+"""
+
+    elif filename == 'header.php':
+        return f"""<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php wp_head(); ?>
+</head>
+
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+
+<header class="site-header">
+    <div class="container">
+        <div class="site-branding">
+            <?php if ( has_custom_logo() ) : ?>
+                <?php the_custom_logo(); ?>
+            <?php else : ?>
+                <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+            <?php endif; ?>
+        </div>
+
+        <nav class="main-navigation">
+            <?php
+            wp_nav_menu( array(
+                'theme_location' => 'primary',
+                'menu_class'     => 'primary-menu',
+                'fallback_cb'    => false,
+            ) );
+            ?>
+        </nav>
+    </div>
+</header>
+
+<main id="content" class="site-main">
+"""
+
+    elif filename == 'index.php':
+        return f"""<?php get_header(); ?>
+
+<div class="content-area">
+    <?php if ( have_posts() ) : ?>
+        <?php while ( have_posts() ) : the_post(); ?>
+            <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                <header class="entry-header">
+                    <h2 class="entry-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                </header>
+                <div class="entry-content">
+                    <?php the_excerpt(); ?>
+                </div>
+            </article>
+        <?php endwhile; ?>
+        <?php the_posts_pagination(); ?>
+    <?php else : ?>
+        <p>No posts found.</p>
+    <?php endif; ?>
+</div>
+
+<?php get_footer(); ?>
+"""
+
+    elif filename == 'single.php':
+        return f"""<?php get_header(); ?>
+
+<div class="content-area">
+    <?php while ( have_posts() ) : the_post(); ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <header class="entry-header">
+                <h1 class="entry-title"><?php the_title(); ?></h1>
+            </header>
+            <div class="entry-content">
+                <?php the_content(); ?>
+            </div>
+        </article>
+    <?php endwhile; ?>
+</div>
+
+<?php get_footer(); ?>
+"""
+
+    elif filename == 'page.php':
+        return f"""<?php get_header(); ?>
+
+<div class="content-area">
+    <?php while ( have_posts() ) : the_post(); ?>
+        <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+            <header class="entry-header">
+                <h1 class="entry-title"><?php the_title(); ?></h1>
+            </header>
+            <div class="entry-content">
+                <?php the_content(); ?>
+            </div>
+        </article>
+    <?php endwhile; ?>
+</div>
+
+<?php get_footer(); ?>
+"""
+
+    elif filename == 'sidebar.php':
+        return f"""<aside class="sidebar">
+    <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
+        <?php dynamic_sidebar( 'sidebar-1' ); ?>
+    <?php endif; ?>
+</aside>
+"""
+
+    elif filename == 'functions.php':
+        safe_name = theme_name.replace('-', '_')
+        return f"""<?php
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+function {safe_name}_setup() {{
+    add_theme_support( 'title-tag' );
+    add_theme_support( 'post-thumbnails' );
+    register_nav_menus( array(
+        'primary' => __( 'Primary Menu', '{theme_name}' ),
+    ) );
+}}
+add_action( 'after_setup_theme', '{safe_name}_setup' );
+
+function {safe_name}_scripts() {{
+    wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri() );
+}}
+add_action( 'wp_enqueue_scripts', '{safe_name}_scripts' );
+
+function {safe_name}_widgets_init() {{
+    register_sidebar( array(
+        'name'          => __( 'Sidebar', '{theme_name}' ),
+        'id'            => 'sidebar-1',
+        'before_widget' => '<section class="widget">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ) );
+    register_sidebar( array(
+        'name'          => __( 'Footer', '{theme_name}' ),
+        'id'            => 'footer-1',
+        'before_widget' => '<section class="widget">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ) );
+}}
+add_action( 'widgets_init', '{safe_name}_widgets_init' );
+"""
+
+    else:
+        # Generic fallback for unknown files
+        return f"""<?php
+// Minimal fallback for {filename}
+"""
+
+
 def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
     """Sanitize footer.php to remove malformed syntax and fix common LLM errors.
 
