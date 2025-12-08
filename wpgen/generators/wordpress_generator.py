@@ -17,6 +17,8 @@ from ..utils.code_validator import (
     generate_plugin_compatibility_layer,
     get_fallback_functions_php,
     get_fallback_template,
+    ensure_base_layout_enqueue,
+    get_minimal_fallback,
     remove_nonexistent_requires,
     repair_wordpress_code,
     repair_footer_php,
@@ -975,6 +977,25 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
 
         # Get theme name from theme_dir
         theme_name = theme_dir.name
+
+        # Guard against empty/structureless template output that would render blank pages
+        if filename in {"front-page.php", "index.php"}:
+            critical_markers = ["get_header", "get_footer", "have_posts"]
+            missing_markers = [marker for marker in critical_markers if marker not in php_code]
+            if len(php_code.strip()) < 80 or missing_markers:
+                logger.warning(
+                    f"{filename} missing critical structure ({', '.join(missing_markers) if missing_markers else 'content too short'}) - using fallback"
+                )
+                if fallback_code:
+                    php_code = fallback_code
+                else:
+                    php_code = get_minimal_fallback(filename, theme_name)
+
+        # For functions.php, inject guaranteed base layout enqueue to avoid blank previews
+        if filename == 'functions.php':
+            php_code, enqueue_repairs = ensure_base_layout_enqueue(php_code, theme_name)
+            for repair in enqueue_repairs:
+                logger.info(f"✓ {filename}: {repair}")
 
         # Determine file type for structure validation
         file_type = 'template'

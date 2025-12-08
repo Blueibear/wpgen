@@ -176,6 +176,27 @@ get_header();
     </div>
 </section>
 
+<!-- Content Section -->
+<section class="content-section section">
+    <div class="container">
+        <?php if ( have_posts() ) : ?>
+            <?php while ( have_posts() ) : the_post(); ?>
+                <article id="post-<?php the_ID(); ?>" <?php post_class( 'content-article' ); ?>>
+                    <h2 class="entry-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                    <div class="entry-content">
+                        <?php the_content(); ?>
+                    </div>
+                </article>
+            <?php endwhile; ?>
+        <?php else : ?>
+            <article class="no-content">
+                <h2><?php esc_html_e( 'Welcome!', '{theme_name}' ); ?></h2>
+                <p><?php esc_html_e( 'Add a page or post to see your content here.', '{theme_name}' ); ?></p>
+            </article>
+        <?php endif; ?>
+    </div>
+</section>
+
 <!-- CTA Section -->
 <section class="cta-section section bg-primary">
     <div class="container">
