@@ -663,11 +663,11 @@ function {safe_function_name}_widgets_init() {{
         'before_title'  => '<h3 class="widget-title">',
         'after_title'   => '</h3>',
     ) );
-}}
-add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
+ }}
+ add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
 
-/**
- * Display post meta data (date and author).
+ /**
+  * Display post meta data (date and author).
  */
 function {safe_function_name}_get_the_meta_data() {{
     echo '<div class="entry-meta">';
@@ -704,18 +704,58 @@ function {safe_function_name}_pagination() {{
 /**
  * Display posts pagination with fallback.
  */
-function {safe_function_name}_posts_pagination() {{
-    if ( function_exists( 'wp_pagenavi' ) ) {{
-        wp_pagenavi();
-    }} else {{
-        the_posts_pagination( array(
-            'mid_size'  => 2,
-            'prev_text' => __( '&laquo; Previous', '{theme_name}' ),
-            'next_text' => __( 'Next &raquo;', '{theme_name}' ),
-        ) );
+ function {safe_function_name}_posts_pagination() {{
+      if ( function_exists( 'wp_pagenavi' ) ) {{
+          wp_pagenavi();
+      }} else {{
+          the_posts_pagination( array(
+              'mid_size'  => 2,
+              'prev_text' => __( '&laquo; Previous', '{theme_name}' ),
+              'next_text' => __( 'Next &raquo;', '{theme_name}' ),
+          ) );
+      }}
+  }}
+"""
+
+
+def ensure_base_layout_enqueue(php_code: str, theme_name: str) -> tuple[str, list[str]]:
+    """Ensure functions.php enqueues the critical base layout stylesheet.
+
+    Some generations (especially from lightweight or mocked LLM providers) may omit
+    the base layout enqueue, which leads to completely unstyled/blank previews in
+    WordPress. This helper injects a minimal, namespaced enqueue hook so structural
+    CSS and UI assets always load.
+
+    Args:
+        php_code: Raw PHP code for functions.php
+        theme_name: Theme slug/name for namespacing the injected hook
+
+    Returns:
+        Tuple of (possibly modified PHP code, list of repairs applied)
+    """
+    repairs: list[str] = []
+
+    # Skip if the base layout enqueue is already present
+    if 'theme-base-layout' in php_code or 'assets/css/style.css' in php_code:
+        return php_code, repairs
+
+    safe_name = re.sub(r'[^a-zA-Z0-9_]+', '_', theme_name or 'wpgen_theme')
+    enqueue_snippet = f"""
+// Auto-injected by WPGen: ensure structural CSS always loads
+if ( ! function_exists('{safe_name}_enqueue_base_layout') ) {{
+    function {safe_name}_enqueue_base_layout() {{
+        wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+        if ( ! wp_style_is( 'wpgen-ui', 'enqueued' ) ) {{
+            wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
+        }}
     }}
+    add_action( 'wp_enqueue_scripts', '{safe_name}_enqueue_base_layout', 5 );
 }}
 """
+
+    repairs.append("Injected base layout enqueue to functions.php")
+    patched_code = php_code.rstrip() + "\n\n" + enqueue_snippet
+    return patched_code, repairs
 
 
 def check_plugin_compatibility(php_code: str, theme_name: str) -> list[str]:
