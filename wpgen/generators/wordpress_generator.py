@@ -79,7 +79,11 @@ def _ensure_style_header(theme_dir: str, requirements: dict, config: dict = None
         config: WordPress configuration dict
     """
     config = config or {}
-    style_path = os.path.join(theme_dir, "style.css")
+    # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
+    # This handles cases where paths are passed with Windows-style separators on any platform
+    normalized_dir = str(theme_dir).replace('\\', '/')
+    theme_path = Path(normalized_dir)
+    style_path = theme_path / "style.css"
     theme_name = (requirements.get("theme_display_name")
                   or requirements.get("theme_name") or "WPGen Theme")
 
@@ -128,17 +132,15 @@ Version: 0.1.0
 Text Domain: {text_domain}
 */"""
 
-    if not os.path.exists(style_path):
-        with open(style_path, "w", encoding="utf-8") as f:
-            f.write(header + "\n\n/* Add theme styles below */\n")
+    if not style_path.exists():
+        style_path.write_text(header + "\n\n/* Add theme styles below */\n", encoding="utf-8")
         return
 
-    original = open(style_path, "r", encoding="utf-8", errors="ignore").read()
+    original = style_path.read_text(encoding="utf-8", errors="ignore")
     trimmed = original.lstrip()
     has_header = trimmed.startswith("/*") and "Theme Name:" in trimmed.split("*/", 1)[0]
     if not has_header:
-        with open(style_path, "w", encoding="utf-8") as f:
-            f.write(header + "\n\n" + original)
+        style_path.write_text(header + "\n\n" + original, encoding="utf-8")
 
 
 def _first_hex(color_scheme: str | None, fallback: str = "#0f172a") -> str:
@@ -180,8 +182,12 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
         logger.warning("PIL (Pillow) not installed. Skipping screenshot generation.")
         return
 
-    shot_path = os.path.join(theme_dir, "screenshot.png")
-    if os.path.exists(shot_path):
+    # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
+    # This handles cases where paths are passed with Windows-style separators on any platform
+    normalized_dir = str(theme_dir).replace('\\', '/')
+    theme_path = Path(normalized_dir)
+    shot_path = theme_path / "screenshot.png"
+    if shot_path.exists():
         return
 
     # Try to use first uploaded image as screenshot
@@ -197,12 +203,13 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
             else:
                 src = img_data
 
-            # Verify path exists
-            if not os.path.exists(src):
+            # Verify path exists - normalize and use Path for cross-platform compatibility
+            src_path = Path(str(src).replace('\\', '/'))
+            if not src_path.exists():
                 logger.warning(f"Image path does not exist: {src}")
                 raise FileNotFoundError(f"Image not found: {src}")
 
-            with Image.open(src) as im:
+            with Image.open(src_path) as im:
                 im = im.convert("RGB")
                 canvas = Image.new("RGB", (1200, 900), (247, 248, 250))
                 r = im.copy()
@@ -211,7 +218,7 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
                 y = (900 - r.height) // 2
                 canvas.paste(r, (x, y))
                 canvas.save(shot_path, format="PNG", optimize=True)
-                logger.info(f"Generated screenshot from uploaded image: {os.path.basename(src)}")
+                logger.info(f"Generated screenshot from uploaded image: {src_path.name}")
                 return
         except Exception as e:
             logger.warning(f"Could not use uploaded image for screenshot: {e}. Generating placeholder instead.")
@@ -259,7 +266,8 @@ class WordPressGenerator:
             config: WordPress configuration from config.yaml
         """
         self.llm_provider = llm_provider
-        self.output_dir = Path(output_dir)
+        # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
+        self.output_dir = Path(str(output_dir).replace('\\', '/'))
         self.config = config or {}
         self.safe_mode = self.config.get("safe_mode", False)
 
