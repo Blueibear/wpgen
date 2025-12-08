@@ -13,6 +13,7 @@ from typing import Any
 
 from ..llm.base import BaseLLMProvider
 from ..utils.code_validator import (
+    clean_generated_code,
     generate_plugin_compatibility_layer,
     get_fallback_functions_php,
     get_fallback_template,
@@ -763,6 +764,8 @@ The theme should look modern, professional, and visually impressive when activat
             css_code = self.llm_provider.generate_code(
                 description, "css", context, images=self.design_images
             )
+            # CRITICAL: Clean LLM output to remove markdown fences and explanatory text
+            css_code = clean_generated_code(css_code, 'css')
             full_css = header + css_code
 
             style_file = theme_dir / "style.css"
@@ -871,6 +874,10 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                 description, "php", context, images=self.design_images
             )
 
+            # CRITICAL: Clean LLM output FIRST before any special handling
+            # This removes markdown fences and explanatory text
+            php_code = clean_generated_code(php_code, 'php')
+
             # Ensure PHP opening tag
             if not php_code.strip().startswith("<?php"):
                 php_code = "<?php\n" + php_code
@@ -948,6 +955,11 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
             fallback_code: Optional fallback code if validation fails
         """
         from ..utils.code_validator import validate_and_repair_php_file
+
+        # CRITICAL: Clean LLM output FIRST to remove markdown fences, explanatory text,
+        # and invisible Unicode characters. This must happen BEFORE any other processing.
+        php_code = clean_generated_code(php_code, 'php')
+        logger.debug(f"Cleaned LLM output for {filename}")
 
         # Ensure PHP opening tag
         if not php_code.strip().startswith("<?php") and not php_code.strip().startswith("<!DOCTYPE"):
@@ -1250,7 +1262,12 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
                 description, "php", context, images=self.design_images
             )
 
+            # CRITICAL: Clean LLM output FIRST before any special handling
+            # This removes markdown fences and explanatory text before we check for DOCTYPE
+            php_code = clean_generated_code(php_code, 'php')
+
             # Special handling for header - might start with <!DOCTYPE
+            # Now that output is cleaned, this check works correctly
             if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith(
                 "<?php"
             ):
