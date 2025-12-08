@@ -639,9 +639,15 @@ class PHPValidator:
             logger.warning("PHP CLI not available, using Python-based validation")
             return self._python_based_validation(php_code, filename)
 
-        # Note: Backslash sanitization happens earlier in validate_and_fix_php()
-        # via remove_stray_backslashes() which now handles \' and \" patterns.
-        # The code received here should already be sanitized.
+        # CRITICAL FIX: Apply backslash sanitization RIGHT BEFORE linting
+        # This ensures that no stray backslashes like \' reach the temp lint file
+        # Must be done after all concatenation, immediately before writing temp file
+        php_code, backslash_count = remove_stray_backslashes(php_code)
+        if backslash_count > 0:
+            logger.debug(f"Sanitized {backslash_count} stray backslash(es) before linting {filename}")
+
+        # Temporary logging to verify sanitization
+        logger.debug("Sanitized php_code preview: %s", php_code[:200])
 
         # Use PHP -l for syntax checking
         # This works correctly with mixed PHP + HTML templates

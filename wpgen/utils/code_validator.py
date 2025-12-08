@@ -15,6 +15,7 @@ from .php_validation import (
     validate_and_fix_php,
     clean_llm_output,
     PHPValidator,
+    remove_stray_backslashes,
 )
 
 logger = get_logger(__name__)
@@ -156,6 +157,12 @@ class CodeValidator:
             else:
                 logger.warning(warning_msg)
                 return True, warning_msg, True
+
+        # CRITICAL FIX: Apply backslash sanitization RIGHT BEFORE linting
+        php_code, backslash_count = remove_stray_backslashes(php_code)
+        if backslash_count > 0:
+            logger.debug(f"Sanitized {backslash_count} stray backslash(es) before linting")
+        logger.debug("Sanitized php_code preview: %s", php_code[:200])
 
         # Create temporary file with PHP code
         try:
@@ -304,6 +311,12 @@ def validate_php_syntax(php_code: str) -> tuple[bool, str | None]:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         logger.warning("PHP command not available, skipping syntax validation")
         return True, None
+
+    # CRITICAL FIX: Apply backslash sanitization RIGHT BEFORE linting
+    php_code, backslash_count = remove_stray_backslashes(php_code)
+    if backslash_count > 0:
+        logger.debug(f"Sanitized {backslash_count} stray backslash(es) before linting")
+    logger.debug("Sanitized php_code preview: %s", php_code[:200])
 
     # Create temporary file with PHP code
     try:
