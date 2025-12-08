@@ -156,9 +156,9 @@ Requirements:
                 code = self.generate(prompt_text, system_prompt)
                 logger.info(f"Generated {file_type} code successfully")
 
-            # Clean up any markdown code blocks if present
-            code = code.replace("```php", "").replace("```css", "").replace("```javascript", "")
-            code = code.replace("```", "").strip()
+            # Clean up markdown and explanatory text using comprehensive cleaner
+            from ..utils.code_validator import clean_generated_code
+            code = clean_generated_code(code, file_type)
 
             return code
 
