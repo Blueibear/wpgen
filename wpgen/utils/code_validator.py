@@ -1725,8 +1725,8 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
 
     This function performs aggressive cleaning to prevent syntax errors:
     1. Removes ALL stray backslashes except valid PHP escapes
-    2. Converts \' to '
-    3. Converts \" to "
+    2. Converts \' to ' and \" to "
+    3. Normalizes common WordPress function calls (date, bloginfo, etc.)
     4. Removes \ before HTML tags or whitespace
     5. Removes duplicated <footer> sections (keeps only first)
     6. Ensures exactly one closing </body> and </html>
@@ -1739,6 +1739,21 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
     """
     cleanups = []
     original_code = php_code
+
+    # Step 0: Footer-specific WordPress function sanitization
+    # Fix common LLM errors in copyright lines
+    before = php_code
+    # Normalize date() calls: date(\'Y\') -> date('Y')
+    php_code = re.sub(r"date\(\\*'Y'\\*\)", "date('Y')", php_code)
+    php_code = re.sub(r'date\(\\*"Y"\\*\)', "date('Y')", php_code)
+    # Normalize bloginfo() calls: bloginfo(\'name\') -> bloginfo('name')
+    php_code = re.sub(r"bloginfo\(\\*'name'\\*\)", "bloginfo('name')", php_code)
+    php_code = re.sub(r'bloginfo\(\\*"name"\\*\)', "bloginfo('name')", php_code)
+    # Also handle other common bloginfo parameters
+    php_code = re.sub(r"bloginfo\(\\*'description'\\*\)", "bloginfo('description')", php_code)
+    php_code = re.sub(r"bloginfo\(\\*'url'\\*\)", "bloginfo('url')", php_code)
+    if php_code != before:
+        cleanups.append("Normalized WordPress function calls (date, bloginfo) to remove backslash escaping")
 
     # Step 1: Remove backslashes before quotes (convert \' to ' and \" to ")
     # But preserve valid PHP escape sequences in strings

@@ -223,7 +223,12 @@ def detect_stray_backslashes(code: str) -> tuple[bool, list[str]]:
 
 
 def remove_stray_backslashes(code: str) -> tuple[str, int]:
-    """Remove stray backslashes from code (excluding valid escape sequences and namespaces).
+    r"""Remove stray backslashes from code (excluding valid escape sequences and namespaces).
+
+    This function removes common LLM-generated backslash errors:
+    - Escaped quotes in PHP code: date(\'Y\') -> date('Y')
+    - Backslashes before HTML tags: \< -> <
+    - Backslashes before whitespace and punctuation
 
     Args:
         code: Code string to clean
@@ -232,6 +237,12 @@ def remove_stray_backslashes(code: str) -> tuple[str, int]:
         Tuple of (cleaned_code, number_of_backslashes_removed)
     """
     original = code
+
+    # CRITICAL FIX: Remove escaped quotes inside PHP code
+    # This fixes patterns like: date(\'Y\'), bloginfo(\'name\'), etc.
+    # These are very common LLM errors that cause "unexpected token \" in PHP
+    code = re.sub(r"\\'", "'", code)  # \' to '
+    code = re.sub(r'\\"', '"', code)  # \" to "
 
     # Replace obvious stray backslashes (e.g., "\ " or "\<" or "\>")
     # These are common LLM generation errors
@@ -244,6 +255,8 @@ def remove_stray_backslashes(code: str) -> tuple[str, int]:
     code = re.sub(r'\\\)', ')', code)  # Backslash after paren
     code = re.sub(r'\\\{', '{', code)  # Backslash before brace
     code = re.sub(r'\\\}', '}', code)  # Backslash after brace
+    code = re.sub(r'\\\[', '[', code)  # Backslash before bracket
+    code = re.sub(r'\\\]', ']', code)  # Backslash after bracket
 
     # Count removals
     removed = len(original) - len(code)
@@ -606,8 +619,17 @@ class PHPValidator:
     def validate_php_syntax(self, php_code: str, filename: str = "generated.php") -> tuple[bool, str | None]:
         """Validate PHP syntax using PHP CLI if available.
 
+        This method handles both pure PHP files and mixed PHP + HTML templates:
+        - Pure PHP: Files starting with <?php
+        - Mixed templates: HTML with embedded PHP blocks (header.php, footer.php, etc.)
+        - HTML-only: Templates with no PHP (rare, but valid)
+
+        The validation does NOT wrap content in <?php ?> blocks, as this would
+        break mixed HTML+PHP templates. The `php -l` command correctly handles
+        mixed content - it only validates PHP blocks and ignores HTML.
+
         Args:
-            php_code: PHP code to validate
+            php_code: PHP code to validate (may contain HTML)
             filename: Filename for error reporting
 
         Returns:
@@ -617,7 +639,12 @@ class PHPValidator:
             logger.warning("PHP CLI not available, using Python-based validation")
             return self._python_based_validation(php_code, filename)
 
+        # Note: Backslash sanitization happens earlier in validate_and_fix_php()
+        # via remove_stray_backslashes() which now handles \' and \" patterns.
+        # The code received here should already be sanitized.
+
         # Use PHP -l for syntax checking
+        # This works correctly with mixed PHP + HTML templates
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
                 f.write(php_code)
