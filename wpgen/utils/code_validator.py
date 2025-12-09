@@ -393,7 +393,10 @@ def remove_nonexistent_requires(php_code: str, theme_dir: Path | None = None) ->
 
 
 def clean_generated_code(code: str, file_type: str) -> str:
-    """Clean generated code by removing markdown and explanatory text.
+    """Clean generated code by removing markdown, backslashes, and other LLM artifacts.
+
+    This is the PRIMARY code cleaning function that should be called on all LLM output
+    BEFORE any validation or writing to disk.
 
     Args:
         code: Generated code string
@@ -401,26 +404,453 @@ def clean_generated_code(code: str, file_type: str) -> str:
 
     Returns:
         Cleaned code
+
+    Raises:
+        ValueError: If code contains unevaluated Python expressions
     """
-    # Use the comprehensive cleaner from php_validation module
+    # STEP 1: Use the comprehensive cleaner from php_validation module
     code = clean_llm_output(code, file_type)
 
-    # Additional PHP-specific validation
+    # STEP 2: Remove stray backslashes (common LLM error)
+    # This fixes patterns like: date(\'Y\'), bloginfo(\'name\'), etc.
+    code, backslashes_removed = remove_stray_backslashes(code)
+    if backslashes_removed > 0:
+        logger.info(f"Removed {backslashes_removed} stray backslash(es) from generated code")
+
+    # STEP 3: Additional PHP-specific validation and cleaning
     if file_type == 'php':
-        # Check for Python-like placeholders that weren't evaluated
-        # We check for both bracket notation and dot notation that might be left over
+        # 3a: Check for Python-like placeholders that weren't evaluated
         # Use regex to catch {theme_name}, {theme_name.replace...}, {requirements...}
         if re.search(r'\{theme_name[\.\}]|\{requirements', code):
             logger.error("CRITICAL: Found unevaluated Python expression in generated PHP code!")
             logger.error(f"Code snippet: {code[:200]}")
             raise ValueError("Generated code contains unevaluated Python expressions")
 
-        # Check for markdown remnants
+        # 3b: Check for markdown remnants
         if '```' in code:
             logger.warning("Found markdown code fences in PHP, removing")
             code = code.replace('```php', '').replace('```', '')
 
+        # 3c: Fix HTML-inside-PHP blocks (common LLM error)
+        code = fix_html_inside_php_blocks(code)
+
+        # 3d: Remove HTML comments inside PHP blocks
+        code = remove_html_comments_in_php(code)
+
+        # 3e: Fix malformed heredocs (common LLM error)
+        code = fix_malformed_heredocs(code)
+
+        # 3f: Normalize PHP opening tags (fix things like <? php)
+        code = normalize_php_tags(code)
+
     return code.strip()
+
+
+def fix_html_inside_php_blocks(code: str) -> str:
+    """Fix HTML tags that are incorrectly placed inside PHP blocks.
+
+    Transforms patterns like:
+        <?php <div class="foo"> ?>
+    Into:
+        <div class="foo">
+        <?php ?>
+
+    Or removes them if they would create invalid PHP.
+
+    Args:
+        code: PHP code to fix
+
+    Returns:
+        Fixed code
+    """
+    # Pattern: <?php followed by HTML tag without proper PHP code between
+    # This catches: <?php <div>, <?php <span class="x">, etc.
+    pattern = r'<\?php\s*(<[a-zA-Z][^>]*>)\s*\?>'
+
+    def replace_html_in_php(match):
+        html_tag = match.group(1)
+        # Move the HTML tag outside the PHP block
+        return html_tag
+
+    fixed_code = re.sub(pattern, replace_html_in_php, code)
+
+    # Also fix cases where HTML is at the start of a PHP block
+    # Pattern: <?php <div>some content
+    pattern2 = r'<\?php\s+(<[a-zA-Z][^>]*>)([^<]*)'
+
+    def replace_html_at_start(match):
+        html_tag = match.group(1)
+        rest = match.group(2)
+        # If rest contains PHP code (has $ or function calls), keep PHP block
+        if '$' in rest or '(' in rest:
+            return f'{html_tag}\n<?php {rest}'
+        else:
+            return f'{html_tag}{rest}'
+
+    fixed_code = re.sub(pattern2, replace_html_at_start, fixed_code)
+
+    if fixed_code != code:
+        logger.info("Fixed HTML tags incorrectly placed inside PHP blocks")
+
+    return fixed_code
+
+
+def remove_html_comments_in_php(code: str) -> str:
+    """Remove HTML comments that are incorrectly placed inside PHP blocks.
+
+    Args:
+        code: PHP code to clean
+
+    Returns:
+        Code with HTML comments removed from PHP blocks
+    """
+    # Find PHP blocks and remove HTML comments from them
+    def clean_php_block(match):
+        block = match.group(0)
+        # Remove HTML comments from inside PHP blocks
+        cleaned = re.sub(r'<!--.*?-->', '', block, flags=re.DOTALL)
+        return cleaned
+
+    # Process each PHP block
+    cleaned_code = re.sub(r'<\?php.*?\?>', clean_php_block, code, flags=re.DOTALL)
+
+    if cleaned_code != code:
+        logger.info("Removed HTML comments from inside PHP blocks")
+
+    return cleaned_code
+
+
+def fix_malformed_heredocs(code: str) -> str:
+    """Fix malformed heredoc/nowdoc syntax in PHP.
+
+    Common LLM errors:
+    - Missing closing identifier
+    - Whitespace before closing identifier
+    - Invalid identifier names
+
+    Args:
+        code: PHP code to fix
+
+    Returns:
+        Fixed code
+    """
+    # Check for unclosed heredocs: <<<EOF without matching EOF;
+    heredoc_pattern = r'<<<\s*([\'"]?)([A-Za-z_][A-Za-z0-9_]*)\1\s*\n'
+    matches = list(re.finditer(heredoc_pattern, code))
+
+    for match in matches:
+        identifier = match.group(2)
+        # Check if closing identifier exists
+        closing_pattern = rf'^\s*{identifier}\s*;?\s*$'
+        after_heredoc = code[match.end():]
+
+        if not re.search(closing_pattern, after_heredoc, re.MULTILINE):
+            # Heredoc is not closed - convert to regular string
+            logger.warning(f"Found unclosed heredoc <<<{identifier}, converting to string")
+            # Find the heredoc content and convert to a quoted string
+            start = match.start()
+            # Find next PHP tag or end of file
+            next_php = code.find('?>', match.end())
+            if next_php == -1:
+                next_php = len(code)
+
+            heredoc_content = code[match.end():next_php]
+            # Escape and convert to a regular string
+            escaped_content = heredoc_content.replace("'", "\\'").strip()
+            code = code[:start] + f"'{escaped_content}'" + code[next_php:]
+
+    return code
+
+
+def normalize_php_tags(code: str) -> str:
+    """Normalize PHP opening/closing tags.
+
+    Fixes common LLM errors:
+    - <? php (space in tag)
+    - <?PHP (uppercase)
+    - Orphan ?> without opening <?php
+
+    Args:
+        code: PHP code to normalize
+
+    Returns:
+        Normalized code
+    """
+    # Fix space in opening tag: <? php -> <?php
+    code = re.sub(r'<\?\s+php', '<?php', code, flags=re.IGNORECASE)
+
+    # Normalize case: <?PHP -> <?php
+    code = re.sub(r'<\?PHP', '<?php', code)
+
+    # Fix orphan closing tags at the start of file
+    code = re.sub(r'^\s*\?>\s*', '', code)
+
+    return code
+
+
+def normalize_php_output(
+    php_code: str,
+    filename: str,
+    theme_name: str = "wpgen-theme"
+) -> tuple[str, list[str]]:
+    """Centralized PHP normalization pipeline for all generated PHP files.
+
+    This is the SINGLE POINT OF ENTRY for normalizing PHP output before writing
+    to disk. All generators should use this function.
+
+    The pipeline:
+    1. Clean LLM artifacts (markdown, explanatory text, invisible Unicode)
+    2. Remove stray backslashes and fix escape sequences
+    3. Fix HTML-inside-PHP blocks
+    4. Remove HTML comments from PHP blocks
+    5. Fix malformed heredocs
+    6. Normalize PHP tags
+    7. Validate and replace unfilled placeholders
+    8. Ensure structural requirements (get_header, get_footer, loop)
+
+    Args:
+        php_code: Raw PHP code from LLM or template
+        filename: Name of the file being processed (for context-aware fixes)
+        theme_name: Theme name for placeholder replacement
+
+    Returns:
+        Tuple of (normalized_code, list_of_repairs_made)
+    """
+    repairs = []
+
+    # STEP 1: Clean LLM output (markdown, explanatory text, invisible Unicode)
+    try:
+        php_code = clean_generated_code(php_code, 'php')
+    except ValueError as e:
+        # Python expression found - this is a critical error
+        repairs.append(f"CRITICAL: {str(e)}")
+        # Try to fix by returning minimal fallback
+        php_code = get_minimal_fallback(filename, theme_name)
+        repairs.append(f"Used minimal fallback for {filename}")
+        return php_code, repairs
+
+    # STEP 2: Validate and replace unfilled placeholders
+    php_code, placeholder_repairs = validate_and_fix_placeholders(php_code, theme_name)
+    repairs.extend(placeholder_repairs)
+
+    # STEP 3: Validate structural requirements for templates
+    if filename in ['index.php', 'front-page.php', 'single.php', 'page.php', 'archive.php', 'search.php']:
+        php_code, structural_repairs = ensure_template_structure(php_code, filename, theme_name)
+        repairs.extend(structural_repairs)
+
+    # STEP 4: Final PHP syntax validation (if PHP CLI available)
+    syntax_valid, syntax_error = validate_php_syntax(php_code)
+    if not syntax_valid:
+        repairs.append(f"PHP syntax error detected: {syntax_error}")
+        # Try to fix common issues
+        php_code, fix_repairs = attempt_php_syntax_fixes(php_code)
+        repairs.extend(fix_repairs)
+
+        # Revalidate
+        syntax_valid, syntax_error = validate_php_syntax(php_code)
+        if not syntax_valid:
+            repairs.append(f"Could not fix PHP syntax, using minimal fallback")
+            php_code = get_minimal_fallback(filename, theme_name)
+
+    return php_code, repairs
+
+
+def validate_and_fix_placeholders(php_code: str, theme_name: str) -> tuple[str, list[str]]:
+    """Validate and fix unfilled placeholders in PHP code.
+
+    Detects and replaces patterns like:
+    - {theme_name} -> actual theme name
+    - '{theme_name}' -> 'actual-theme-name'
+    - __THEME_NAME__ -> actual theme name
+
+    Args:
+        php_code: PHP code to check
+        theme_name: Theme name to use for replacements
+
+    Returns:
+        Tuple of (fixed_code, list_of_repairs)
+    """
+    repairs = []
+    original_code = php_code
+    theme_slug = theme_name.replace('-', '_')
+
+    # Pattern 1: Literal {theme_name} placeholder (should have been f-string substituted)
+    if '{theme_name}' in php_code:
+        # In esc_html_e context, this is the text domain
+        php_code = php_code.replace("'{theme_name}'", f"'{theme_name}'")
+        # In other contexts, replace directly
+        php_code = re.sub(r'(?<![\'"])\{theme_name\}(?![\'"])', theme_name, php_code)
+        repairs.append(f"Replaced {{theme_name}} placeholders with '{theme_name}'")
+
+    # Pattern 2: __THEME_NAME__ style placeholders
+    if '__THEME_NAME__' in php_code:
+        php_code = php_code.replace('__THEME_NAME__', theme_name)
+        repairs.append(f"Replaced __THEME_NAME__ with '{theme_name}'")
+
+    # Pattern 3: __THEME_SLUG__ style placeholders (for function names)
+    if '__THEME_SLUG__' in php_code:
+        php_code = php_code.replace('__THEME_SLUG__', theme_slug)
+        repairs.append(f"Replaced __THEME_SLUG__ with '{theme_slug}'")
+
+    # Pattern 4: THEMESLUG in function names
+    if 'THEMESLUG' in php_code:
+        php_code = php_code.replace('THEMESLUG', theme_slug)
+        repairs.append(f"Replaced THEMESLUG with '{theme_slug}'")
+
+    if php_code != original_code:
+        logger.info(f"Fixed {len(repairs)} placeholder issue(s)")
+
+    return php_code, repairs
+
+
+def ensure_template_structure(
+    php_code: str,
+    filename: str,
+    theme_name: str
+) -> tuple[str, list[str]]:
+    """Ensure WordPress template files have required structural components.
+
+    Required components:
+    - get_header() call
+    - get_footer() call
+    - WordPress loop (for index.php, front-page.php, archive.php)
+    - Proper HTML structure
+
+    Args:
+        php_code: PHP code to validate
+        filename: Template filename
+        theme_name: Theme name for fallback content
+
+    Returns:
+        Tuple of (fixed_code, list_of_repairs)
+    """
+    repairs = []
+    modified = False
+
+    # Check for get_header()
+    has_get_header = 'get_header()' in php_code or 'get_header(' in php_code
+    if not has_get_header:
+        # Insert get_header() at the beginning
+        if php_code.strip().startswith('<?php'):
+            php_code = php_code.replace('<?php', '<?php\nget_header();\n?>\n', 1)
+        else:
+            php_code = '<?php get_header(); ?>\n' + php_code
+        repairs.append(f"Added missing get_header() to {filename}")
+        modified = True
+
+    # Check for get_footer()
+    has_get_footer = 'get_footer()' in php_code or 'get_footer(' in php_code
+    if not has_get_footer:
+        # Append get_footer() at the end
+        php_code = php_code.rstrip() + '\n<?php get_footer(); ?>\n'
+        repairs.append(f"Added missing get_footer() to {filename}")
+        modified = True
+
+    # Check for WordPress loop in templates that need it
+    needs_loop = filename in ['index.php', 'front-page.php', 'archive.php', 'search.php']
+    has_loop = 'have_posts()' in php_code and 'the_post()' in php_code
+
+    if needs_loop and not has_loop:
+        # Check if there's a WP_Query (alternative to main loop)
+        has_wp_query = 'WP_Query' in php_code or 'new WP_Query' in php_code
+
+        if not has_wp_query:
+            # Insert a basic WordPress loop
+            loop_code = '''
+<div class="content-area">
+    <?php if ( have_posts() ) : ?>
+        <?php while ( have_posts() ) : the_post(); ?>
+            <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                <div class="entry-content">
+                    <?php the_content(); ?>
+                </div>
+            </article>
+        <?php endwhile; ?>
+        <?php the_posts_pagination(); ?>
+    <?php else : ?>
+        <article class="no-content">
+            <h2><?php esc_html_e( 'No Content Found', '%s' ); ?></h2>
+            <p><?php esc_html_e( 'Add some content to see it displayed here.', '%s' ); ?></p>
+        </article>
+    <?php endif; ?>
+</div>
+''' % (theme_name, theme_name)
+
+            # Find where to insert (after get_header, before get_footer)
+            footer_pos = php_code.find('get_footer()')
+            if footer_pos > 0:
+                # Find the <?php before get_footer
+                php_tag_pos = php_code.rfind('<?php', 0, footer_pos)
+                if php_tag_pos > 0:
+                    php_code = php_code[:php_tag_pos] + loop_code + '\n' + php_code[php_tag_pos:]
+                else:
+                    php_code = php_code[:footer_pos] + loop_code + '\n<?php ' + php_code[footer_pos:]
+            else:
+                # No footer found, append before end
+                php_code = php_code.rstrip() + '\n' + loop_code
+
+            repairs.append(f"Added missing WordPress loop to {filename}")
+            modified = True
+
+    if modified:
+        logger.info(f"Fixed structural issues in {filename}: {', '.join(repairs)}")
+
+    return php_code, repairs
+
+
+def attempt_php_syntax_fixes(php_code: str) -> tuple[str, list[str]]:
+    """Attempt to fix common PHP syntax errors.
+
+    Args:
+        php_code: PHP code with syntax errors
+
+    Returns:
+        Tuple of (fixed_code, list_of_repairs)
+    """
+    repairs = []
+
+    # Fix 1: Unbalanced braces
+    open_braces = php_code.count('{')
+    close_braces = php_code.count('}')
+    if open_braces > close_braces:
+        # Add missing closing braces
+        missing = open_braces - close_braces
+        php_code = php_code.rstrip() + '\n' + ('}' * missing)
+        repairs.append(f"Added {missing} missing closing brace(s)")
+    elif close_braces > open_braces:
+        # Remove extra closing braces from the end
+        extra = close_braces - open_braces
+        for _ in range(extra):
+            last_brace = php_code.rfind('}')
+            if last_brace > 0:
+                php_code = php_code[:last_brace] + php_code[last_brace+1:]
+        repairs.append(f"Removed {extra} extra closing brace(s)")
+
+    # Fix 2: Unbalanced parentheses
+    open_parens = php_code.count('(')
+    close_parens = php_code.count(')')
+    if open_parens > close_parens:
+        missing = open_parens - close_parens
+        php_code = php_code.rstrip() + (')' * missing)
+        repairs.append(f"Added {missing} missing closing parenthesis(es)")
+
+    # Fix 3: Missing semicolons before closing PHP tag
+    php_code = re.sub(r'([^;\s\{\}])\s*\?>', r'\1; ?>', php_code)
+
+    # Fix 4: Double semicolons
+    before = php_code
+    php_code = re.sub(r';{2,}', ';', php_code)
+    if php_code != before:
+        repairs.append("Fixed double semicolons")
+
+    # Fix 5: Empty PHP blocks (<?php ?> or <?php ; ?>)
+    before = php_code
+    php_code = re.sub(r'<\?php\s*;?\s*\?>', '', php_code)
+    if php_code != before:
+        repairs.append("Removed empty PHP blocks")
+
+    return php_code, repairs
 
 
 def validate_and_repair_php_file(
@@ -1449,7 +1879,7 @@ function {safe_function_name}_pagination() {{
 
 
 def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
-    """FINAL PASS sanitizer that removes ALL illegal backslashes and malformed escapes.
+    r"""FINAL PASS sanitizer that removes ALL illegal backslashes and malformed escapes.
 
     This runs AFTER the file is written to disk, as the last line of defense against
     malformed syntax. It's more aggressive than the initial sanitizer.
@@ -1460,7 +1890,7 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     3. Repairs malformed PHP blocks (mismatched <?php and ?>)
     4. Logs all removals for debugging
 
-    Valid escapes that are preserved: \n, \r, \t, \\, \', \", \$
+    Valid escapes that are preserved: \\n, \\r, \\t, \\\\, \\', \\", \\$
 
     Args:
         php_code: PHP code to sanitize
@@ -1774,13 +2204,13 @@ add_action( 'widgets_init', '{safe_name}_widgets_init' );
 
 
 def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
-    """Sanitize footer.php to remove malformed syntax and fix common LLM errors.
+    r"""Sanitize footer.php to remove malformed syntax and fix common LLM errors.
 
     This function performs aggressive cleaning to prevent syntax errors:
     1. Removes ALL stray backslashes except valid PHP escapes
-    2. Converts \' to ' and \" to "
+    2. Converts \\' to ' and \\" to "
     3. Normalizes common WordPress function calls (date, bloginfo, etc.)
-    4. Removes \ before HTML tags or whitespace
+    4. Removes \\ before HTML tags or whitespace
     5. Removes duplicated <footer> sections (keeps only first)
     6. Ensures exactly one closing </body> and </html>
 

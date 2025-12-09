@@ -19,6 +19,7 @@ from ..utils.code_validator import (
     get_fallback_template,
     ensure_base_layout_enqueue,
     get_minimal_fallback,
+    normalize_php_output,
     remove_nonexistent_requires,
     repair_wordpress_code,
     repair_footer_php,
@@ -139,10 +140,43 @@ Text Domain: {text_domain}
         return
 
     original = style_path.read_text(encoding="utf-8", errors="ignore")
+
+    # CRITICAL FIX: Strip ANY content before the first /* comment
+    # LLMs sometimes generate explanatory text before CSS that would cause WordPress to reject the theme
+    first_comment_pos = original.find('/*')
+    if first_comment_pos > 0:
+        # There's content before the first comment - this is invalid for style.css
+        # Strip it and log a warning
+        stripped_content = original[:first_comment_pos].strip()
+        if stripped_content:
+            logger.warning(f"Stripped invalid content before style.css header: '{stripped_content[:50]}...'")
+        original = original[first_comment_pos:]
+
     trimmed = original.lstrip()
-    has_header = trimmed.startswith("/*") and "Theme Name:" in trimmed.split("*/", 1)[0]
-    if not has_header:
+
+    # Check if there's a valid WordPress theme header
+    has_valid_header = False
+    if trimmed.startswith("/*"):
+        # Extract the first comment block
+        first_comment_end = trimmed.find("*/")
+        if first_comment_end > 0:
+            first_comment = trimmed[:first_comment_end]
+            # Check for required Theme Name field
+            has_valid_header = "Theme Name:" in first_comment
+
+    if not has_valid_header:
+        # No valid header found - prepend our header
+        # Also strip any malformed header comment that might exist
+        if trimmed.startswith("/*"):
+            # There's a comment but it's not a valid theme header
+            first_comment_end = trimmed.find("*/")
+            if first_comment_end > 0:
+                # Remove the invalid header comment
+                original = trimmed[first_comment_end + 2:].lstrip()
+                logger.warning("Removed invalid/incomplete theme header from style.css")
+
         style_path.write_text(header + "\n\n" + original, encoding="utf-8")
+        logger.info("Injected valid WordPress theme header at top of style.css")
 
 
 def _first_hex(color_scheme: str | None, fallback: str = "#0f172a") -> str:
@@ -958,6 +992,12 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
     ) -> None:
         """Validate PHP code and write to file with comprehensive validation and fallback.
 
+        This method implements a multi-stage validation pipeline:
+        1. Centralized normalization (clean, fix backslashes, fix HTML-in-PHP, etc.)
+        2. Structural validation (get_header, get_footer, loop)
+        3. PHP syntax validation with php -l
+        4. Fallback to safe templates if validation fails
+
         Args:
             theme_dir: Theme directory path
             filename: Name of the PHP file
@@ -966,19 +1006,39 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
         """
         from ..utils.code_validator import validate_and_repair_php_file
 
-        # CRITICAL: Clean LLM output FIRST to remove markdown fences, explanatory text,
-        # and invisible Unicode characters. This must happen BEFORE any other processing.
-        php_code = clean_generated_code(php_code, 'php')
-        logger.debug(f"Cleaned LLM output for {filename}")
-
-        # Ensure PHP opening tag
-        if not php_code.strip().startswith("<?php") and not php_code.strip().startswith("<!DOCTYPE"):
-            php_code = "<?php\n" + php_code
-
         # Get theme name from theme_dir
         theme_name = theme_dir.name
 
-        # Guard against empty/structureless template output that would render blank pages
+        # ==============================================
+        # STAGE 1: CENTRALIZED NORMALIZATION PIPELINE
+        # This is the FIRST line of defense against invalid PHP
+        # ==============================================
+        logger.info(f"🔧 STAGE 1: Running centralized normalization on {filename}")
+
+        try:
+            php_code, normalization_repairs = normalize_php_output(php_code, filename, theme_name)
+
+            if normalization_repairs:
+                logger.info(f"📋 Normalization repairs for {filename}:")
+                for repair in normalization_repairs:
+                    logger.info(f"  ✓ {repair}")
+        except Exception as e:
+            logger.error(f"❌ Normalization failed for {filename}: {e}")
+            if fallback_code:
+                logger.warning(f"→ Using fallback due to normalization failure")
+                php_code = fallback_code
+            else:
+                php_code = get_minimal_fallback(filename, theme_name)
+                logger.warning(f"→ Using minimal fallback due to normalization failure")
+
+        # Ensure PHP opening tag (if not already present from normalization)
+        if not php_code.strip().startswith("<?php") and not php_code.strip().startswith("<!DOCTYPE"):
+            php_code = "<?php\n" + php_code
+
+        # ==============================================
+        # STAGE 2: STRUCTURAL VALIDATION
+        # Check for critical markers and use fallback if missing
+        # ==============================================
         if filename in {"front-page.php", "index.php"}:
             critical_markers = ["get_header", "get_footer", "have_posts"]
             missing_markers = [marker for marker in critical_markers if marker not in php_code]
