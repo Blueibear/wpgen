@@ -969,6 +969,69 @@ def validate_and_repair_php_file(
     return current_code, False, log_messages
 
 
+def validate_functions_php_no_output(php_code: str) -> tuple[bool, list[str]]:
+    """Validate that functions.php has no direct output.
+
+    functions.php should NEVER output content directly as it's loaded before headers
+    are sent. Direct output causes "headers already sent" errors and breaks WordPress.
+
+    Args:
+        php_code: PHP code to validate
+
+    Returns:
+        Tuple of (has_output, list of issues)
+    """
+    issues = []
+
+    # Remove all function/class definitions and string literals to avoid false positives
+    # We'll check for output statements that are NOT inside functions
+    lines = php_code.split('\n')
+    in_function = 0
+    in_class = 0
+    in_string = False
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+
+        # Skip comments
+        if stripped.startswith('//') or stripped.startswith('#') or stripped.startswith('/*') or stripped.startswith('*'):
+            continue
+
+        # Track function/class depth
+        if re.search(r'\bfunction\s+\w+\s*\(', stripped):
+            in_function += stripped.count('{')
+        if re.search(r'\bclass\s+\w+', stripped):
+            in_class += stripped.count('{')
+
+        # Adjust depth based on braces
+        if in_function > 0:
+            in_function += stripped.count('{') - stripped.count('}')
+        if in_class > 0:
+            in_class += stripped.count('{') - stripped.count('}')
+
+        # Only check for output when NOT inside a function or class
+        if in_function == 0 and in_class == 0:
+            # Check for direct echo/print statements
+            if re.search(r'\becho\s+', stripped) and not stripped.startswith('//'):
+                issues.append(f"Line {i}: Direct 'echo' statement outside function")
+
+            if re.search(r'\bprint\s+', stripped) and not stripped.startswith('//'):
+                issues.append(f"Line {i}: Direct 'print' statement outside function")
+
+            # Check for HTML outside PHP tags
+            if not stripped.startswith('<?') and not stripped.startswith('?>'):
+                # Check if line contains HTML tags
+                if re.search(r'<(?!php\b)[a-z]+[^>]*>', stripped, re.IGNORECASE):
+                    issues.append(f"Line {i}: HTML output outside PHP tags")
+
+            # Check for short echo tags with direct output
+            if re.search(r'<\?=', stripped):
+                issues.append(f"Line {i}: Short echo tag '<?=' with direct output")
+
+    has_output = len(issues) > 0
+    return has_output, issues
+
+
 def get_fallback_functions_php(theme_name: str) -> str:
     """Get fallback functions.php template.
 
@@ -2978,6 +3041,10 @@ def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
 def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
     """Validate and sanitize all filenames in a theme directory.
 
+    Performs two levels of validation:
+    1. Sanitizes double extensions (e.g., page.php.php -> page.php)
+    2. Validates against WordPress template hierarchy rules
+
     Args:
         theme_dir: Path to theme directory
 
@@ -2997,10 +3064,27 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
         results['errors'].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
+    # Import WordPress template hierarchy validator
+    from .template_hierarchy_validator import TemplateHierarchyValidator
+    validator = TemplateHierarchyValidator()
+
+    # Check if WooCommerce is enabled (check for woocommerce.php or functions.php with WooCommerce support)
+    woocommerce_enabled = False
+    functions_php = theme_dir / "functions.php"
+    if functions_php.exists():
+        try:
+            content = functions_php.read_text(encoding='utf-8')
+            if 'woocommerce' in content.lower():
+                woocommerce_enabled = True
+        except Exception:
+            pass
+
     # Check all files in theme directory (non-recursive for now, just top-level templates)
     for file_path in theme_dir.iterdir():
         if file_path.is_file():
             original_name = file_path.name
+
+            # Step 1: Sanitize double extensions
             sanitized_name, changes = sanitize_theme_filename(original_name)
 
             if changes:
@@ -3012,15 +3096,46 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
                     logger.warning(f"Cannot rename {original_name} to {sanitized_name}: target already exists")
                     results['errors'].append(f"Rename conflict: {original_name} → {sanitized_name} (target exists)")
                     results['valid'] = False
+                    continue
                 else:
                     try:
                         file_path.rename(new_path)
                         results['renames'].append(f"{original_name} → {sanitized_name}")
                         logger.info(f"Renamed file: {original_name} → {sanitized_name}")
+                        # Update for next check
+                        file_path = new_path
+                        original_name = sanitized_name
                     except Exception as e:
                         logger.error(f"Failed to rename {original_name}: {e}")
                         results['errors'].append(f"Failed to rename {original_name}: {str(e)}")
                         results['valid'] = False
+                        continue
+
+            # Step 2: Validate against WordPress template hierarchy
+            if original_name.endswith(('.php', '.css')):
+                is_valid, error_msg = validator.is_valid_template_name(original_name, woocommerce_enabled)
+                if not is_valid:
+                    # Try to suggest a valid name
+                    suggested_name = validator.suggest_valid_template_name(original_name)
+                    error_with_suggestion = f"{error_msg}. Suggested: {suggested_name}"
+                    results['errors'].append(error_with_suggestion)
+                    results['valid'] = False
+                    logger.error(f"Invalid WordPress template: {error_with_suggestion}")
+
+                    # Auto-fix if it's a simple case (capitalized name)
+                    if original_name != original_name.lower() and original_name.endswith('.php'):
+                        lowercase_name = original_name.lower()
+                        new_path = theme_dir / lowercase_name
+                        if not new_path.exists():
+                            try:
+                                file_path.rename(new_path)
+                                results['renames'].append(f"{original_name} → {lowercase_name} (WordPress hierarchy fix)")
+                                logger.info(f"Auto-fixed capitalized template: {original_name} → {lowercase_name}")
+                                # Remove from errors since we fixed it
+                                results['errors'].pop()
+                                results['valid'] = True
+                            except Exception as e:
+                                logger.error(f"Failed to auto-fix {original_name}: {e}")
 
     return results
 

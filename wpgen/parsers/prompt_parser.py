@@ -192,6 +192,20 @@ class PromptParser:
                     for item in requirements[field]
                 ]
 
+        # Normalize page names to lowercase, kebab-case (WordPress template naming requirement)
+        # This prevents issues like "Home.php", "About.php" which break WordPress hierarchy
+        from ..utils.template_hierarchy_validator import normalize_page_name
+        if "pages" in requirements and requirements["pages"]:
+            normalized_pages = []
+            for page in requirements["pages"]:
+                if isinstance(page, str):
+                    normalized = normalize_page_name(page)
+                    if normalized:  # Only add if normalization succeeded
+                        normalized_pages.append(normalized)
+                    else:
+                        logger.warning(f"Skipping invalid page name: '{page}'")
+            requirements["pages"] = normalized_pages
+
         # Ensure scalar string fields are actually strings (not dicts or other types)
         string_fields = ["color_scheme", "layout", "description", "theme_display_name"]
         for field in string_fields:

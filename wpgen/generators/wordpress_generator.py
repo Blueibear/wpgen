@@ -141,6 +141,19 @@ Text Domain: {text_domain}
 
     original = style_path.read_text(encoding="utf-8", errors="ignore")
 
+    # CRITICAL FIX: Strip BOM (Byte Order Mark) if present
+    # BOM can cause WordPress to fail to recognize the theme header
+    if original.startswith('\ufeff'):
+        logger.warning("Removed BOM (Byte Order Mark) from style.css")
+        original = original[1:]
+
+    # CRITICAL FIX: Strip invisible Unicode characters that may cause parsing issues
+    from ..utils.php_validation import strip_invisible_unicode
+    cleaned = strip_invisible_unicode(original)
+    if cleaned != original:
+        logger.warning("Removed invisible Unicode characters from style.css")
+        original = cleaned
+
     # CRITICAL FIX: Strip ANY content before the first /* comment
     # LLMs sometimes generate explanatory text before CSS that would cause WordPress to reject the theme
     first_comment_pos = original.find('/*')
@@ -152,6 +165,7 @@ Text Domain: {text_domain}
             logger.warning(f"Stripped invalid content before style.css header: '{stripped_content[:50]}...'")
         original = original[first_comment_pos:]
 
+    # Strip leading whitespace (but keep the content)
     trimmed = original.lstrip()
 
     # Check if there's a valid WordPress theme header
@@ -1057,6 +1071,16 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
             for repair in enqueue_repairs:
                 logger.info(f"✓ {filename}: {repair}")
 
+            # CRITICAL: Validate functions.php has no direct output
+            from ..utils.code_validator import validate_functions_php_no_output
+            has_output, output_issues = validate_functions_php_no_output(php_code)
+            if has_output:
+                logger.error(f"functions.php contains direct output (this breaks WordPress):")
+                for issue in output_issues:
+                    logger.error(f"  - {issue}")
+                logger.warning("Replacing with safe fallback functions.php")
+                php_code = fallback_code if fallback_code else get_minimal_fallback(filename, theme_name)
+
         # Determine file type for structure validation
         file_type = 'template'
         if filename == 'header.php':
@@ -1639,11 +1663,19 @@ Include:
             "404.php": "404 error page template",
         }
 
-        # Add custom page templates
+        # Add custom page templates (using WordPress-safe naming)
+        from ..utils.template_hierarchy_validator import get_page_template_filename, normalize_page_name
         for page in requirements.get("pages", []):
-            if page not in ["index", "single", "archive", "search", "404"]:
-                template_file = f"page-{page}.php"
-                templates_to_generate[template_file] = f"Custom page template for {page}"
+            # Skip core WordPress templates
+            if page not in ["index", "single", "archive", "search", "404", "home", "front-page", "page"]:
+                # Ensure page name is normalized (should already be from parser, but double-check)
+                normalized_page = normalize_page_name(page)
+                if normalized_page:
+                    template_file = get_page_template_filename(normalized_page)
+                    templates_to_generate[template_file] = f"Custom page template for {normalized_page}"
+                    logger.info(f"Adding custom page template: {template_file}")
+                else:
+                    logger.warning(f"Skipping invalid page name: '{page}'")
 
         for template_file, description in templates_to_generate.items():
             try:
@@ -3019,20 +3051,30 @@ select:focus {
             self._generate_preloader(theme_dir, requirements)
 
     def _generate_woocommerce_support(self, theme_dir: Path) -> None:
-        """Add WooCommerce support files and templates."""
-        # Create woocommerce.php template
+        """Add WooCommerce support files and templates.
+
+        Generates proper WooCommerce template hierarchy:
+        - woocommerce.php (main template wrapper)
+        - archive-product.php (shop/product archive)
+        - single-product.php (individual product)
+        - taxonomy-product_cat.php (product categories)
+        - taxonomy-product_tag.php (product tags)
+        """
+        logger.info("Generating WooCommerce template hierarchy")
+
+        # 1. Main WooCommerce wrapper template
         woo_template = """<?php
 /**
- * WooCommerce template
+ * WooCommerce Template
  *
- * This template is used for all WooCommerce pages
+ * This template is used for all WooCommerce pages as a fallback
  */
 
 get_header();
 
 if ( function_exists( 'woocommerce' ) ) :
     ?>
-    <div class="woocommerce-wrapper">
+    <div class="woocommerce-wrapper container">
         <?php woocommerce_content(); ?>
     </div>
     <?php
@@ -3042,7 +3084,247 @@ get_footer();
 """
         woo_file = theme_dir / "woocommerce.php"
         woo_file.write_text(woo_template, encoding="utf-8")
-        logger.info("Created woocommerce.php template")
+        logger.info("Created woocommerce.php")
+
+        # 2. Product archive template (shop page)
+        archive_product_template = """<?php
+/**
+ * Template Name: Product Archive
+ *
+ * The template for displaying product archives (shop page)
+ */
+
+get_header();
+?>
+
+<main id="main" class="site-main woocommerce-page">
+    <div class="container">
+        <?php
+        if ( function_exists( 'woocommerce_breadcrumb' ) ) {
+            woocommerce_breadcrumb();
+        }
+        ?>
+
+        <?php if ( have_posts() ) : ?>
+
+            <header class="woocommerce-products-header">
+                <?php if ( apply_filters( 'woocommerce_show_page_title', true ) ) : ?>
+                    <h1 class="woocommerce-products-header__title page-title"><?php woocommerce_page_title(); ?></h1>
+                <?php endif; ?>
+
+                <?php
+                /**
+                 * Hook: woocommerce_archive_description
+                 * @hooked woocommerce_taxonomy_archive_description - 10
+                 * @hooked woocommerce_product_archive_description - 10
+                 */
+                do_action( 'woocommerce_archive_description' );
+                ?>
+            </header>
+
+            <?php
+            if ( function_exists( 'woocommerce_product_loop_start' ) ) {
+                woocommerce_product_loop_start();
+            }
+
+            while ( have_posts() ) :
+                the_post();
+                /**
+                 * Hook: woocommerce_shop_loop
+                 */
+                do_action( 'woocommerce_shop_loop' );
+                wc_get_template_part( 'content', 'product' );
+            endwhile;
+
+            if ( function_exists( 'woocommerce_product_loop_end' ) ) {
+                woocommerce_product_loop_end();
+            }
+            ?>
+
+            <?php
+            /**
+             * Hook: woocommerce_after_shop_loop
+             * @hooked woocommerce_pagination - 10
+             */
+            do_action( 'woocommerce_after_shop_loop' );
+            ?>
+
+        <?php else : ?>
+
+            <?php
+            /**
+             * Hook: woocommerce_no_products_found
+             * @hooked wc_no_products_found - 10
+             */
+            do_action( 'woocommerce_no_products_found' );
+            ?>
+
+        <?php endif; ?>
+    </div>
+</main>
+
+<?php get_footer(); ?>
+"""
+        archive_product_file = theme_dir / "archive-product.php"
+        archive_product_file.write_text(archive_product_template, encoding="utf-8")
+        logger.info("Created archive-product.php")
+
+        # 3. Single product template
+        single_product_template = """<?php
+/**
+ * Template Name: Single Product
+ *
+ * The template for displaying a single product
+ */
+
+get_header();
+?>
+
+<main id="main" class="site-main woocommerce-page">
+    <div class="container">
+        <?php
+        if ( function_exists( 'woocommerce_breadcrumb' ) ) {
+            woocommerce_breadcrumb();
+        }
+        ?>
+
+        <?php while ( have_posts() ) : the_post(); ?>
+
+            <?php wc_get_template_part( 'content', 'single-product' ); ?>
+
+        <?php endwhile; ?>
+    </div>
+</main>
+
+<?php get_footer(); ?>
+"""
+        single_product_file = theme_dir / "single-product.php"
+        single_product_file.write_text(single_product_template, encoding="utf-8")
+        logger.info("Created single-product.php")
+
+        # 4. Product category taxonomy template
+        taxonomy_product_cat_template = """<?php
+/**
+ * Template Name: Product Category
+ *
+ * The template for displaying product category archives
+ */
+
+get_header();
+?>
+
+<main id="main" class="site-main woocommerce-page">
+    <div class="container">
+        <?php
+        if ( function_exists( 'woocommerce_breadcrumb' ) ) {
+            woocommerce_breadcrumb();
+        }
+        ?>
+
+        <header class="woocommerce-products-header">
+            <h1 class="woocommerce-products-header__title page-title"><?php single_term_title(); ?></h1>
+
+            <?php
+            /**
+             * Hook: woocommerce_archive_description
+             * @hooked woocommerce_taxonomy_archive_description - 10
+             */
+            do_action( 'woocommerce_archive_description' );
+            ?>
+        </header>
+
+        <?php if ( have_posts() ) : ?>
+
+            <?php
+            if ( function_exists( 'woocommerce_product_loop_start' ) ) {
+                woocommerce_product_loop_start();
+            }
+
+            while ( have_posts() ) :
+                the_post();
+                wc_get_template_part( 'content', 'product' );
+            endwhile;
+
+            if ( function_exists( 'woocommerce_product_loop_end' ) ) {
+                woocommerce_product_loop_end();
+            }
+            ?>
+
+            <?php do_action( 'woocommerce_after_shop_loop' ); ?>
+
+        <?php else : ?>
+
+            <?php do_action( 'woocommerce_no_products_found' ); ?>
+
+        <?php endif; ?>
+    </div>
+</main>
+
+<?php get_footer(); ?>
+"""
+        taxonomy_product_cat_file = theme_dir / "taxonomy-product_cat.php"
+        taxonomy_product_cat_file.write_text(taxonomy_product_cat_template, encoding="utf-8")
+        logger.info("Created taxonomy-product_cat.php")
+
+        # 5. Product tag taxonomy template
+        taxonomy_product_tag_template = """<?php
+/**
+ * Template Name: Product Tag
+ *
+ * The template for displaying product tag archives
+ */
+
+get_header();
+?>
+
+<main id="main" class="site-main woocommerce-page">
+    <div class="container">
+        <?php
+        if ( function_exists( 'woocommerce_breadcrumb' ) ) {
+            woocommerce_breadcrumb();
+        }
+        ?>
+
+        <header class="woocommerce-products-header">
+            <h1 class="woocommerce-products-header__title page-title"><?php single_term_title(); ?></h1>
+
+            <?php do_action( 'woocommerce_archive_description' ); ?>
+        </header>
+
+        <?php if ( have_posts() ) : ?>
+
+            <?php
+            if ( function_exists( 'woocommerce_product_loop_start' ) ) {
+                woocommerce_product_loop_start();
+            }
+
+            while ( have_posts() ) :
+                the_post();
+                wc_get_template_part( 'content', 'product' );
+            endwhile;
+
+            if ( function_exists( 'woocommerce_product_loop_end' ) ) {
+                woocommerce_product_loop_end();
+            }
+            ?>
+
+            <?php do_action( 'woocommerce_after_shop_loop' ); ?>
+
+        <?php else : ?>
+
+            <?php do_action( 'woocommerce_no_products_found' ); ?>
+
+        <?php endif; ?>
+    </div>
+</main>
+
+<?php get_footer(); ?>
+"""
+        taxonomy_product_tag_file = theme_dir / "taxonomy-product_tag.php"
+        taxonomy_product_tag_file.write_text(taxonomy_product_tag_template, encoding="utf-8")
+        logger.info("Created taxonomy-product_tag.php")
+
+        logger.info("WooCommerce template hierarchy generation complete")
 
     def _generate_gutenberg_blocks(self, theme_dir: Path, blocks: list[str]) -> None:
         """Generate custom Gutenberg blocks scaffolding with React idempotency."""
