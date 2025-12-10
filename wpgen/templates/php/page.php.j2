@@ -1,0 +1,92 @@
+{# WordPress page.php template - Jinja2 #}
+{# Static page template #}
+{# Variables: theme, layout #}
+<?php
+/**
+ * The template for displaying pages
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<div class="content-area{% if layout.sidebar_position != 'none' %} has-sidebar{% endif %}">
+    <div class="container">
+        <div class="content-wrapper">
+            <div id="primary" class="content-main">
+
+                <?php
+                while ( have_posts() ) :
+                    the_post();
+                    ?>
+
+                    <article id="post-<?php the_ID(); ?>" <?php post_class( 'page-content' ); ?>>
+                        <header class="entry-header">
+                            <?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+                        </header>
+
+                        <?php if ( has_post_thumbnail() ) : ?>
+                            <div class="featured-image">
+                                <?php the_post_thumbnail( 'large' ); ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="entry-content">
+                            <?php
+                            the_content();
+
+                            wp_link_pages(
+                                array(
+                                    'before' => '<div class="page-links">' . esc_html__( 'Pages:', '{{ theme.theme_name }}' ),
+                                    'after'  => '</div>',
+                                )
+                            );
+                            ?>
+                        </div>
+
+                        <?php if ( get_edit_post_link() ) : ?>
+                            <footer class="entry-footer">
+                                <?php
+                                edit_post_link(
+                                    sprintf(
+                                        wp_kses(
+                                            /* translators: %s: Post title */
+                                            __( 'Edit <span class="screen-reader-text">%s</span>', '{{ theme.theme_name }}' ),
+                                            array( 'span' => array( 'class' => array() ) )
+                                        ),
+                                        get_the_title()
+                                    ),
+                                    '<span class="edit-link">',
+                                    '</span>'
+                                );
+                                ?>
+                            </footer>
+                        <?php endif; ?>
+                    </article>
+
+                    <?php
+                    // If comments are open or there are comments, load the comment template
+                    if ( comments_open() || get_comments_number() ) :
+                        comments_template();
+                    endif;
+
+                endwhile;
+                ?>
+
+            </div><!-- #primary -->
+
+            {% if layout.sidebar_position != 'none' %}
+            <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
+            <aside id="secondary" class="widget-area sidebar sidebar-{{ layout.sidebar_position }}">
+                <?php dynamic_sidebar( 'sidebar-1' ); ?>
+            </aside>
+            <?php endif; ?>
+            {% endif %}
+
+        </div><!-- .content-wrapper -->
+    </div><!-- .container -->
+</div><!-- .content-area -->
+
+<?php
+get_footer();

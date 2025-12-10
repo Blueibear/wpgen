@@ -1,0 +1,133 @@
+{# WordPress comments.php template - Jinja2 #}
+{# Comments template #}
+{# Variables: theme #}
+<?php
+/**
+ * The template for displaying comments
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+// Prevent direct access
+if ( post_password_required() ) {
+    return;
+}
+?>
+
+<div id="comments" class="comments-area">
+
+    <?php if ( have_comments() ) : ?>
+        <h2 class="comments-title">
+            <?php
+            ${{ theme.theme_name | replace('-', '_') }}_comment_count = get_comments_number();
+            if ( '1' === ${{ theme.theme_name | replace('-', '_') }}_comment_count ) {
+                printf(
+                    /* translators: 1: title. */
+                    esc_html__( 'One comment on &ldquo;%1$s&rdquo;', '{{ theme.theme_name }}' ),
+                    '<span>' . get_the_title() . '</span>'
+                );
+            } else {
+                printf(
+                    /* translators: 1: comment count number, 2: title. */
+                    esc_html( _nx( '%1$s comment on &ldquo;%2$s&rdquo;', '%1$s comments on &ldquo;%2$s&rdquo;', ${{ theme.theme_name | replace('-', '_') }}_comment_count, 'comments title', '{{ theme.theme_name }}' ) ),
+                    number_format_i18n( ${{ theme.theme_name | replace('-', '_') }}_comment_count ),
+                    '<span>' . get_the_title() . '</span>'
+                );
+            }
+            ?>
+        </h2>
+
+        <?php the_comments_navigation(); ?>
+
+        <ol class="comment-list">
+            <?php
+            wp_list_comments(
+                array(
+                    'style'      => 'ol',
+                    'short_ping' => true,
+                    'callback'   => '{{ theme.theme_name | replace('-', '_') }}_comment_template',
+                )
+            );
+            ?>
+        </ol>
+
+        <?php the_comments_navigation(); ?>
+
+        <?php if ( ! comments_open() ) : ?>
+            <p class="no-comments"><?php esc_html_e( 'Comments are closed.', '{{ theme.theme_name }}' ); ?></p>
+        <?php endif; ?>
+
+    <?php endif; ?>
+
+    <?php
+    comment_form(
+        array(
+            'title_reply_before' => '<h3 id="reply-title" class="comment-reply-title">',
+            'title_reply_after'  => '</h3>',
+        )
+    );
+    ?>
+
+</div><!-- #comments -->
+
+<?php
+/**
+ * Custom comment template.
+ *
+ * @param WP_Comment $comment Comment object.
+ * @param array      $args    Arguments.
+ * @param int        $depth   Depth.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_comment_template( $comment, $args, $depth ) {
+    ?>
+    <li id="comment-<?php comment_ID(); ?>" <?php comment_class( 'comment-item' ); ?>>
+        <article class="comment-body">
+            <header class="comment-meta">
+                <div class="comment-author vcard">
+                    <?php echo get_avatar( $comment, 60 ); ?>
+                    <cite class="fn"><?php echo get_comment_author_link(); ?></cite>
+                </div>
+
+                <div class="comment-metadata">
+                    <a href="<?php echo esc_url( get_comment_link( $comment, $args ) ); ?>">
+                        <time datetime="<?php comment_time( 'c' ); ?>">
+                            <?php
+                            printf(
+                                /* translators: 1: date, 2: time */
+                                esc_html__( '%1$s at %2$s', '{{ theme.theme_name }}' ),
+                                get_comment_date( '', $comment ),
+                                get_comment_time()
+                            );
+                            ?>
+                        </time>
+                    </a>
+                </div>
+            </header>
+
+            <div class="comment-content">
+                <?php if ( '0' === $comment->comment_approved ) : ?>
+                    <p class="comment-awaiting-moderation"><?php esc_html_e( 'Your comment is awaiting moderation.', '{{ theme.theme_name }}' ); ?></p>
+                <?php endif; ?>
+
+                <?php comment_text(); ?>
+            </div>
+
+            <footer class="comment-footer">
+                <?php
+                comment_reply_link(
+                    array_merge(
+                        $args,
+                        array(
+                            'add_below' => 'comment',
+                            'depth'     => $depth,
+                            'max_depth' => $args['max_depth'],
+                        )
+                    )
+                );
+                ?>
+
+                <?php edit_comment_link( esc_html__( 'Edit', '{{ theme.theme_name }}' ), '<span class="edit-link">', '</span>' ); ?>
+            </footer>
+        </article>
+    <?php
+}

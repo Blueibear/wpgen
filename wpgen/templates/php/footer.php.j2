@@ -1,0 +1,123 @@
+{# WordPress footer.php template - Jinja2 #}
+{# This template is rendered with theme specification JSON #}
+{# Variables: theme, colors, typography, layout, features, widget_areas #}
+    </main><!-- #primary -->
+
+    <footer id="colophon" class="site-footer">
+        {% if layout.footer_columns > 0 %}
+        <div class="footer-widgets">
+            <div class="container">
+                <div class="footer-widgets-grid footer-columns-{{ layout.footer_columns }}">
+                    {% for i in range(1, layout.footer_columns + 1) %}
+                    <div class="footer-widget-area footer-{{ i }}">
+                        <?php if ( is_active_sidebar( 'footer-{{ i }}' ) ) : ?>
+                            <?php dynamic_sidebar( 'footer-{{ i }}' ); ?>
+                        <?php else : ?>
+                            {% if i == 1 %}
+                            <div class="widget">
+                                <h3 class="widget-title"><?php esc_html_e( 'About Us', '{{ theme.theme_name }}' ); ?></h3>
+                                <p><?php bloginfo( 'description' ); ?></p>
+                                <?php if ( has_custom_logo() ) : ?>
+                                    <?php the_custom_logo(); ?>
+                                <?php endif; ?>
+                            </div>
+                            {% elif i == 2 %}
+                            <div class="widget">
+                                <h3 class="widget-title"><?php esc_html_e( 'Quick Links', '{{ theme.theme_name }}' ); ?></h3>
+                                <?php
+                                wp_nav_menu(
+                                    array(
+                                        'theme_location' => 'footer',
+                                        'menu_class'     => 'footer-menu',
+                                        'container'      => false,
+                                        'depth'          => 1,
+                                        'fallback_cb'    => '{{ theme.theme_name | replace('-', '_') }}_fallback_footer_menu',
+                                    )
+                                );
+                                ?>
+                            </div>
+                            {% elif i == 3 %}
+                            <div class="widget">
+                                <h3 class="widget-title"><?php esc_html_e( 'Recent Posts', '{{ theme.theme_name }}' ); ?></h3>
+                                <ul class="footer-recent-posts">
+                                    <?php
+                                    $recent_posts = wp_get_recent_posts( array( 'numberposts' => 3 ) );
+                                    foreach ( $recent_posts as $post ) :
+                                    ?>
+                                        <li>
+                                            <a href="<?php echo esc_url( get_permalink( $post['ID'] ) ); ?>">
+                                                <?php echo esc_html( $post['post_title'] ); ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; wp_reset_postdata(); ?>
+                                </ul>
+                            </div>
+                            {% else %}
+                            <div class="widget">
+                                <h3 class="widget-title"><?php esc_html_e( 'Contact', '{{ theme.theme_name }}' ); ?></h3>
+                                <p><?php esc_html_e( 'Add your contact information here.', '{{ theme.theme_name }}' ); ?></p>
+                                {% if features.social_links %}
+                                <div class="social-links">
+                                    {% for platform in features.social_links %}
+                                    <a href="#" class="social-link social-{{ platform }}" aria-label="{{ platform | title }}">
+                                        <span class="screen-reader-text">{{ platform | title }}</span>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        <?php endif; ?>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div><!-- .footer-widgets -->
+        {% endif %}
+
+        <div class="site-info">
+            <div class="container">
+                <div class="site-info-inner">
+                    <div class="copyright">
+                        <p>
+                            &copy; <?php echo esc_html( date( 'Y' ) ); ?>
+                            <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+                                <?php bloginfo( 'name' ); ?>
+                            </a>.
+                            <?php esc_html_e( 'All rights reserved.', '{{ theme.theme_name }}' ); ?>
+                        </p>
+                    </div>
+
+                    <?php if ( has_nav_menu( 'footer' ) ) : ?>
+                    <nav class="footer-navigation" aria-label="<?php esc_attr_e( 'Footer Menu', '{{ theme.theme_name }}' ); ?>">
+                        <?php
+                        wp_nav_menu(
+                            array(
+                                'theme_location' => 'footer',
+                                'menu_class'     => 'footer-legal-menu',
+                                'container'      => false,
+                                'depth'          => 1,
+                            )
+                        );
+                        ?>
+                    </nav>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div><!-- .site-info -->
+    </footer><!-- #colophon -->
+
+</div><!-- #page -->
+
+{% if features.back_to_top %}
+<button id="back-to-top" class="back-to-top" aria-label="<?php esc_attr_e( 'Back to top', '{{ theme.theme_name }}' ); ?>">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 15l-6-6-6 6"/>
+    </svg>
+</button>
+{% endif %}
+
+<?php wp_footer(); ?>
+
+</body>
+</html>
