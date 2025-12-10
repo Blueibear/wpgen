@@ -565,6 +565,10 @@ class WordPressGenerator:
             theme_dir: Theme directory path
             requirements: Theme requirements
         """
+        # Normalize and ensure theme directory exists
+        theme_dir = Path(str(theme_dir).replace("\\", "/"))
+        theme_dir.mkdir(parents=True, exist_ok=True)
+
         logger.info("Generating style.css")
 
         # Generate the header comment
