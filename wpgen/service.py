@@ -3,6 +3,11 @@
 This module provides a centralized, high-level API for theme generation
 that can be used by CLI, Gradio UI, and Flask web UI. It handles the
 complete pipeline from prompt to deployed theme.
+
+The default generator is now the HybridWordPressGenerator which uses:
+1. JSON specification from LLM (no raw PHP output)
+2. Jinja2 templates to render valid PHP files
+3. Guaranteed syntax-correct output with no hallucinated functions
 """
 
 import os
@@ -12,7 +17,7 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, Field, field_validator
 
-from .generators import WordPressGenerator
+from .generators import WordPressGenerator, HybridWordPressGenerator
 from .github import GitHubIntegration
 from .parsers import PromptParser
 from .utils import get_llm_provider, get_logger
@@ -36,6 +41,12 @@ class LLMProvider(str, Enum):
     LOCAL_OLLAMA = "local-ollama"
 
 
+class GeneratorType(str, Enum):
+    """Generator type selection."""
+    HYBRID = "hybrid"  # JSON → Jinja → PHP (recommended, default)
+    LEGACY = "legacy"  # Direct LLM PHP generation (deprecated)
+
+
 class GenerationRequest(BaseModel):
     """Request model for theme generation."""
 
@@ -45,6 +56,12 @@ class GenerationRequest(BaseModel):
     # File inputs
     image_files: list[str] | None = Field(default=None, description="Paths to design mockup images")
     text_files: list[str] | None = Field(default=None, description="Paths to content documents (PDF, MD, TXT)")
+
+    # Generator selection
+    generator_type: GeneratorType = Field(
+        default=GeneratorType.HYBRID,
+        description="Generator type: 'hybrid' (JSON→Jinja→PHP, recommended) or 'legacy' (direct PHP generation)"
+    )
 
     # LLM configuration
     llm_provider: LLMProvider | None = Field(default=None, description="LLM provider to use")
@@ -186,11 +203,33 @@ class ThemeGenerationService:
             if request.optional_features:
                 requirements = self._apply_optional_features(requirements, request.optional_features)
 
-            # Generate theme
+            # Generate theme using selected generator
             self.logger.info("Generating WordPress theme files")
             output_dir = request.output_dir or cfg.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
-            theme_dir = generator.generate(requirements)
+
+            # Choose generator based on request
+            if request.generator_type == GeneratorType.HYBRID:
+                self.logger.info("Using HYBRID generator (JSON → Jinja → PHP)")
+                # Prepare images for hybrid generator
+                images = None
+                if request.image_files:
+                    images = [{"path": p} for p in request.image_files if Path(p).exists()]
+
+                # Store original prompt for hybrid generator
+                requirements["original_prompt"] = request.prompt
+
+                generator = HybridWordPressGenerator(
+                    llm_provider,
+                    output_dir,
+                    cfg.get("wordpress", {})
+                )
+                theme_dir = generator.generate(requirements, images)
+            else:
+                # Legacy generator
+                self.logger.info("Using LEGACY generator (direct LLM PHP generation)")
+                self.logger.warning("Legacy generator is deprecated - consider using hybrid generator")
+                generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
+                theme_dir = generator.generate(requirements)
 
             self.logger.info(f"Theme generated: {theme_dir}")
 

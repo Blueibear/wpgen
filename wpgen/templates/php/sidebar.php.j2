@@ -1,0 +1,18 @@
+{# WordPress sidebar.php template - Jinja2 #}
+{# Sidebar widget area template #}
+{# Variables: theme #}
+<?php
+/**
+ * The sidebar containing the main widget area
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+if ( ! is_active_sidebar( 'sidebar-1' ) ) {
+    return;
+}
+?>
+
+<aside id="secondary" class="widget-area sidebar">
+    <?php dynamic_sidebar( 'sidebar-1' ); ?>
+</aside><!-- #secondary -->

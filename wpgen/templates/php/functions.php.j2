@@ -1,0 +1,598 @@
+{# WordPress functions.php template - Jinja2 #}
+{# This template is rendered with theme specification JSON #}
+{# Variables: theme, colors, typography, layout, features, widget_areas, post_types #}
+<?php
+/**
+ * {{ theme.theme_display_name }} functions and definitions
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ * @since {{ theme.version }}
+ */
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+// Define theme constants
+if ( ! defined( 'THEME_VERSION' ) ) {
+    define( 'THEME_VERSION', '{{ theme.version }}' );
+}
+
+if ( ! defined( 'THEME_DIR' ) ) {
+    define( 'THEME_DIR', get_template_directory() );
+}
+
+if ( ! defined( 'THEME_URI' ) ) {
+    define( 'THEME_URI', get_template_directory_uri() );
+}
+
+/**
+ * Theme setup.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_setup() {
+    // Add default posts and comments RSS feed links to head
+    add_theme_support( 'automatic-feed-links' );
+
+    // Let WordPress manage the document title
+    add_theme_support( 'title-tag' );
+
+    // Enable support for Post Thumbnails on posts and pages
+    add_theme_support( 'post-thumbnails' );
+
+    // Custom logo support
+    add_theme_support(
+        'custom-logo',
+        array(
+            'height'      => 100,
+            'width'       => 300,
+            'flex-height' => true,
+            'flex-width'  => true,
+        )
+    );
+
+    // Register navigation menus
+    register_nav_menus(
+        array(
+            'primary' => esc_html__( 'Primary Menu', '{{ theme.theme_name }}' ),
+            'footer'  => esc_html__( 'Footer Menu', '{{ theme.theme_name }}' ),
+        )
+    );
+
+    // Switch default core markup to output valid HTML5
+    add_theme_support(
+        'html5',
+        array(
+            'search-form',
+            'comment-form',
+            'comment-list',
+            'gallery',
+            'caption',
+            'style',
+            'script',
+        )
+    );
+
+    // Add theme support for selective refresh for widgets
+    add_theme_support( 'customize-selective-refresh-widgets' );
+
+    // Gutenberg support
+    add_theme_support( 'responsive-embeds' );
+    add_theme_support( 'align-wide' );
+
+    // Editor styles
+    add_theme_support( 'editor-styles' );
+
+    // Custom background support
+    add_theme_support(
+        'custom-background',
+        array(
+            'default-color' => '{{ colors.background | replace('#', '') }}',
+        )
+    );
+
+    {% if features.woocommerce.enabled %}
+    // WooCommerce support
+    add_theme_support( 'woocommerce' );
+    add_theme_support( 'wc-product-gallery-zoom' );
+    add_theme_support( 'wc-product-gallery-lightbox' );
+    add_theme_support( 'wc-product-gallery-slider' );
+    {% endif %}
+}
+add_action( 'after_setup_theme', '{{ theme.theme_name | replace('-', '_') }}_setup' );
+
+/**
+ * Set the content width in pixels.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_content_width() {
+    $GLOBALS['content_width'] = apply_filters( '{{ theme.theme_name | replace('-', '_') }}_content_width', {{ layout.content_width | replace('px', '') }} );
+}
+add_action( 'after_setup_theme', '{{ theme.theme_name | replace('-', '_') }}_content_width', 0 );
+
+/**
+ * Register widget areas.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_widgets_init() {
+    {% for area in widget_areas %}
+    register_sidebar(
+        array(
+            'name'          => esc_html__( '{{ area.name }}', '{{ theme.theme_name }}' ),
+            'id'            => '{{ area.id }}',
+            'description'   => esc_html__( '{{ area.description }}', '{{ theme.theme_name }}' ),
+            'before_widget' => '<div id="%1$s" class="widget %2$s">',
+            'after_widget'  => '</div>',
+            'before_title'  => '<h3 class="widget-title">',
+            'after_title'   => '</h3>',
+        )
+    );
+
+    {% endfor %}
+}
+add_action( 'widgets_init', '{{ theme.theme_name | replace('-', '_') }}_widgets_init' );
+
+/**
+ * Enqueue scripts and styles.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_scripts() {
+    // Main stylesheet
+    wp_enqueue_style(
+        '{{ theme.theme_name }}-style',
+        get_stylesheet_uri(),
+        array(),
+        THEME_VERSION
+    );
+
+    // Theme JavaScript
+    wp_enqueue_script(
+        '{{ theme.theme_name }}-scripts',
+        THEME_URI . '/assets/js/theme.js',
+        array(),
+        THEME_VERSION,
+        true
+    );
+
+    // Navigation script
+    wp_enqueue_script(
+        '{{ theme.theme_name }}-navigation',
+        THEME_URI . '/assets/js/navigation.js',
+        array(),
+        THEME_VERSION,
+        true
+    );
+
+    // Comment reply script
+    if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
+        wp_enqueue_script( 'comment-reply' );
+    }
+
+    // Localize script
+    wp_localize_script(
+        '{{ theme.theme_name }}-scripts',
+        '{{ theme.theme_name | replace('-', '_') }}Vars',
+        array(
+            'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( '{{ theme.theme_name }}_nonce' ),
+            'siteUrl'  => home_url(),
+            'themeUrl' => THEME_URI,
+        )
+    );
+}
+add_action( 'wp_enqueue_scripts', '{{ theme.theme_name | replace('-', '_') }}_scripts' );
+
+/**
+ * Enqueue editor styles.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_editor_styles() {
+    add_editor_style( 'assets/css/editor-style.css' );
+}
+add_action( 'admin_init', '{{ theme.theme_name | replace('-', '_') }}_editor_styles' );
+
+/**
+ * Add custom CSS variables to the head.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_custom_css_variables() {
+    ?>
+    <style id="{{ theme.theme_name }}-css-variables">
+        :root {
+            --color-primary: {{ colors.primary }};
+            --color-secondary: {{ colors.secondary }};
+            --color-accent: {{ colors.accent }};
+            --color-background: {{ colors.background }};
+            --color-surface: {{ colors.surface }};
+            --color-text-primary: {{ colors.text_primary }};
+            --color-text-secondary: {{ colors.text_secondary }};
+            --color-text-muted: {{ colors.text_muted }};
+            --color-border: {{ colors.border }};
+            --color-success: {{ colors.success }};
+            --color-warning: {{ colors.warning }};
+            --color-error: {{ colors.error }};
+
+            --font-primary: '{{ typography.font_primary }}', system-ui, -apple-system, sans-serif;
+            --font-headings: '{{ typography.font_headings }}', system-ui, -apple-system, sans-serif;
+            --font-mono: '{{ typography.font_mono }}', 'Fira Code', monospace;
+
+            --font-size-base: {{ typography.base_size }};
+            --line-height-body: {{ typography.line_height_body }};
+            --line-height-headings: {{ typography.line_height_headings }};
+
+            --container-width: {{ layout.container_width }};
+            --content-width: {{ layout.content_width }};
+            --sidebar-width: {{ layout.sidebar_width }};
+            --header-height: {{ layout.header_height }};
+        }
+    </style>
+    <?php
+}
+add_action( 'wp_head', '{{ theme.theme_name | replace('-', '_') }}_custom_css_variables', 5 );
+
+/**
+ * Fallback menu for primary navigation.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_fallback_menu() {
+    echo '<ul class="primary-menu">';
+    echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', '{{ theme.theme_name }}' ) . '</a></li>';
+
+    // Get pages
+    $pages = get_pages( array( 'number' => 5, 'sort_column' => 'menu_order' ) );
+    foreach ( $pages as $page ) {
+        echo '<li><a href="' . esc_url( get_permalink( $page->ID ) ) . '">' . esc_html( $page->post_title ) . '</a></li>';
+    }
+
+    echo '</ul>';
+}
+
+/**
+ * Fallback menu for footer navigation.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_fallback_footer_menu() {
+    echo '<ul class="footer-menu">';
+    echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', '{{ theme.theme_name }}' ) . '</a></li>';
+    echo '<li><a href="#">' . esc_html__( 'Privacy Policy', '{{ theme.theme_name }}' ) . '</a></li>';
+    echo '<li><a href="#">' . esc_html__( 'Terms of Service', '{{ theme.theme_name }}' ) . '</a></li>';
+    echo '</ul>';
+}
+
+/**
+ * Get post meta data.
+ *
+ * @return void
+ */
+function {{ theme.theme_name | replace('-', '_') }}_get_the_meta_data() {
+    ?>
+    <div class="entry-meta">
+        <span class="posted-on">
+            <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                <?php echo esc_html( get_the_date() ); ?>
+            </time>
+        </span>
+        <span class="byline">
+            <span class="author vcard">
+                <a class="url fn n" href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>">
+                    <?php echo esc_html( get_the_author() ); ?>
+                </a>
+            </span>
+        </span>
+        <?php if ( has_category() ) : ?>
+        <span class="cat-links">
+            <?php the_category( ', ' ); ?>
+        </span>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Display post thumbnail with fallback.
+ *
+ * @param string $size Image size.
+ * @return void
+ */
+function {{ theme.theme_name | replace('-', '_') }}_get_the_image( $size = 'large' ) {
+    if ( has_post_thumbnail() ) {
+        the_post_thumbnail(
+            $size,
+            array(
+                'class' => 'post-thumbnail',
+                'alt'   => the_title_attribute( array( 'echo' => false ) ),
+            )
+        );
+    } else {
+        // Placeholder image
+        echo '<div class="post-thumbnail-placeholder"></div>';
+    }
+}
+
+/**
+ * Display pagination.
+ *
+ * @return void
+ */
+function {{ theme.theme_name | replace('-', '_') }}_pagination() {
+    if ( function_exists( 'wp_pagenavi' ) ) {
+        wp_pagenavi();
+    } else {
+        the_posts_pagination(
+            array(
+                'mid_size'  => 2,
+                'prev_text' => '&laquo; ' . esc_html__( 'Previous', '{{ theme.theme_name }}' ),
+                'next_text' => esc_html__( 'Next', '{{ theme.theme_name }}' ) . ' &raquo;',
+            )
+        );
+    }
+}
+
+/**
+ * Posts pagination alias.
+ *
+ * @return void
+ */
+function {{ theme.theme_name | replace('-', '_') }}_posts_pagination() {
+    {{ theme.theme_name | replace('-', '_') }}_pagination();
+}
+
+{% if features.woocommerce.enabled %}
+/**
+ * WooCommerce setup.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_woocommerce_setup() {
+    // Change products per page
+    add_filter( 'loop_shop_per_page', function() {
+        return {{ features.woocommerce.products_per_page }};
+    } );
+
+    // Change product columns
+    add_filter( 'loop_shop_columns', function() {
+        return {{ features.woocommerce.products_columns }};
+    } );
+}
+add_action( 'after_setup_theme', '{{ theme.theme_name | replace('-', '_') }}_woocommerce_setup' );
+{% endif %}
+
+{% if features.dark_mode %}
+/**
+ * Dark mode toggle support.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_dark_mode_script() {
+    ?>
+    <script>
+    (function() {
+        const html = document.documentElement;
+        const stored = localStorage.getItem('{{ theme.theme_name }}-dark-mode');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (stored === 'true' || (stored === null && prefersDark)) {
+            html.classList.add('dark-mode');
+        }
+    })();
+    </script>
+    <?php
+}
+add_action( 'wp_head', '{{ theme.theme_name | replace('-', '_') }}_dark_mode_script', 1 );
+{% endif %}
+
+{% if post_types %}
+/**
+ * Register custom post types.
+ */
+function {{ theme.theme_name | replace('-', '_') }}_register_post_types() {
+    {% for post_type in post_types %}
+    register_post_type(
+        '{{ post_type }}',
+        array(
+            'labels' => array(
+                'name'               => esc_html__( '{{ post_type | title }}s', '{{ theme.theme_name }}' ),
+                'singular_name'      => esc_html__( '{{ post_type | title }}', '{{ theme.theme_name }}' ),
+                'add_new'            => esc_html__( 'Add New', '{{ theme.theme_name }}' ),
+                'add_new_item'       => esc_html__( 'Add New {{ post_type | title }}', '{{ theme.theme_name }}' ),
+                'edit_item'          => esc_html__( 'Edit {{ post_type | title }}', '{{ theme.theme_name }}' ),
+                'view_item'          => esc_html__( 'View {{ post_type | title }}', '{{ theme.theme_name }}' ),
+            ),
+            'public'             => true,
+            'has_archive'        => true,
+            'show_in_rest'       => true,
+            'supports'           => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
+            'rewrite'            => array( 'slug' => '{{ post_type }}' ),
+        )
+    );
+
+    {% endfor %}
+}
+add_action( 'init', '{{ theme.theme_name | replace('-', '_') }}_register_post_types' );
+{% endif %}
+
+/**
+ * Product Grid Shortcode.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string
+ */
+function {{ theme.theme_name | replace('-', '_') }}_product_grid_shortcode( $atts ) {
+    $atts = shortcode_atts(
+        array(
+            'count'    => 6,
+            'columns'  => 3,
+            'category' => '',
+        ),
+        $atts,
+        'product_grid'
+    );
+
+    $args = array(
+        'post_type'      => 'post',
+        'posts_per_page' => absint( $atts['count'] ),
+        'post_status'    => 'publish',
+    );
+
+    if ( ! empty( $atts['category'] ) ) {
+        $args['category_name'] = sanitize_text_field( $atts['category'] );
+    }
+
+    $query = new WP_Query( $args );
+
+    ob_start();
+
+    if ( $query->have_posts() ) :
+        ?>
+        <div class="product-grid grid grid-<?php echo esc_attr( $atts['columns'] ); ?>">
+            <?php
+            while ( $query->have_posts() ) :
+                $query->the_post();
+                ?>
+                <article class="product-card post-card">
+                    <?php if ( has_post_thumbnail() ) : ?>
+                        <div class="card-image">
+                            <a href="<?php the_permalink(); ?>">
+                                <?php the_post_thumbnail( 'medium_large' ); ?>
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                    <div class="card-content">
+                        <h3 class="card-title">
+                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                        </h3>
+                        <?php the_excerpt(); ?>
+                        <a href="<?php the_permalink(); ?>" class="btn btn-primary"><?php esc_html_e( 'Read More', '{{ theme.theme_name }}' ); ?></a>
+                    </div>
+                </article>
+                <?php
+            endwhile;
+            ?>
+        </div>
+        <?php
+        wp_reset_postdata();
+    else :
+        ?>
+        <p><?php esc_html_e( 'No posts found.', '{{ theme.theme_name }}' ); ?></p>
+        <?php
+    endif;
+
+    return ob_get_clean();
+}
+add_shortcode( 'product_grid', '{{ theme.theme_name | replace('-', '_') }}_product_grid_shortcode' );
+
+/**
+ * Hero Banner Shortcode.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string
+ */
+function {{ theme.theme_name | replace('-', '_') }}_hero_banner_shortcode( $atts ) {
+    $atts = shortcode_atts(
+        array(
+            'title'      => '',
+            'text'       => '',
+            'button_text' => '',
+            'button_url'  => '#',
+        ),
+        $atts,
+        'hero_banner'
+    );
+
+    ob_start();
+    ?>
+    <section class="hero-section">
+        <div class="hero-content container">
+            <?php if ( ! empty( $atts['title'] ) ) : ?>
+                <h1 class="hero-title"><?php echo esc_html( $atts['title'] ); ?></h1>
+            <?php endif; ?>
+            <?php if ( ! empty( $atts['text'] ) ) : ?>
+                <p class="hero-text"><?php echo esc_html( $atts['text'] ); ?></p>
+            <?php endif; ?>
+            <?php if ( ! empty( $atts['button_text'] ) ) : ?>
+                <a href="<?php echo esc_url( $atts['button_url'] ); ?>" class="btn btn-primary btn-lg">
+                    <?php echo esc_html( $atts['button_text'] ); ?>
+                </a>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'hero_banner', '{{ theme.theme_name | replace('-', '_') }}_hero_banner_shortcode' );
+
+/**
+ * Call to Action Shortcode.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string
+ */
+function {{ theme.theme_name | replace('-', '_') }}_cta_box_shortcode( $atts ) {
+    $atts = shortcode_atts(
+        array(
+            'title'       => '',
+            'text'        => '',
+            'button_text' => '',
+            'button_url'  => '#',
+            'background'  => 'primary',
+        ),
+        $atts,
+        'cta_box'
+    );
+
+    $bg_class = 'bg-' . sanitize_html_class( $atts['background'] );
+
+    ob_start();
+    ?>
+    <section class="cta-section <?php echo esc_attr( $bg_class ); ?>">
+        <div class="cta-content container">
+            <?php if ( ! empty( $atts['title'] ) ) : ?>
+                <h2 class="cta-title"><?php echo esc_html( $atts['title'] ); ?></h2>
+            <?php endif; ?>
+            <?php if ( ! empty( $atts['text'] ) ) : ?>
+                <p class="cta-text"><?php echo esc_html( $atts['text'] ); ?></p>
+            <?php endif; ?>
+            <?php if ( ! empty( $atts['button_text'] ) ) : ?>
+                <a href="<?php echo esc_url( $atts['button_url'] ); ?>" class="btn btn-secondary btn-lg">
+                    <?php echo esc_html( $atts['button_text'] ); ?>
+                </a>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'cta_box', '{{ theme.theme_name | replace('-', '_') }}_cta_box_shortcode' );
+
+/**
+ * Add body classes.
+ *
+ * @param array $classes Body classes.
+ * @return array
+ */
+function {{ theme.theme_name | replace('-', '_') }}_body_classes( $classes ) {
+    // Add class for sidebar position
+    $classes[] = 'sidebar-{{ layout.sidebar_position }}';
+
+    // Add class for header style
+    $classes[] = 'header-{{ layout.header_style }}';
+
+    // Add class if no sidebar
+    if ( ! is_active_sidebar( 'sidebar-1' ) ) {
+        $classes[] = 'no-sidebar';
+    }
+
+    return $classes;
+}
+add_filter( 'body_class', '{{ theme.theme_name | replace('-', '_') }}_body_classes' );
+
+/**
+ * Excerpt length.
+ *
+ * @param int $length Excerpt length.
+ * @return int
+ */
+function {{ theme.theme_name | replace('-', '_') }}_excerpt_length( $length ) {
+    return 25;
+}
+add_filter( 'excerpt_length', '{{ theme.theme_name | replace('-', '_') }}_excerpt_length' );
+
+/**
+ * Excerpt more.
+ *
+ * @param string $more More text.
+ * @return string
+ */
+function {{ theme.theme_name | replace('-', '_') }}_excerpt_more( $more ) {
+    return '&hellip;';
+}
+add_filter( 'excerpt_more', '{{ theme.theme_name | replace('-', '_') }}_excerpt_more' );

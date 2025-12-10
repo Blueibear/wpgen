@@ -1,0 +1,155 @@
+{# WordPress single.php template - Jinja2 #}
+{# Single post template #}
+{# Variables: theme, layout #}
+<?php
+/**
+ * The template for displaying single posts
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<div class="content-area{% if layout.sidebar_position != 'none' %} has-sidebar{% endif %}">
+    <div class="container">
+        <div class="content-wrapper">
+            <div id="primary" class="content-main">
+
+                <?php
+                while ( have_posts() ) :
+                    the_post();
+                    ?>
+
+                    <article id="post-<?php the_ID(); ?>" <?php post_class( 'single-post' ); ?>>
+                        <header class="entry-header">
+                            <?php if ( has_post_thumbnail() ) : ?>
+                                <div class="featured-image">
+                                    <?php the_post_thumbnail( 'large' ); ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="entry-meta">
+                                <span class="posted-on">
+                                    <time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                                        <?php echo esc_html( get_the_date() ); ?>
+                                    </time>
+                                </span>
+                                <span class="byline">
+                                    <?php esc_html_e( 'by', '{{ theme.theme_name }}' ); ?>
+                                    <a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>">
+                                        <?php echo esc_html( get_the_author() ); ?>
+                                    </a>
+                                </span>
+                                <?php if ( has_category() ) : ?>
+                                    <span class="cat-links">
+                                        <?php esc_html_e( 'in', '{{ theme.theme_name }}' ); ?>
+                                        <?php the_category( ', ' ); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+                        </header>
+
+                        <div class="entry-content">
+                            <?php
+                            the_content(
+                                sprintf(
+                                    wp_kses(
+                                        /* translators: %s: Post title */
+                                        __( 'Continue reading<span class="screen-reader-text"> "%s"</span>', '{{ theme.theme_name }}' ),
+                                        array( 'span' => array( 'class' => array() ) )
+                                    ),
+                                    get_the_title()
+                                )
+                            );
+
+                            wp_link_pages(
+                                array(
+                                    'before' => '<div class="page-links">' . esc_html__( 'Pages:', '{{ theme.theme_name }}' ),
+                                    'after'  => '</div>',
+                                )
+                            );
+                            ?>
+                        </div>
+
+                        <footer class="entry-footer">
+                            <?php if ( has_tag() ) : ?>
+                                <div class="tags-links">
+                                    <?php the_tags( '<span class="tags-label">' . esc_html__( 'Tags:', '{{ theme.theme_name }}' ) . '</span> ', ', ' ); ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="post-navigation">
+                                <?php
+                                the_post_navigation(
+                                    array(
+                                        'prev_text' => '<span class="nav-subtitle">' . esc_html__( 'Previous:', '{{ theme.theme_name }}' ) . '</span> <span class="nav-title">%title</span>',
+                                        'next_text' => '<span class="nav-subtitle">' . esc_html__( 'Next:', '{{ theme.theme_name }}' ) . '</span> <span class="nav-title">%title</span>',
+                                    )
+                                );
+                                ?>
+                            </div>
+                        </footer>
+                    </article>
+
+                    <?php
+                    // Author bio box
+                    if ( get_the_author_meta( 'description' ) ) :
+                        ?>
+                        <div class="author-bio">
+                            <div class="author-avatar">
+                                <?php echo get_avatar( get_the_author_meta( 'ID' ), 80 ); ?>
+                            </div>
+                            <div class="author-info">
+                                <h3 class="author-name">
+                                    <a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>">
+                                        <?php echo esc_html( get_the_author() ); ?>
+                                    </a>
+                                </h3>
+                                <p class="author-description"><?php echo esc_html( get_the_author_meta( 'description' ) ); ?></p>
+                            </div>
+                        </div>
+                        <?php
+                    endif;
+
+                    // Comments
+                    if ( comments_open() || get_comments_number() ) :
+                        comments_template();
+                    endif;
+
+                endwhile;
+                ?>
+
+            </div><!-- #primary -->
+
+            {% if layout.sidebar_position != 'none' %}
+            <aside id="secondary" class="widget-area sidebar sidebar-{{ layout.sidebar_position }}">
+                <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
+                    <?php dynamic_sidebar( 'sidebar-1' ); ?>
+                <?php else : ?>
+                    <div class="widget">
+                        <h3 class="widget-title"><?php esc_html_e( 'Recent Posts', '{{ theme.theme_name }}' ); ?></h3>
+                        <ul>
+                            <?php
+                            $recent_posts = wp_get_recent_posts( array( 'numberposts' => 5 ) );
+                            foreach ( $recent_posts as $post ) :
+                                ?>
+                                <li><a href="<?php echo esc_url( get_permalink( $post['ID'] ) ); ?>"><?php echo esc_html( $post['post_title'] ); ?></a></li>
+                                <?php
+                            endforeach;
+                            wp_reset_postdata();
+                            ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+            </aside><!-- #secondary -->
+            {% endif %}
+
+        </div><!-- .content-wrapper -->
+    </div><!-- .container -->
+</div><!-- .content-area -->
+
+<?php
+get_footer();

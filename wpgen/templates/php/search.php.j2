@@ -1,0 +1,126 @@
+{# WordPress search.php template - Jinja2 #}
+{# Search results template #}
+{# Variables: theme, layout #}
+<?php
+/**
+ * The template for displaying search results
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<div class="content-area{% if layout.sidebar_position != 'none' %} has-sidebar{% endif %}">
+    <div class="container">
+        <div class="content-wrapper">
+            <div id="primary" class="content-main">
+
+                <?php if ( have_posts() ) : ?>
+
+                    <header class="page-header search-header">
+                        <h1 class="page-title">
+                            <?php
+                            printf(
+                                /* translators: %s: search query */
+                                esc_html__( 'Search Results for: %s', '{{ theme.theme_name }}' ),
+                                '<span>' . get_search_query() . '</span>'
+                            );
+                            ?>
+                        </h1>
+                        <div class="search-form-wrapper">
+                            <?php get_search_form(); ?>
+                        </div>
+                    </header>
+
+                    <div class="search-results">
+                        <?php
+                        while ( have_posts() ) :
+                            the_post();
+                            ?>
+                            <article id="post-<?php the_ID(); ?>" <?php post_class( 'search-result-item' ); ?>>
+                                <header class="entry-header">
+                                    <?php the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">', '</a></h2>' ); ?>
+                                </header>
+
+                                <div class="entry-meta">
+                                    <span class="post-type">
+                                        <?php
+                                        $post_type_obj = get_post_type_object( get_post_type() );
+                                        echo esc_html( $post_type_obj->labels->singular_name );
+                                        ?>
+                                    </span>
+                                    <span class="posted-on">
+                                        <time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                                            <?php echo esc_html( get_the_date() ); ?>
+                                        </time>
+                                    </span>
+                                </div>
+
+                                <div class="entry-summary">
+                                    <?php the_excerpt(); ?>
+                                </div>
+
+                                <footer class="entry-footer">
+                                    <a href="<?php the_permalink(); ?>" class="read-more">
+                                        <?php esc_html_e( 'View', '{{ theme.theme_name }}' ); ?> &rarr;
+                                    </a>
+                                </footer>
+                            </article>
+                            <?php
+                        endwhile;
+                        ?>
+                    </div>
+
+                    <nav class="posts-navigation">
+                        <?php
+                        the_posts_pagination(
+                            array(
+                                'mid_size'  => 2,
+                                'prev_text' => '&laquo; ' . esc_html__( 'Previous', '{{ theme.theme_name }}' ),
+                                'next_text' => esc_html__( 'Next', '{{ theme.theme_name }}' ) . ' &raquo;',
+                            )
+                        );
+                        ?>
+                    </nav>
+
+                <?php else : ?>
+
+                    <article class="no-results not-found">
+                        <header class="page-header">
+                            <h1 class="page-title"><?php esc_html_e( 'Nothing Found', '{{ theme.theme_name }}' ); ?></h1>
+                        </header>
+
+                        <div class="page-content">
+                            <p><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with different keywords.', '{{ theme.theme_name }}' ); ?></p>
+                            <?php get_search_form(); ?>
+                        </div>
+
+                        <div class="search-suggestions">
+                            <h3><?php esc_html_e( 'Suggestions:', '{{ theme.theme_name }}' ); ?></h3>
+                            <ul>
+                                <li><?php esc_html_e( 'Make sure all words are spelled correctly.', '{{ theme.theme_name }}' ); ?></li>
+                                <li><?php esc_html_e( 'Try different keywords.', '{{ theme.theme_name }}' ); ?></li>
+                                <li><?php esc_html_e( 'Try more general keywords.', '{{ theme.theme_name }}' ); ?></li>
+                            </ul>
+                        </div>
+                    </article>
+
+                <?php endif; ?>
+
+            </div><!-- #primary -->
+
+            {% if layout.sidebar_position != 'none' %}
+            <aside id="secondary" class="widget-area sidebar sidebar-{{ layout.sidebar_position }}">
+                <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
+                    <?php dynamic_sidebar( 'sidebar-1' ); ?>
+                <?php endif; ?>
+            </aside><!-- #secondary -->
+            {% endif %}
+
+        </div><!-- .content-wrapper -->
+    </div><!-- .container -->
+</div><!-- .content-area -->
+
+<?php
+get_footer();
