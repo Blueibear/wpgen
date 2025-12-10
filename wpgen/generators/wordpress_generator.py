@@ -149,10 +149,10 @@ Text Domain: {text_domain}
 
     # CRITICAL FIX: Strip invisible Unicode characters that may cause parsing issues
     from ..utils.php_validation import strip_invisible_unicode
-    cleaned = strip_invisible_unicode(original)
-    if cleaned != original:
-        logger.warning("Removed invisible Unicode characters from style.css")
-        original = cleaned
+    cleaned, removed = strip_invisible_unicode(original)
+    if removed > 0:
+        logger.warning(f"Removed {removed} invisible Unicode character(s) from style.css")
+    original = cleaned
 
     # CRITICAL FIX: Strip ANY content before the first /* comment
     # LLMs sometimes generate explanatory text before CSS that would cause WordPress to reject the theme
