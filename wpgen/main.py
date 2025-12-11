@@ -11,7 +11,7 @@ from pathlib import Path
 import click
 import yaml
 
-from wpgen.generators import WordPressGenerator
+from wpgen.generators import HybridWordPressGenerator
 from wpgen.github import GitHubIntegration
 
 # Import directly from submodules to avoid import-time SDK crashes
@@ -191,7 +191,12 @@ def generate(
         # Generate theme
         click.echo("🏗️  Generating WordPress theme...")
         output_dir = output or cfg.get("output", {}).get("output_dir", "output")
-        generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
+
+        # Store original prompt for hybrid generator
+        requirements["original_prompt"] = prompt
+
+        # Use Hybrid Generator (JSON → Jinja2 → PHP architecture)
+        generator = HybridWordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
         theme_dir = generator.generate(requirements)
 
         click.echo(f"✅ Theme generated successfully: {theme_dir}\n")

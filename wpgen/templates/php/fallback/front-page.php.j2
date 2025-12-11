@@ -1,0 +1,47 @@
+{# Minimal fallback front-page.php - guaranteed valid #}
+<?php
+/**
+ * The front page template - Fallback version
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<div class="front-page-content">
+    <div class="container">
+        <?php
+        if ( have_posts() ) :
+            while ( have_posts() ) :
+                the_post();
+                ?>
+                <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                    <header class="entry-header">
+                        <h1 class="entry-title"><?php the_title(); ?></h1>
+                    </header>
+
+                    <div class="entry-content">
+                        <?php the_content(); ?>
+                    </div>
+                </article>
+                <?php
+            endwhile;
+        else :
+            ?>
+            <article class="no-results">
+                <header class="page-header">
+                    <h1 class="page-title"><?php esc_html_e( 'Welcome', '{{ theme.theme_name }}' ); ?></h1>
+                </header>
+                <div class="page-content">
+                    <p><?php esc_html_e( 'This is your front page. Add content to get started.', '{{ theme.theme_name }}' ); ?></p>
+                </div>
+            </article>
+            <?php
+        endif;
+        ?>
+    </div>
+</div>
+
+<?php
+get_footer();

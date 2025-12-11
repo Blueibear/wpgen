@@ -14,7 +14,7 @@ from werkzeug.exceptions import HTTPException
 
 from wpgen.github.integration import GitHubIntegration
 from wpgen.parsers.prompt_parser import PromptParser
-from wpgen.generators.wordpress_generator import WordPressGenerator
+from wpgen.generators.hybrid_generator import HybridWordPressGenerator
 from wpgen.utils.config import get_llm_provider as get_provider
 from wpgen.utils.logger import setup_logger
 from wpgen.config_schema import load_and_validate_config, get_redacted_config_summary
@@ -217,7 +217,12 @@ def create_app(config: dict = None, validate_config: bool = True):
             # Generate theme
             cfg = app.config["WPGEN_CONFIG"]
             output_dir = cfg.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
+
+            # Store original prompt for hybrid generator
+            requirements["original_prompt"] = prompt
+
+            # Use Hybrid Generator (JSON → Jinja2 → PHP architecture)
+            generator = HybridWordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
             theme_dir = generator.generate(requirements)
 
             result = {

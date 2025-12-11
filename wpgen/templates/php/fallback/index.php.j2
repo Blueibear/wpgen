@@ -1,0 +1,63 @@
+{# Minimal fallback index.php - guaranteed valid #}
+<?php
+/**
+ * The main template file - Fallback version
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<div class="content-area">
+    <div class="container">
+        <main id="primary" class="site-main">
+
+            <?php
+            if ( have_posts() ) :
+
+                while ( have_posts() ) :
+                    the_post();
+                    ?>
+                    <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                        <header class="entry-header">
+                            <?php
+                            if ( is_singular() ) :
+                                the_title( '<h1 class="entry-title">', '</h1>' );
+                            else :
+                                the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">', '</a></h2>' );
+                            endif;
+                            ?>
+                        </header>
+
+                        <div class="entry-content">
+                            <?php
+                            the_content();
+                            ?>
+                        </div>
+                    </article>
+                    <?php
+                endwhile;
+
+                the_posts_navigation();
+
+            else :
+                ?>
+                <article class="no-results">
+                    <header class="page-header">
+                        <h1 class="page-title"><?php esc_html_e( 'Nothing Found', '{{ theme.theme_name }}' ); ?></h1>
+                    </header>
+                    <div class="page-content">
+                        <p><?php esc_html_e( 'Sorry, no content found.', '{{ theme.theme_name }}' ); ?></p>
+                    </div>
+                </article>
+                <?php
+            endif;
+            ?>
+
+        </main>
+    </div>
+</div>
+
+<?php
+get_footer();
