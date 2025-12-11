@@ -1,7 +1,8 @@
-{# Minimal fallback front-page.php - guaranteed valid #}
+{# Permanent fallback front-page.php - Guaranteed working template #}
 <?php
 /**
- * The front page template - Fallback version
+ * Front Page Template
+ * Guaranteed fallback template that always renders.
  *
  * @package {{ theme.theme_display_name | replace(' ', '_') }}
  */
@@ -9,39 +10,77 @@
 get_header();
 ?>
 
-<div class="front-page-content">
+<main id="primary" class="site-main">
     <div class="container">
-        <?php
-        if ( have_posts() ) :
-            while ( have_posts() ) :
-                the_post();
-                ?>
-                <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-                    <header class="entry-header">
-                        <h1 class="entry-title"><?php the_title(); ?></h1>
-                    </header>
 
-                    <div class="entry-content">
-                        <?php the_content(); ?>
-                    </div>
-                </article>
-                <?php
-            endwhile;
-        else :
-            ?>
-            <article class="no-results">
-                <header class="page-header">
-                    <h1 class="page-title"><?php esc_html_e( 'Welcome', '{{ theme.theme_name }}' ); ?></h1>
+    <?php if ( have_posts() ) : ?>
+        <?php while ( have_posts() ) : the_post(); ?>
+            <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                <header class="entry-header">
+                    <?php if ( has_post_thumbnail() ) : ?>
+                        <div class="post-thumbnail">
+                            <?php the_post_thumbnail( 'large' ); ?>
+                        </div>
+                    <?php endif; ?>
+                    <h1 class="entry-title"><?php the_title(); ?></h1>
                 </header>
-                <div class="page-content">
-                    <p><?php esc_html_e( 'This is your front page. Add content to get started.', '{{ theme.theme_name }}' ); ?></p>
+
+                <div class="entry-content">
+                    <?php the_content(); ?>
                 </div>
+
+                <?php if ( get_edit_post_link() ) : ?>
+                    <footer class="entry-footer">
+                        <?php
+                        edit_post_link(
+                            sprintf(
+                                wp_kses(
+                                    __( 'Edit <span class="screen-reader-text">%s</span>', '{{ theme.theme_name }}' ),
+                                    array(
+                                        'span' => array(
+                                            'class' => array(),
+                                        ),
+                                    )
+                                ),
+                                get_the_title()
+                            ),
+                            '<span class="edit-link">',
+                            '</span>'
+                        );
+                        ?>
+                    </footer>
+                <?php endif; ?>
             </article>
-            <?php
-        endif;
-        ?>
+        <?php endwhile; ?>
+
+    <?php else : ?>
+        <section class="no-content">
+            <header class="page-header">
+                <h1 class="page-title"><?php esc_html_e( 'Welcome', '{{ theme.theme_name }}' ); ?></h1>
+            </header>
+            <div class="page-content">
+                <p><?php esc_html_e( 'This is a fallback front page template. Add content to your home page to replace this.', '{{ theme.theme_name }}' ); ?></p>
+                <?php if ( current_user_can( 'publish_posts' ) ) : ?>
+                    <p><?php
+                        printf(
+                            wp_kses(
+                                __( 'Ready to publish your first post? <a href="%1$s">Get started here</a>.', '{{ theme.theme_name }}' ),
+                                array(
+                                    'a' => array(
+                                        'href' => array(),
+                                    ),
+                                )
+                            ),
+                            esc_url( admin_url( 'post-new.php' ) )
+                        );
+                    ?></p>
+                <?php endif; ?>
+            </div>
+        </section>
+    <?php endif; ?>
+
     </div>
-</div>
+</main>
 
 <?php
 get_footer();

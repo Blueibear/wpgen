@@ -1,0 +1,103 @@
+{# Permanent fallback archive.php - Guaranteed working template #}
+<?php
+/**
+ * Archive Template
+ * Template for displaying archive pages.
+ *
+ * @package {{ theme.theme_display_name | replace(' ', '_') }}
+ */
+
+get_header();
+?>
+
+<main id="primary" class="site-main">
+    <div class="container">
+
+    <?php if ( have_posts() ) : ?>
+
+        <header class="page-header">
+            <?php
+            the_archive_title( '<h1 class="page-title">', '</h1>' );
+            the_archive_description( '<div class="archive-description">', '</div>' );
+            ?>
+        </header>
+
+        <?php
+        while ( have_posts() ) :
+            the_post();
+            ?>
+
+            <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+                <header class="entry-header">
+                    <?php
+                    the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+                    ?>
+
+                    <?php if ( 'post' === get_post_type() ) : ?>
+                        <div class="entry-meta">
+                            <span class="posted-on">
+                                <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( DATE_W3C ) ); ?>">
+                                    <?php echo esc_html( get_the_date() ); ?>
+                                </time>
+                            </span>
+                            <span class="byline">
+                                <span class="author vcard">
+                                    <a class="url fn n" href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>">
+                                        <?php echo esc_html( get_the_author() ); ?>
+                                    </a>
+                                </span>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+                </header>
+
+                <?php if ( has_post_thumbnail() ) : ?>
+                    <div class="post-thumbnail">
+                        <a href="<?php the_permalink(); ?>">
+                            <?php the_post_thumbnail( 'medium' ); ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
+
+                <div class="entry-summary">
+                    <?php the_excerpt(); ?>
+                </div>
+
+                <footer class="entry-footer">
+                    <a href="<?php the_permalink(); ?>" class="read-more">
+                        <?php echo esc_html__( 'Read More', '{{ theme.theme_name }}' ); ?>
+                    </a>
+                </footer>
+            </article>
+
+        <?php endwhile; ?>
+
+        <?php
+        the_posts_navigation(
+            array(
+                'prev_text' => esc_html__( 'Older posts', '{{ theme.theme_name }}' ),
+                'next_text' => esc_html__( 'Newer posts', '{{ theme.theme_name }}' ),
+            )
+        );
+        ?>
+
+    <?php else : ?>
+
+        <article class="no-results not-found">
+            <header class="page-header">
+                <h1 class="page-title"><?php esc_html_e( 'Nothing Found', '{{ theme.theme_name }}' ); ?></h1>
+            </header>
+
+            <div class="page-content">
+                <p><?php esc_html_e( 'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.', '{{ theme.theme_name }}' ); ?></p>
+                <?php get_search_form(); ?>
+            </div>
+        </article>
+
+    <?php endif; ?>
+
+    </div>
+</main>
+
+<?php
+get_footer();

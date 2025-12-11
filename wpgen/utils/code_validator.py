@@ -2087,8 +2087,15 @@ def repair_php_blocks(php_code: str) -> tuple[str, list[str]]:
 def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
     """Get minimal non-breaking fallback template for any PHP file.
 
-    These fallbacks are guaranteed to pass PHP syntax validation and never break WordPress.
-    They are used when LLM generation fails AND sanitization cannot fix the code.
+    IMPORTANT: This function is DEPRECATED and should NOT be used for new code.
+    Use Jinja2 fallback templates from wpgen/templates/php/fallback/ instead.
+
+    This function provides Python-based fallback templates for critical files when
+    LLM generation fails AND sanitization cannot fix the code. However, the preferred
+    approach is to use the Jinja2 fallback template system.
+
+    CRITICAL: This function will NEVER generate stub templates. If a file is not
+    recognized, it will raise an error rather than generating placeholder code.
 
     Args:
         filename: Name of the PHP file (e.g., 'footer.php', 'header.php')
@@ -2096,6 +2103,9 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 
     Returns:
         Minimal working PHP code for the file
+
+    Raises:
+        ValueError: If the filename is not recognized (no stub generation allowed)
     """
     if filename == 'footer.php':
         return """</main>
@@ -2260,10 +2270,13 @@ add_action( 'widgets_init', '{safe_name}_widgets_init' );
 """
 
     else:
-        # Generic fallback for unknown files
-        return f"""<?php
-// Minimal fallback for {filename}
-"""
+        # CRITICAL: No stub templates allowed
+        # If the file is not recognized, we should not generate a stub
+        # The system should use Jinja2 fallback templates instead
+        raise ValueError(
+            f"No minimal fallback available for {filename}. "
+            f"Stub templates are FORBIDDEN. Use Jinja2 fallback templates from the template directory instead."
+        )
 
 
 def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
