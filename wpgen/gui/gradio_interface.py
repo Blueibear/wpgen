@@ -9,7 +9,7 @@ from pathlib import Path
 
 import gradio as gr
 
-from ..generators import WordPressGenerator
+from ..generators import HybridWordPressGenerator
 from ..github import GitHubIntegration
 from ..parsers import PromptParser
 from ..utils import FileHandler, get_llm_provider, get_logger, setup_logger
@@ -349,7 +349,12 @@ PROGRESS:
             yield progress_msg, status, "", ""
 
             output_dir = config.get("output", {}).get("output_dir", "output")
-            generator = WordPressGenerator(llm_provider, output_dir, config.get("wordpress", {}))
+
+            # Store original prompt for hybrid generator
+            requirements["original_prompt"] = prompt
+
+            # Use Hybrid Generator (JSON → Jinja2 → PHP architecture)
+            generator = HybridWordPressGenerator(llm_provider, output_dir, config.get("wordpress", {}))
 
             # Pass design images to generator for vision-based code generation
             theme_dir = generator.generate(

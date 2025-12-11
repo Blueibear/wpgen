@@ -17,6 +17,7 @@ through these safe, pre-validated templates.
 import os
 import re
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,7 @@ logger = get_logger(__name__)
 # Template directory locations
 TEMPLATE_DIR = Path(__file__).parent
 PHP_TEMPLATE_DIR = TEMPLATE_DIR / "php"
+PHP_FALLBACK_DIR = PHP_TEMPLATE_DIR / "fallback"
 JS_TEMPLATE_DIR = TEMPLATE_DIR / "js"
 
 
@@ -56,6 +58,42 @@ JS_TEMPLATES = {
     "assets/js/theme.js": "theme.js.j2",
     "assets/js/navigation.js": "navigation.js.j2",
 }
+
+# Critical templates that have fallback versions
+CRITICAL_TEMPLATES = {
+    "header.php",
+    "footer.php",
+    "front-page.php",
+    "index.php",
+}
+
+
+def validate_php_file(file_path: Path) -> bool:
+    """Validate PHP syntax of a file using php -l.
+
+    Args:
+        file_path: Path to PHP file
+
+    Returns:
+        True if valid, False otherwise
+    """
+    try:
+        result = subprocess.run(
+            ["php", "-l", str(file_path)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        logger.warning(f"PHP validation unavailable: {e}")
+        # If php is not available, assume valid (CI environments may not have PHP)
+        return True
+    except Exception as e:
+        logger.error(f"PHP validation error: {e}")
+        return False
 
 
 def sanitize_filename(filename: str) -> str:
@@ -149,6 +187,15 @@ class ThemeRenderer:
             keep_trailing_newline=True,
         )
 
+        # Setup Jinja2 environment for fallback templates
+        self.fallback_env = Environment(
+            loader=FileSystemLoader(str(PHP_FALLBACK_DIR)),
+            autoescape=False,
+            trim_blocks=True,
+            lstrip_blocks=True,
+            keep_trailing_newline=True,
+        )
+
         logger.info(f"Initialized ThemeRenderer with output dir: {output_dir}")
 
     def render(self, spec: ThemeSpecification, images: list[dict[str, Any]] | None = None) -> str:
@@ -228,7 +275,7 @@ class ThemeRenderer:
         }
 
     def _render_php_templates(self, theme_dir: Path, context: dict[str, Any]) -> None:
-        """Render all PHP templates.
+        """Render all PHP templates with validation and fallback support.
 
         Args:
             theme_dir: Theme directory path
@@ -244,6 +291,30 @@ class ThemeRenderer:
                 output_path.write_text(content, encoding="utf-8")
 
                 logger.debug(f"Rendered: {output_file}")
+
+                # Validate PHP syntax for critical files
+                if output_file.endswith('.php') and output_file in CRITICAL_TEMPLATES:
+                    is_valid = validate_php_file(output_path)
+
+                    if not is_valid:
+                        logger.error(f"PHP validation failed for {output_file}, using fallback template")
+
+                        # Try to use fallback template
+                        try:
+                            fallback_template = self.fallback_env.get_template(template_file)
+                            fallback_content = fallback_template.render(**context)
+                            output_path.write_text(fallback_content, encoding="utf-8")
+
+                            # Validate fallback
+                            if validate_php_file(output_path):
+                                logger.info(f"Successfully used fallback template for {output_file}")
+                            else:
+                                logger.error(f"Fallback template also failed validation for {output_file}")
+                                raise ValueError(f"Both primary and fallback templates failed for {output_file}")
+
+                        except Exception as fallback_error:
+                            logger.error(f"Failed to use fallback template for {output_file}: {fallback_error}")
+                            raise ValueError(f"Template rendering and fallback both failed for {output_file}")
 
             except Exception as e:
                 logger.error(f"Failed to render {output_file}: {e}")
