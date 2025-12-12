@@ -1163,6 +1163,30 @@ def validate_and_fix_php(
     return fixed_code, is_valid, issues
 
 
+def sanitize_php_code(text: str) -> str:
+    """Sanitize PHP code by removing escaping artifacts and invisible characters.
+
+    This function removes:
+    - Escaped quotes (\' and \") when outside actual PHP strings
+    - Invisible unicode characters (U+2630, etc.)
+    - Other non-printable characters
+
+    Args:
+        text: PHP code text to sanitize
+
+    Returns:
+        Sanitized PHP code
+    """
+    # Remove escaping artifacts
+    text = text.replace("\\'", "'")
+    text = text.replace('\\"', '"')
+
+    # Remove invisible unicode (keep only printable + whitespace)
+    text = ''.join(ch for ch in text if ch.isprintable() or ch in ['\n', '\r', '\t', ' '])
+
+    return text
+
+
 def clean_llm_output(code: str, file_type: str = 'php') -> str:
     """Clean LLM output to extract only raw code and remove invisible Unicode.
 

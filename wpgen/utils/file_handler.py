@@ -392,6 +392,13 @@ class FileHandler:
     def create_zip(self, directory: str) -> str | None:
         """Create a ZIP archive of a directory.
 
+        Excludes:
+        - .git, .github directories
+        - node_modules, vendor directories
+        - Hidden files and directories (starting with .)
+        - Python cache files (__pycache__, *.pyc)
+        - IDE files (.vscode, .idea)
+
         Args:
             directory: Path to directory to zip
 
@@ -408,11 +415,35 @@ class FileHandler:
 
             import zipfile
 
+            # Directories and patterns to exclude
+            exclude_dirs = {'.git', '.github', 'node_modules', 'vendor', '__pycache__', '.vscode', '.idea'}
+            exclude_patterns = {'*.pyc', '.DS_Store', 'Thumbs.db'}
+
+            excluded_count = 0
+
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for file_path in dir_path.rglob("*"):
+                    # Skip if path contains excluded directory
+                    if any(excluded_dir in file_path.parts for excluded_dir in exclude_dirs):
+                        excluded_count += 1
+                        continue
+
+                    # Skip hidden files/directories (starting with .)
+                    if any(part.startswith('.') for part in file_path.parts[len(dir_path.parts):]):
+                        excluded_count += 1
+                        continue
+
+                    # Skip files matching excluded patterns
+                    if any(file_path.match(pattern) for pattern in exclude_patterns):
+                        excluded_count += 1
+                        continue
+
                     if file_path.is_file():
                         arcname = file_path.relative_to(dir_path)
                         zipf.write(file_path, arcname)
+
+            if excluded_count > 0:
+                logger.info(f"Excluded {excluded_count} files/directories from ZIP (.git, .github, node_modules, hidden files)")
 
             logger.info(f"Created ZIP archive: {zip_path}")
             return str(zip_path)

@@ -1260,163 +1260,64 @@ Use modern WordPress template tags and best practices."""
             self._validate_and_write_php(theme_dir, "index.php", fallback)
 
     def _generate_header_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
-        """Generate header.php template file.
+        """Generate header.php template file with fixed boilerplate structure.
+
+        The header uses a fixed boilerplate that prevents LLM from generating malformed
+        HTML structure. The LLM only generates the inner header content (logo, nav, etc.)
+        which is inserted into the {{HEADER_CONTENT}} placeholder.
 
         Args:
             theme_dir: Theme directory path
             requirements: Theme requirements
         """
-        logger.info("Generating header.php")
+        logger.info("Generating header.php with fixed boilerplate structure")
 
-        # Import header pattern for structured guidance
-        from ..patterns import pattern_to_prompt_context
+        # Fixed boilerplate - LLM cannot modify this
+        HEADER_BOILERPLATE = """<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
 
-        header_pattern = pattern_to_prompt_context('header')
+<header class="site-header">
+{{HEADER_CONTENT}}
+</header>
+"""
 
         context = {
             "theme_name": requirements["theme_name"],
             "navigation": requirements.get("navigation", []),
         }
 
-        description = f"""IMPORTANT: Respond ONLY with valid PHP/HTML code for header.php. No explanations, no markdown code fences, no comments before the code.
+        # Prompt the LLM to generate ONLY the inner header content
+        description = """CRITICAL: Generate ONLY the inner header markup (logo, nav, hero, etc.).
+DO NOT generate DOCTYPE, <html>, <head>, <body>, or <header> tags - these are provided by the template.
+DO NOT open or close <main> tags.
 
-Create a modern, fully-featured header.php template for WordPress theme.
+Generate modern, semantic header content including:
 
-HEADER DESIGN PATTERN:
+1. SITE BRANDING:
+   - <div class="site-branding"> container
+   - <?php the_custom_logo(); ?> for logo
+   - Conditional site title (h1 on home, p elsewhere):
+     <?php if ( is_front_page() && is_home() ) : ?>
+         <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+     <?php else : ?>
+         <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+     <?php endif; ?>
+   - Site description: <?php bloginfo( 'description' ); ?>
 
-{header_pattern}
+2. NAVIGATION:
+   - <nav class="main-navigation"> with proper aria-label
+   - wp_nav_menu() with theme_location 'primary'
+   - Mobile menu toggle button with class "mobile-menu-toggle"
 
-CRITICAL REQUIREMENTS - Modern Header Structure:
-
-1. DOCUMENT HEAD:
-   - Full DOCTYPE html with language attributes
-   - Meta charset and viewport
-   - wp_head() hook before </head>
-   - Proper HTML5 document structure
-
-2. SEMANTIC HEADER STRUCTURE:
-   - Use <header class="site-header"> as main container
-   - Add <div class="header-inner container"> for width constraint
-   - Wrap logo and title in <div class="site-branding">
-   - Include the_custom_logo() for logo display
-   - Use conditional h1/p for site title (h1 on front page, p on others)
-   - Wrap navigation in <nav class="main-navigation">
-   - Use flexbox layout classes (.flex, .flex-between, .flex-center)
-
-3. MOBILE NAVIGATION:
-   - Add mobile menu toggle button with hamburger icon (☰)
-   - Button should have class "mobile-menu-toggle" and aria-label
-   - Add data attribute or JS hook for mobile menu
-   - Include proper accessibility attributes (aria-expanded, aria-controls)
-
-4. NAVIGATION STRUCTURE:
-   - Desktop navigation with wp_nav_menu()
-   - Menu should have class "primary-menu"
-   - Include proper container and menu classes
-   - Add support for dropdown/submenu styling
-
-5. SAMPLE STRUCTURE:
-<!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-    <meta charset="<?php bloginfo( 'charset' ); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="profile" href="https://gmpg.org/xfn/11">
-    <?php wp_head(); ?>
-</head>
-<body <?php body_class(); ?>>
-<?php wp_body_open(); ?>
-<header class="site-header">
-    <div class="header-inner container">
-        <div class="site-branding">
-            <?php the_custom_logo(); ?>
-            <div class="site-title-group">
-                <?php if ( is_front_page() && is_home() ) : ?>
-                    <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
-                <?php else : ?>
-                    <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
-                <?php endif; ?>
-                <p class="site-description"><?php bloginfo( 'description' ); ?></p>
-            </div>
-        </div>
-
-        <button class="mobile-menu-toggle" aria-label="Toggle mobile menu" aria-expanded="false">
-            <span class="menu-icon"></span>
-        </button>
-
-        <nav class="main-navigation" aria-label="Primary Navigation">
-            <?php
-            wp_nav_menu( array(
-                'theme_location' => 'primary',
-                'menu_class'     => 'primary-menu',
-                'container'      => false,
-            ) );
-            ?>
-        </nav>
-    </div>
-</header>
-<main id="main" class="site-main">
-
-6. STYLING CONSIDERATIONS:
-   - Header should support sticky/fixed positioning via CSS
-   - Logo should be properly sized
-   - Mobile menu toggle should only show on mobile
-   - Desktop navigation should be horizontal
-   - Include proper spacing and alignment
-   - Support for search icon or CTA button (optional)
-
-7. WORDPRESS STANDARDS:
-   - Use proper escaping (esc_url, esc_html, etc.)
-   - Follow WordPress coding standards
-   - Include proper indentation
-   - Add inline comments for complex sections
-
-IMPORTANT: Create a complete, production-ready header with modern navigation, mobile menu support, and clean semantic HTML."""
-
-        try:
-            # Pass design images for header layout/navigation reference
-            php_code = self.llm_provider.generate_code(
-                description, "php", context, images=self.design_images
-            )
-
-            # CRITICAL: Clean LLM output FIRST before any special handling
-            # This removes markdown fences and explanatory text before we check for DOCTYPE
-            php_code = clean_generated_code(php_code, 'php')
-
-            # Special handling for header - might start with <!DOCTYPE
-            # Now that output is cleaned, this check works correctly
-            if not php_code.strip().startswith("<!DOCTYPE") and not php_code.strip().startswith(
-                "<?php"
-            ):
-                php_code = "<?php\n" + php_code
-
-            # Validate that generated code has required semantic structure
-            has_site_header = 'site-header' in php_code
-            has_site_branding = 'site-branding' in php_code
-            has_custom_logo = 'the_custom_logo()' in php_code
-            has_main_nav = 'main-navigation' in php_code
-
-            if not (has_site_header and has_site_branding and has_custom_logo and has_main_nav):
-                logger.warning("Generated header.php missing required semantic structure - using fallback")
-                logger.warning(f"  site-header: {has_site_header}, site-branding: {has_site_branding}, "
-                             f"the_custom_logo(): {has_custom_logo}, main-navigation: {has_main_nav}")
-                # Use fallback template
-                raise ValueError("Generated header missing required structure")
-
-            self._validate_and_write_php(theme_dir, "header.php", php_code)
-
-        except Exception as e:
-            logger.error(f"Failed to generate header.php: {str(e)}")
-            fallback = """<!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-    <meta charset="<?php bloginfo( 'charset' ); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?php wp_head(); ?>
-</head>
-<body <?php body_class(); ?>>
-<?php wp_body_open(); ?>
-<header class="site-header">
+3. EXAMPLE OUTPUT:
+<div class="header-inner container">
     <div class="site-branding">
         <?php the_custom_logo(); ?>
         <?php if ( is_front_page() && is_home() ) : ?>
@@ -1425,190 +1326,194 @@ IMPORTANT: Create a complete, production-ready header with modern navigation, mo
             <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
         <?php endif; ?>
     </div>
-    <nav class="main-navigation">
-        <?php
-        wp_nav_menu( array(
-            'theme_location' => 'primary',
-            'menu_class'     => 'primary-menu',
-        ) );
-        ?>
+    <button class="mobile-menu-toggle" aria-label="Toggle menu">
+        <span class="menu-icon"></span>
+    </button>
+    <nav class="main-navigation" aria-label="Primary">
+        <?php wp_nav_menu( array( 'theme_location' => 'primary', 'menu_class' => 'primary-menu' ) ); ?>
     </nav>
-</header>
-<main id="main" class="site-main">
-"""
+</div>
+
+IMPORTANT: Output ONLY the inner content. No DOCTYPE, html, head, body, or header tags."""
+
+        try:
+            # Generate inner header content only
+            inner_content = self.llm_provider.generate_code(
+                description, "php", context, images=self.design_images
+            )
+
+            # Clean the generated content
+            from ..utils.php_validation import sanitize_php_code
+            inner_content = clean_generated_code(inner_content, 'php')
+            inner_content = sanitize_php_code(inner_content)
+
+            # Strip any accidentally generated DOCTYPE, html, head, body, or header tags
+            inner_content = re.sub(r'<!DOCTYPE[^>]*>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r'</?html[^>]*>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r'<head>.*?</head>', '', inner_content, flags=re.DOTALL | re.IGNORECASE)
+            inner_content = re.sub(r'</?body[^>]*>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r'<header[^>]*>|</header>', '', inner_content, flags=re.IGNORECASE)
+            # CRITICAL: Remove any <main> tags from header
+            inner_content = re.sub(r'</?main[^>]*>', '', inner_content, flags=re.IGNORECASE)
+
+            # Validate inner content has required elements
+            has_branding = 'site-branding' in inner_content
+            has_logo = 'the_custom_logo()' in inner_content
+            has_nav = 'main-navigation' in inner_content or 'wp_nav_menu' in inner_content
+
+            if not (has_branding and has_logo and has_nav):
+                logger.warning("Generated header content missing required elements - using fallback")
+                raise ValueError("Generated header content incomplete")
+
+            # Insert inner content into boilerplate
+            php_code = HEADER_BOILERPLATE.replace('{{HEADER_CONTENT}}', inner_content)
+
+            self._validate_and_write_php(theme_dir, "header.php", php_code)
+
+        except Exception as e:
+            logger.error(f"Failed to generate header.php: {str(e)}")
+            # Fallback with basic but complete header content
+            fallback_content = """    <div class="site-branding">
+        <?php the_custom_logo(); ?>
+        <?php if ( is_front_page() && is_home() ) : ?>
+            <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+        <?php else : ?>
+            <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+        <?php endif; ?>
+    </div>
+    <nav class="main-navigation">
+        <?php wp_nav_menu( array( 'theme_location' => 'primary', 'menu_class' => 'primary-menu' ) ); ?>
+    </nav>"""
+            fallback = HEADER_BOILERPLATE.replace('{{HEADER_CONTENT}}', fallback_content)
             self._validate_and_write_php(theme_dir, "header.php", fallback)
 
     def _generate_footer_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
-        """Generate footer.php template file.
+        """Generate footer.php template file with fixed boilerplate structure.
+
+        The footer uses a fixed boilerplate that prevents LLM from generating malformed
+        structure. The LLM only generates the inner footer content (widgets, copyright, etc.)
+        which is inserted into the {{FOOTER_CONTENT}} placeholder.
 
         Args:
             theme_dir: Theme directory path
             requirements: Theme requirements
         """
-        logger.info("Generating footer.php")
+        logger.info("Generating footer.php with fixed boilerplate structure")
 
-        # Import footer pattern for structured guidance
-        from ..patterns import pattern_to_prompt_context
-
-        footer_pattern = pattern_to_prompt_context('footer')
-
-        context = {"theme_name": requirements["theme_name"]}
-
-        description = f"""IMPORTANT: Respond ONLY with valid PHP/HTML code for footer.php. No explanations, no markdown code fences, no comments before the code.
-
-Create a modern, fully-featured footer.php template for WordPress theme.
-
-FOOTER DESIGN PATTERN:
-
-{footer_pattern}
-
-CRITICAL REQUIREMENTS - Footer Must Prevent Blank Screens:
-
-1. CLOSE MAIN CONTENT AREA:
-   - Include closing </main> tag if header.php opens it
-   - Example: </main><!-- .site-main -->
-   - If unsure, include it - won't cause issues if redundant
-
-2. SEMANTIC FOOTER TAG WITH VISIBLE CONTENT:
-   - MUST use semantic <footer> tag with any class name
-   - Footer MUST contain visible content to prevent layout collapse
-   - Include container div inside footer for structure
-   - Example: <footer class="site-footer"> or <footer class="footer">
-
-3. FOOTER WIDGET AREAS WITH ALWAYS-VISIBLE FALLBACK:
-   - Create multi-column footer widget layout (2-4 columns)
-   - Each widget area has unique ID (footer-1, footer-2, footer-3)
-   - CRITICAL: MUST include visible fallback content when widgets are not active
-   - Use if/else with dynamic_sidebar() to show fallback when no widgets
-   - Fallback content: "About", "Quick Links", "Connect" with real text
-   - This ensures footer NEVER appears empty
-   - Wrap in container div for width constraint
-
-4. FOOTER CREDITS SECTION:
-   - Include <div class="site-info"> section with copyright
-   - Include current year: date('Y')
-   - Include site name: bloginfo('name')
-   - Example: "&copy; 2024 Site Name. All rights reserved."
-   - This adds visible content to prevent blank footers
-
-5. WORDPRESS HOOKS (CRITICAL):
-   - MUST include <?php wp_footer(); ?> before </body>
-   - MUST include closing </body> and </html> tags
-   - These are required for WordPress to function properly
-   - Missing these causes WordPress Customizer to fail
-
-6. SAMPLE STRUCTURE WITH VISIBLE FALLBACK CONTENT:
-</main><!-- .site-main -->
-
-<footer class="site-footer">
-    <div class="footer-widgets container">
-        <div class="footer-widgets-inner grid grid-3">
-            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
-                <div class="footer-widget-area footer-widget-1">
-                    <?php dynamic_sidebar( 'footer-1' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-1">
-                    <h3 class="widget-title">About</h3>
-                    <p>Welcome to our website. Visit us to learn more.</p>
-                </div>
-            <?php endif; ?>
-
-            <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
-                <div class="footer-widget-area footer-widget-2">
-                    <?php dynamic_sidebar( 'footer-2' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-2">
-                    <h3 class="widget-title">Quick Links</h3>
-                    <ul>
-                        <li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a></li>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
-            <?php if ( is_active_sidebar( 'footer-3' ) ) : ?>
-                <div class="footer-widget-area footer-widget-3">
-                    <?php dynamic_sidebar( 'footer-3' ); ?>
-                </div>
-            <?php else : ?>
-                <div class="footer-widget-area footer-widget-3">
-                    <h3 class="widget-title">Connect</h3>
-                    <p>Stay connected with us.</p>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <div class="site-info">
-        <div class="container">
-            <p class="copyright">
-                &copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.
-            </p>
-        </div>
+        # Fixed boilerplate - LLM cannot modify this
+        FOOTER_BOILERPLATE = """<footer class="site-footer">
+    <div class="footer-inner">
+{{FOOTER_CONTENT}}
     </div>
 </footer>
 
 <?php wp_footer(); ?>
 </body>
 </html>
+"""
 
-7. STYLING CONSIDERATIONS:
-   - Footer should have distinct background color
-   - Widget areas should stack on mobile (responsive)
-   - Proper spacing and typography
-   - Copyright section should be visually separated
+        context = {"theme_name": requirements["theme_name"]}
 
-8. ACCESSIBILITY:
-   - Proper landmark roles (footer role is implicit)
-   - Proper heading hierarchy in widgets
-   - Semantic HTML structure
+        # Prompt the LLM to generate ONLY the inner footer content
+        description = """CRITICAL: Generate ONLY the inner footer markup (widgets, copyright, etc.).
+DO NOT generate <footer>, wp_footer(), </body>, or </html> tags - these are provided by the template.
+DO NOT close or open <main> tags.
 
-9. WORDPRESS STANDARDS:
-   - Use proper escaping (esc_html, esc_url, etc.)
-   - Follow WordPress coding standards
-   - Include proper indentation
-   - Add inline comments for sections
+Generate modern footer content including:
 
-IMPORTANT: The footer MUST prevent blank screens and WordPress Customizer failures:
-- Include wp_footer() hook and closing tags (</body></html>) - REQUIRED
-- Include visible fallback content in widget areas - prevents empty footer
-- Include copyright section - adds visible content
-- Close any open tags (</main> if needed) - prevents DOM breaks
-- Use proper structure to ensure WordPress preview never blanks out
+1. FOOTER WIDGETS:
+   - Multiple widget areas with visible fallback content
+   - Use is_active_sidebar() checks with else clauses
+   - Fallback content prevents empty footers
+   - Example:
+     <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+         <div class="footer-widget"><?php dynamic_sidebar( 'footer-1' ); ?></div>
+     <?php else : ?>
+         <div class="footer-widget">
+             <h3>About</h3>
+             <p><?php bloginfo( 'description' ); ?></p>
+         </div>
+     <?php endif; ?>
 
-Create a complete, production-ready footer that will NEVER cause layout collapse or preview failures."""
+2. COPYRIGHT SECTION:
+   - Site info with copyright notice
+   - Use date('Y') for current year (NOT date(\'Y\'))
+   - Use bloginfo('name') for site name
+   - Example:
+     <div class="site-info">
+         <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?>. All rights reserved.</p>
+     </div>
+
+3. EXAMPLE OUTPUT:
+<div class="footer-widgets">
+    <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+        <div class="footer-widget"><?php dynamic_sidebar( 'footer-1' ); ?></div>
+    <?php else : ?>
+        <div class="footer-widget">
+            <h3>About</h3>
+            <p><?php bloginfo( 'description' ); ?></p>
+        </div>
+    <?php endif; ?>
+</div>
+<div class="site-info">
+    <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?>.</p>
+</div>
+
+CRITICAL: Use date('Y') NOT date(\'Y\') - backslash escaping causes PHP errors.
+Output ONLY the inner content. No footer, wp_footer(), body, or html closing tags."""
 
         try:
-            # Pass design images for footer layout reference
-            php_code = self.llm_provider.generate_code(
+            # Generate inner footer content only
+            inner_content = self.llm_provider.generate_code(
                 description, "php", context, images=self.design_images
             )
 
-            # Very relaxed validation: auto-repair will fix any issues
-            # Just check that we got some content back
-            if not php_code or len(php_code.strip()) < 10:
-                logger.warning("Generated footer.php is empty or too short - using fallback")
-                raise ValueError("Generated footer is empty")
+            # Clean the generated content
+            from ..utils.php_validation import sanitize_php_code
+            from ..utils.code_validator import remove_duplicate_footers
+            inner_content = clean_generated_code(inner_content, 'php')
+            inner_content = sanitize_php_code(inner_content)
 
-            # The auto-repair function will ensure footer.php has:
-            # - <footer> tag (if missing, will be added)
-            # - </main> closing tag (if main is open but not closed)
-            # - wp_footer() hook (if missing, will be added)
-            # - Proper closing tags (will be added if missing)
-            # - Visible content (empty footers will be replaced)
-            # - PHP syntax validation with php -l
-            # If all validation fails, use template-based fallback (NOT LLM regeneration)
-            from ..utils.code_validator import get_fallback_footer_php
-            fallback = get_fallback_footer_php(requirements["theme_name"])
-            self._validate_and_write_php(theme_dir, "footer.php", php_code, fallback_code=fallback)
+            # Strip any accidentally generated footer, wp_footer(), body, html tags
+            inner_content = re.sub(r'<footer[^>]*>|</footer>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r'<\?php\s+wp_footer\(\);?\s*\?>', '', inner_content)
+            inner_content = re.sub(r'</body>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r'</html>', '', inner_content, flags=re.IGNORECASE)
+            # CRITICAL: Remove any <main> tags from footer
+            inner_content = re.sub(r'</?main[^>]*>', '', inner_content, flags=re.IGNORECASE)
+
+            # Remove duplicate footer blocks if LLM generated them
+            inner_content, duplicates = remove_duplicate_footers(inner_content)
+
+            # Validate inner content isn't empty
+            if len(inner_content.strip()) < 20:
+                logger.warning("Generated footer content too short - using fallback")
+                raise ValueError("Generated footer content too short")
+
+            # Insert inner content into boilerplate
+            php_code = FOOTER_BOILERPLATE.replace('{{FOOTER_CONTENT}}', inner_content)
+
+            self._validate_and_write_php(theme_dir, "footer.php", php_code)
 
         except Exception as e:
             logger.error(f"Failed to generate footer.php: {str(e)}")
-            logger.info("Using template-based fallback footer (NOT LLM-generated)")
-            # Use the guaranteed-safe template-based fallback
-            from ..utils.code_validator import get_fallback_footer_php
-            fallback = get_fallback_footer_php(requirements["theme_name"])
+            # Fallback with basic but complete footer content
+            fallback_content = """        <div class="footer-widgets">
+            <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                <div class="footer-widget">
+                    <?php dynamic_sidebar( 'footer-1' ); ?>
+                </div>
+            <?php else : ?>
+                <div class="footer-widget">
+                    <h3>About</h3>
+                    <p><?php bloginfo( 'description' ); ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
+        <div class="site-info">
+            <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?>. All rights reserved.</p>
+        </div>"""
+            fallback = FOOTER_BOILERPLATE.replace('{{FOOTER_CONTENT}}', fallback_content)
             self._validate_and_write_php(theme_dir, "footer.php", fallback)
 
     def _generate_sidebar_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
@@ -2045,6 +1950,80 @@ Follow WordPress template hierarchy and coding standards."""
                 logger.info(f"Generated template part: {filename}")
             except Exception as e:
                 logger.error(f"Failed to generate template part {filename}: {e}")
+
+        # CRITICAL: Always ensure content.php and content-none.php exist as safe defaults
+        logger.info("Ensuring required template parts exist (content.php, content-none.php)")
+
+        content_php = template_parts_dir / "content.php"
+        if not content_php.exists():
+            logger.info("Creating safe default content.php")
+            content_php.write_text(f"""<?php
+/**
+ * Template part for displaying post content
+ *
+ * @package {requirements['theme_name']}
+ */
+?>
+
+<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+    <header class="entry-header">
+        <?php
+        if ( is_singular() ) :
+            the_title( '<h1 class="entry-title">', '</h1>' );
+        else :
+            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">', '</a></h2>' );
+        endif;
+        ?>
+        <div class="entry-meta">
+            <span class="posted-on"><?php echo esc_html( get_the_date() ); ?></span>
+            <span class="byline"> by <?php echo esc_html( get_the_author() ); ?></span>
+        </div>
+    </header>
+
+    <?php if ( has_post_thumbnail() ) : ?>
+        <div class="post-thumbnail">
+            <?php the_post_thumbnail( 'large' ); ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="entry-content">
+        <?php
+        if ( is_singular() ) :
+            the_content();
+        else :
+            the_excerpt();
+        endif;
+        ?>
+    </div>
+</article>
+""", encoding='utf-8')
+
+        content_none_php = template_parts_dir / "content-none.php"
+        if not content_none_php.exists():
+            logger.info("Creating safe default content-none.php")
+            content_none_php.write_text(f"""<?php
+/**
+ * Template part for displaying a message when no content is found
+ *
+ * @package {requirements['theme_name']}
+ */
+?>
+
+<section class="no-results">
+    <header class="page-header">
+        <h1 class="page-title"><?php esc_html_e( 'Nothing Found', '{requirements['theme_name']}' ); ?></h1>
+    </header>
+
+    <div class="page-content">
+        <?php if ( is_search() ) : ?>
+            <p><?php esc_html_e( 'Sorry, no results were found. Try a different search.', '{requirements['theme_name']}' ); ?></p>
+            <?php get_search_form(); ?>
+        <?php else : ?>
+            <p><?php esc_html_e( 'No content found. Try exploring recent posts.', '{requirements['theme_name']}' ); ?></p>
+        <?php endif; ?>
+    </div>
+</section>
+""", encoding='utf-8')
 
         logger.info(f"Template parts generation complete ({len(template_parts_needed)} files checked)")
 
