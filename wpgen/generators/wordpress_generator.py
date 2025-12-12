@@ -2045,13 +2045,14 @@ Follow WordPress template hierarchy and coding standards."""
         # Generate CSS for smooth transitions and mobile navigation
         css_content = """/* WPGen UI Enhancements - Always On */
 
-/* Smooth page transitions */
+/* Smooth page transitions (with noscript fallback) */
 body {
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
 }
 
-body.wpgen-loaded {
+body.wpgen-loaded,
+body.no-js {
     opacity: 1;
 }
 
@@ -2084,17 +2085,62 @@ a {
         border: none;
         padding: 0.75rem;
         font-size: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    /* Hamburger icon lines */
+    .menu-icon {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 24px;
+    }
+
+    .menu-line {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background-color: currentColor;
+        transition: all 0.3s ease;
+    }
+
+    /* Hamburger animation when menu is open */
+    .mobile-menu-toggle[aria-expanded="true"] .menu-line:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+    }
+
+    .mobile-menu-toggle[aria-expanded="true"] .menu-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .mobile-menu-toggle[aria-expanded="true"] .menu-line:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
     }
 
     /* Mobile menu - hidden by default */
-    .mobile-menu {
+    .main-navigation {
         display: none;
         flex-direction: column;
         width: 100%;
     }
 
-    .mobile-menu.active {
+    .main-navigation.active {
         display: flex;
+    }
+}
+
+/* Desktop: always show navigation, hide toggle */
+@media (min-width: 769px) {
+    .mobile-menu-toggle {
+        display: none;
+    }
+
+    .main-navigation {
+        display: flex !important;
     }
 }
 
@@ -2113,6 +2159,26 @@ a {
         padding: 0.75rem 1.5rem;
     }
 }
+
+/* Screen reader text utility */
+.screen-reader-text {
+    clip: rect(1px, 1px, 1px, 1px);
+    position: absolute !important;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    word-wrap: normal !important;
+}
+
+.screen-reader-text:focus {
+    clip: auto !important;
+    display: block;
+    height: auto;
+    left: 5px;
+    top: 5px;
+    width: auto;
+    z-index: 100000;
+}
 """
 
         css_file = css_dir / "wpgen-ui.css"
@@ -2128,41 +2194,39 @@ a {
         document.body.classList.add('wpgen-loaded');
     });
 
-    // Smooth page navigation (prefetch and fade)
-    var links = document.querySelectorAll('a[href^="' + window.location.origin + '"]');
-    links.forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            var href = this.getAttribute('href');
-            // Skip anchors, external links, and special links
-            if (href.indexOf('#') === 0 || this.getAttribute('target') === '_blank') {
-                return;
-            }
-            e.preventDefault();
-            document.body.classList.remove('wpgen-loaded');
-            setTimeout(function() {
-                window.location.href = href;
-            }, 300);
-        });
-    });
+    // Mobile menu toggle - Defensive programming with fallback selectors
+    function initMobileMenu() {
+        // Try multiple possible selectors
+        var toggleBtn = document.querySelector('.mobile-menu-toggle') ||
+                       document.querySelector('[aria-label*="Menu"]') ||
+                       document.querySelector('.menu-toggle');
 
-    // Mobile menu toggle
-    var toggleBtn = document.querySelector('.mobile-menu-toggle');
-    var mobileNav = document.querySelector('.main-navigation');
+        var mobileNav = document.querySelector('.main-navigation') ||
+                       document.querySelector('nav[aria-label*="Navigation"]') ||
+                       document.querySelector('.primary-navigation') ||
+                       document.querySelector('#site-navigation');
 
-    if (toggleBtn && mobileNav) {
+        if (!toggleBtn || !mobileNav) {
+            // No mobile menu elements found, skip initialization
+            return;
+        }
+
+        // Toggle menu on button click
         toggleBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            var isExpanded = this.getAttribute('aria-expanded') === 'true';
+
             mobileNav.classList.toggle('active');
-            this.setAttribute('aria-expanded',
-                mobileNav.classList.contains('active') ? 'true' : 'false'
-            );
+            this.setAttribute('aria-expanded', !isExpanded ? 'true' : 'false');
         });
 
         // Close menu when clicking outside
         document.addEventListener('click', function(e) {
             if (!toggleBtn.contains(e.target) && !mobileNav.contains(e.target)) {
-                mobileNav.classList.remove('active');
-                toggleBtn.setAttribute('aria-expanded', 'false');
+                if (mobileNav.classList.contains('active')) {
+                    mobileNav.classList.remove('active');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
             }
         });
 
@@ -2174,6 +2238,13 @@ a {
                 toggleBtn.focus();
             }
         });
+    }
+
+    // Initialize after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMobileMenu);
+    } else {
+        initMobileMenu();
     }
 })();
 """
@@ -2586,9 +2657,26 @@ p {
     gap: var(--spacing-md);
 }
 
+.custom-logo-wrapper {
+    max-width: 200px;
+}
+
+.custom-logo-link {
+    display: block;
+}
+
 .custom-logo-link img {
-    max-height: 60px;
+    display: block;
+    max-width: 100%;
+    max-height: 80px;
     width: auto;
+    height: auto;
+}
+
+.site-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .site-title {
@@ -2672,28 +2760,38 @@ article {
     margin-top: var(--spacing-4xl);
 }
 
-.footer-widgets {
+.footer-widgets-area {
     padding: var(--spacing-3xl) 0;
 }
 
-.footer-widgets-inner {
+.footer-row {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: var(--spacing-2xl);
+}
+
+.footer-widget-area {
+    min-width: 0; /* Prevent grid blowout */
 }
 
 .footer-widget-area h2,
 .footer-widget-area h3 {
     font-size: 1.125rem;
     margin-bottom: var(--spacing-md);
+    color: var(--color-text);
 }
 
-.site-info {
+.footer-widget-area .widget {
+    margin-bottom: var(--spacing-lg);
+}
+
+.footer-bottom {
     background: var(--color-background);
     border-top: 1px solid var(--color-border);
     padding: var(--spacing-xl) 0;
 }
 
-.site-info-inner {
+.footer-bottom-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2701,8 +2799,32 @@ article {
     gap: var(--spacing-md);
 }
 
-.copyright {
+.site-info {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.site-info p {
     margin: 0;
+}
+
+.site-info a {
+    color: var(--color-text-muted);
+}
+
+.site-info a:hover {
+    color: var(--color-primary);
+}
+
+.footer-navigation ul {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing-lg);
+    margin: 0;
+    padding: 0;
+}
+
+.footer-navigation a {
     color: var(--color-text-muted);
     font-size: 0.875rem;
 }

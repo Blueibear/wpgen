@@ -21,6 +21,32 @@ from .php_validation import (
 logger = get_logger(__name__)
 
 
+def sanitize_text_domain(theme_name: str) -> str:
+    """Convert theme name to valid WordPress text domain.
+
+    Text domains must be:
+    - Lowercase
+    - Use hyphens instead of underscores or spaces
+    - Match theme slug exactly
+
+    Args:
+        theme_name: Theme name (may contain spaces, uppercase, etc.)
+
+    Returns:
+        Valid text domain string
+    """
+    if not theme_name:
+        return 'wpgen-theme'
+
+    # Convert to lowercase and replace invalid characters
+    domain = theme_name.lower()
+    domain = re.sub(r'[^a-z0-9-]+', '-', domain)
+    domain = re.sub(r'-+', '-', domain)  # Remove duplicate hyphens
+    domain = domain.strip('-')  # Remove leading/trailing hyphens
+
+    return domain if domain else 'wpgen-theme'
+
+
 # Plugin compatibility layer configuration
 # Dictionary of known plugin constants and functions that themes should define as fallbacks
 PLUGIN_COMPATIBILITY_CONSTANTS = {
@@ -1043,6 +1069,7 @@ def get_fallback_functions_php(theme_name: str) -> str:
     """
     # Convert theme name to valid PHP function name (replace hyphens with underscores)
     safe_function_name = theme_name.replace('-', '_')
+    text_domain = sanitize_text_domain(theme_name)
 
     # Generate compatibility layer
     compatibility_layer, injected_items = generate_plugin_compatibility_layer(theme_name)
@@ -1057,6 +1084,9 @@ if ( ! defined( 'ABSPATH' ) ) {{
  * Sets up theme defaults and registers support for various WordPress features.
  */
 function {safe_function_name}_setup() {{
+    // Make theme available for translation
+    load_theme_textdomain( '{text_domain}', get_template_directory() . '/languages' );
+
     // Add theme support
     add_theme_support( 'title-tag' );
     add_theme_support( 'post-thumbnails' );
@@ -1067,19 +1097,22 @@ function {safe_function_name}_setup() {{
         'comment-list',
         'gallery',
         'caption',
+        'style',
+        'script',
     ) );
 
     // Add custom logo support
     add_theme_support( 'custom-logo', array(
-        'height'      => 80,
-        'width'       => 240,
+        'height'      => 100,
+        'width'       => 400,
         'flex-height' => true,
         'flex-width'  => true,
     ) );
 
     // Register navigation menus
     register_nav_menus( array(
-        'primary' => __( 'Primary Menu', '{theme_name}' ),
+        'primary' => __( 'Primary Menu', '{text_domain}' ),
+        'footer'  => __( 'Footer Menu', '{text_domain}' ),
     ) );
 }}
 add_action( 'after_setup_theme', '{safe_function_name}_setup' );
@@ -1126,38 +1159,32 @@ add_action( 'enqueue_block_editor_assets', '{safe_function_name}_editor_assets' 
  * Register widget areas.
  */
 function {safe_function_name}_widgets_init() {{
+    // Main sidebar
     register_sidebar( array(
-        'name'          => __( 'Sidebar', '{theme_name}' ),
+        'name'          => __( 'Sidebar', '{text_domain}' ),
         'id'            => 'sidebar-1',
-        'description'   => __( 'Add widgets here.', '{theme_name}' ),
+        'description'   => __( 'Add widgets here to appear in your sidebar.', '{text_domain}' ),
         'before_widget' => '<section id="%1$s" class="widget %2$s">',
         'after_widget'  => '</section>',
         'before_title'  => '<h2 class="widget-title">',
         'after_title'   => '</h2>',
     ) );
 
-    // Register footer widget areas
-    register_sidebar( array(
-        'name'          => __( 'Footer 1', '{theme_name}' ),
-        'id'            => 'footer-1',
-        'description'   => __( 'Footer widget area 1', '{theme_name}' ),
-        'before_widget' => '<section id="%1$s" class="widget %2$s">',
-        'after_widget'  => '</section>',
-        'before_title'  => '<h3 class="widget-title">',
-        'after_title'   => '</h3>',
-    ) );
-
-    register_sidebar( array(
-        'name'          => __( 'Footer 2', '{theme_name}' ),
-        'id'            => 'footer-2',
-        'description'   => __( 'Footer widget area 2', '{theme_name}' ),
-        'before_widget' => '<section id="%1$s" class="widget %2$s">',
-        'after_widget'  => '</section>',
-        'before_title'  => '<h3 class="widget-title">',
-        'after_title'   => '</h3>',
-    ) );
- }}
- add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
+    // Register footer widget areas (4 columns)
+    $footer_widget_areas = 4;
+    for ( $i = 1; $i <= $footer_widget_areas; $i++ ) {{
+        register_sidebar( array(
+            'name'          => sprintf( __( 'Footer %d', '{text_domain}' ), $i ),
+            'id'            => sprintf( 'footer-%d', $i ),
+            'description'   => sprintf( __( 'Footer widget area %d', '{text_domain}' ), $i ),
+            'before_widget' => '<section id="%1$s" class="widget %2$s">',
+            'after_widget'  => '</section>',
+            'before_title'  => '<h3 class="widget-title">',
+            'after_title'   => '</h3>',
+        ) );
+    }}
+}}
+add_action( 'widgets_init', '{safe_function_name}_widgets_init' );
 
  /**
   * Display post meta data (date and author).
@@ -1197,17 +1224,27 @@ function {safe_function_name}_pagination() {{
 /**
  * Display posts pagination with fallback.
  */
- function {safe_function_name}_posts_pagination() {{
-      if ( function_exists( 'wp_pagenavi' ) ) {{
-          wp_pagenavi();
-      }} else {{
-          the_posts_pagination( array(
-              'mid_size'  => 2,
-              'prev_text' => __( '&laquo; Previous', '{theme_name}' ),
-              'next_text' => __( 'Next &raquo;', '{theme_name}' ),
-          ) );
-      }}
-  }}
+function {safe_function_name}_posts_pagination() {{
+    if ( function_exists( 'wp_pagenavi' ) ) {{
+        wp_pagenavi();
+    }} else {{
+        the_posts_pagination( array(
+            'mid_size'  => 2,
+            'prev_text' => __( '&laquo; Previous', '{text_domain}' ),
+            'next_text' => __( 'Next &raquo;', '{text_domain}' ),
+        ) );
+    }}
+}}
+
+/**
+ * Add no-js class to body by default.
+ * JavaScript will remove this class on page load.
+ */
+function {safe_function_name}_body_classes( $classes ) {{
+    $classes[] = 'no-js';
+    return $classes;
+}}
+add_filter( 'body_class', '{safe_function_name}_body_classes' );
 """
 
 
@@ -1504,8 +1541,8 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
     4. wp_head() hook
     5. <body> with body_class()
     6. wp_body_open() hook
-    7. <header class="site-header">
-    8. Logo and navigation
+    7. <header class="site-header"> with mobile menu toggle
+    8. Logo (with max-width wrapper) and navigation
     9. Opens <main id="content"> (closed in footer.php)
 
     Args:
@@ -1516,6 +1553,7 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
         Guaranteed-safe header.php code
     """
     site_name = requirements.get('theme_display_name', 'My WordPress Site') if requirements else 'My WordPress Site'
+    text_domain = sanitize_text_domain(theme_name)
 
     return f"""<!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -1527,47 +1565,68 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
 </head>
 
 <body <?php body_class(); ?>>
+<script>document.body.classList.remove('no-js');</script>
+<noscript><style>body{{opacity:1!important;}}</style></noscript>
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', '{theme_name}' ); ?></a>
+    <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', '{text_domain}' ); ?></a>
 
     <header class="site-header">
         <div class="header-inner container">
             <div class="site-branding">
-                <?php
-                if ( has_custom_logo() ) {{
-                    the_custom_logo();
-                }} else {{
-                    ?>
-                    <h1 class="site-title">
-                        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
-                            <?php bloginfo( 'name' ); ?>
-                        </a>
-                    </h1>
-                    <?php
-                    $description = get_bloginfo( 'description', 'display' );
-                    if ( $description || is_customize_preview() ) {{
-                        ?>
-                        <p class="site-description"><?php echo esc_html( $description ); ?></p>
+                <?php if ( has_custom_logo() ) : ?>
+                    <div class="custom-logo-wrapper">
+                        <?php the_custom_logo(); ?>
+                    </div>
+                <?php else : ?>
+                    <div class="site-identity">
+                        <?php if ( is_front_page() && is_home() ) : ?>
+                            <h1 class="site-title">
+                                <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
+                                    <?php bloginfo( 'name' ); ?>
+                                </a>
+                            </h1>
+                        <?php else : ?>
+                            <p class="site-title">
+                                <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home">
+                                    <?php bloginfo( 'name' ); ?>
+                                </a>
+                            </p>
+                        <?php endif; ?>
+
                         <?php
-                    }}
-                }}
-                ?>
+                        $description = get_bloginfo( 'description', 'display' );
+                        if ( $description || is_customize_preview() ) :
+                            ?>
+                            <p class="site-description"><?php echo esc_html( $description ); ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div><!-- .site-branding -->
 
-            <nav class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_name}' ); ?>">
+            <button class="mobile-menu-toggle" aria-label="<?php esc_attr_e( 'Toggle Menu', '{text_domain}' ); ?>" aria-expanded="false" aria-controls="site-navigation">
+                <span class="menu-icon">
+                    <span class="menu-line"></span>
+                    <span class="menu-line"></span>
+                    <span class="menu-line"></span>
+                </span>
+                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{text_domain}' ); ?></span>
+            </button>
+
+            <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{text_domain}' ); ?>">
                 <?php
                 wp_nav_menu(
                     array(
                         'theme_location' => 'primary',
+                        'menu_id'        => 'primary-menu',
                         'menu_class'     => 'primary-menu',
                         'container'      => false,
-                        'fallback_cb'    => false,
+                        'fallback_cb'    => 'wp_page_menu',
                     )
                 );
                 ?>
-            </nav><!-- .main-navigation -->
+            </nav><!-- #site-navigation -->
         </div><!-- .header-inner -->
     </header><!-- .site-header -->
 
@@ -1581,10 +1640,11 @@ def get_fallback_footer_php(theme_name: str) -> str:
     This footer template GUARANTEES the following structure in exact order:
     1. Closes </main> (opened in header.php)
     2. <footer class="site-footer"> with working WordPress footer code
-    3. Footer widgets with visible fallback content
+    3. Footer widgets with visible fallback content (all 4 widget areas)
     4. wp_footer() hook
-    5. Closes </body>
-    6. Closes </html>
+    5. Closes </div>#page (opened in header.php)
+    6. Closes </body>
+    7. Closes </html>
 
     This template is used when:
     - LLM generation fails
@@ -1597,6 +1657,8 @@ def get_fallback_footer_php(theme_name: str) -> str:
     Returns:
         Guaranteed-safe footer.php code with working WordPress features
     """
+    text_domain = sanitize_text_domain(theme_name)
+
     return f"""<?php
 /**
  * Footer Template - Fallback Safe Version
@@ -1604,26 +1666,63 @@ def get_fallback_footer_php(theme_name: str) -> str:
  * @package {theme_name}
  */
 ?>
-</main><!-- #content .site-main -->
+    </main><!-- #content .site-main -->
 
-<footer class="site-footer">
-    <div class="footer-widgets container">
-        <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
-            <div class="footer-widget-area footer-widget-1">
-                <?php dynamic_sidebar( 'footer-1' ); ?>
-            </div>
-        <?php else : ?>
-            <div class="footer-widget-area footer-widget-1">
-                <h3 class="widget-title">About</h3>
-                <p><?php bloginfo( 'description' ); ?></p>
-            </div>
-        <?php endif; ?>
-    </div>
+    <footer id="colophon" class="site-footer">
+        <div class="footer-widgets-area">
+            <div class="container">
+                <div class="footer-row">
+                    <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
+                        <div class="footer-widget-area footer-widget-1">
+                            <?php dynamic_sidebar( 'footer-1' ); ?>
+                        </div>
+                    <?php else : ?>
+                        <div class="footer-widget-area footer-widget-1">
+                            <h3 class="widget-title"><?php esc_html_e( 'About', '{text_domain}' ); ?></h3>
+                            <p><?php echo esc_html( get_bloginfo( 'description', 'display' ) ); ?></p>
+                        </div>
+                    <?php endif; ?>
 
-    <div class="footer-bottom">
-        <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?></p>
-    </div>
-</footer>
+                    <?php if ( is_active_sidebar( 'footer-2' ) ) : ?>
+                        <div class="footer-widget-area footer-widget-2">
+                            <?php dynamic_sidebar( 'footer-2' ); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ( is_active_sidebar( 'footer-3' ) ) : ?>
+                        <div class="footer-widget-area footer-widget-3">
+                            <?php dynamic_sidebar( 'footer-3' ); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ( is_active_sidebar( 'footer-4' ) ) : ?>
+                        <div class="footer-widget-area footer-widget-4">
+                            <?php dynamic_sidebar( 'footer-4' ); ?>
+                        </div>
+                    <?php endif; ?>
+                </div><!-- .footer-row -->
+            </div><!-- .container -->
+        </div><!-- .footer-widgets-area -->
+
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="site-info">
+                    <p>
+                        <?php
+                        printf(
+                            /* translators: 1: Copyright symbol and year, 2: Site name */
+                            esc_html__( '%1$s %2$s. All rights reserved.', '{text_domain}' ),
+                            '&copy; ' . esc_html( gmdate( 'Y' ) ),
+                            '<a href="' . esc_url( home_url( '/' ) ) . '" rel="home">' . esc_html( get_bloginfo( 'name' ) ) . '</a>'
+                        );
+                        ?>
+                    </p>
+                </div><!-- .site-info -->
+            </div><!-- .container -->
+        </div><!-- .footer-bottom -->
+    </footer><!-- #colophon -->
+
+</div><!-- #page .site -->
 
 <?php wp_footer(); ?>
 </body>
