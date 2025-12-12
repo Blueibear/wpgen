@@ -3567,3 +3567,127 @@ def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]
             logger.error(f"  {error}")
 
     return results
+
+
+def is_stub_template(php_code: str) -> bool:
+    """Check if a template is a stub/placeholder.
+
+    A stub template is one that contains placeholder text or minimal fallback comments.
+
+    Args:
+        php_code: PHP code to check
+
+    Returns:
+        True if this appears to be a stub template
+    """
+    stub_patterns = [
+        r'//\s*TODO',
+        r'//\s*Minimal\s+fallback',
+        r'echo\s+["\']Coming\s+soon',
+        r'//\s*Placeholder',
+        r'//\s*STUB',
+    ]
+
+    for pattern in stub_patterns:
+        if re.search(pattern, php_code, re.IGNORECASE):
+            return True
+
+    # Check if file is too short (less than 100 characters, excluding whitespace)
+    stripped = php_code.strip()
+    if len(stripped) < 100:
+        return True
+
+    return False
+
+
+def ensure_full_template_structure(php_code: str, filename: str) -> tuple[str, list[str]]:
+    """Ensure a template file has full required structure.
+
+    For page-level templates (index.php, page.php, single.php, etc.), ensures:
+    - get_header() call
+    - <main> opening and closing tags
+    - get_footer() call
+
+    Args:
+        php_code: PHP code to check/fix
+        filename: Template filename
+
+    Returns:
+        Tuple of (fixed_code, list_of_fixes_applied)
+    """
+    fixes = []
+    fixed_code = php_code
+
+    # List of page-level templates that need full structure
+    page_templates = ['index.php', 'page.php', 'single.php', 'archive.php',
+                      'front-page.php', 'category.php', 'tag.php', 'author.php',
+                      'search.php', '404.php', 'home.php']
+
+    if filename not in page_templates:
+        return fixed_code, fixes
+
+    # Check for get_header()
+    if 'get_header()' not in fixed_code:
+        fixed_code = '<?php get_header(); ?>\n' + fixed_code
+        fixes.append(f"Added missing get_header() to {filename}")
+
+    # Check for <main> tag
+    if '<main' not in fixed_code:
+        # Insert <main> after get_header() call
+        fixed_code = re.sub(
+            r'(get_header\(\);?\s*\?>)',
+            r'\1\n<main class="site-main">',
+            fixed_code,
+            count=1
+        )
+        fixes.append(f"Added missing <main> opening tag to {filename}")
+
+    if '</main>' not in fixed_code:
+        # Insert </main> before get_footer() call or at the end
+        if 'get_footer()' in fixed_code:
+            fixed_code = re.sub(
+                r'(<\?php\s+get_footer\(\);?)',
+                r'</main>\n\n\1',
+                fixed_code,
+                count=1
+            )
+        else:
+            fixed_code = fixed_code.rstrip() + '\n</main>\n'
+        fixes.append(f"Added missing </main> closing tag to {filename}")
+
+    # Check for get_footer()
+    if 'get_footer()' not in fixed_code:
+        fixed_code = fixed_code.rstrip() + '\n\n<?php get_footer(); ?>\n'
+        fixes.append(f"Added missing get_footer() to {filename}")
+
+    return fixed_code, fixes
+
+
+def remove_duplicate_footers(php_code: str) -> tuple[str, int]:
+    """Remove duplicate footer blocks from generated code.
+
+    Args:
+        php_code: PHP code that may contain duplicate footers
+
+    Returns:
+        Tuple of (cleaned_code, number_of_duplicates_removed)
+    """
+    # Pattern to match footer blocks
+    footer_pattern = r'<footer[^>]*>.*?</footer>'
+
+    footer_matches = list(re.finditer(footer_pattern, php_code, re.DOTALL | re.IGNORECASE))
+
+    if len(footer_matches) <= 1:
+        return php_code, 0
+
+    # Keep only the first footer, remove the rest
+    duplicates_removed = len(footer_matches) - 1
+
+    # Remove duplicates from the end backwards to preserve indices
+    fixed_code = php_code
+    for match in reversed(footer_matches[1:]):
+        fixed_code = fixed_code[:match.start()] + fixed_code[match.end():]
+
+    logger.info(f"Removed {duplicates_removed} duplicate footer block(s)")
+
+    return fixed_code, duplicates_removed
