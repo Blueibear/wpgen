@@ -9,6 +9,28 @@ to produce valid WordPress theme files. This guarantees:
 - No invalid filenames
 - No Unicode corruption
 - No WordPress preview white-screen
+- No stub/placeholder templates
+- No blank screens from malformed headers
+
+CRITICAL RULES (Updated to prevent blank screens and stub generation):
+
+1. HARD-LOCKED TEMPLATES: header.php is ALWAYS rendered from fallback template,
+   NEVER from LLM output. This prevents broken headers that cause blank screens.
+
+2. ALL PHP TEMPLATES ARE VALIDATED: Every generated PHP file is validated with
+   'php -l' syntax checking. Invalid files trigger immediate fallback.
+
+3. NO STUB TEMPLATES ALLOWED: If validation fails, the system MUST use the full
+   fallback template from wpgen/templates/php/fallback/. Stub templates with
+   "// Minimal fallback" comments are FORBIDDEN.
+
+4. REQUIRED TEMPLATES ENFORCED: All required WordPress templates (header.php,
+   footer.php, index.php, front-page.php, etc.) MUST be present in every
+   generated theme. Missing templates cause immediate failure.
+
+5. FALLBACK TEMPLATES ARE MANDATORY: Every critical template must have a
+   corresponding fallback template in the fallback/ directory. Fallbacks must
+   be fully functional, not stubs.
 
 The LLM never outputs PHP directly - it outputs JSON which is rendered
 through these safe, pre-validated templates.
@@ -59,12 +81,41 @@ JS_TEMPLATES = {
     "assets/js/navigation.js": "navigation.js.j2",
 }
 
-# Critical templates that have fallback versions
+# Templates that are ALWAYS rendered from fallback (hard-locked, never LLM-generated)
+# These templates are too critical to allow LLM generation - they MUST be stable
+HARD_LOCKED_TEMPLATES = {
+    "header.php",  # Hard-locked to prevent broken headers that cause blank screens
+}
+
+# All PHP templates that require validation and fallback support
+# ALL templates must have fallback versions - NO stubs allowed
 CRITICAL_TEMPLATES = {
     "header.php",
     "footer.php",
     "front-page.php",
     "index.php",
+    "page.php",
+    "single.php",
+    "archive.php",
+    "search.php",
+    "404.php",
+    "functions.php",
+}
+
+# Required WordPress template files that MUST be present in every theme
+# The generator must NEVER omit these files
+REQUIRED_TEMPLATES = {
+    "header.php",
+    "footer.php",
+    "front-page.php",
+    "index.php",
+    "page.php",
+    "single.php",
+    "archive.php",
+    "search.php",
+    "404.php",
+    "functions.php",
+    "style.css",
 }
 
 
@@ -277,48 +328,79 @@ class ThemeRenderer:
     def _render_php_templates(self, theme_dir: Path, context: dict[str, Any]) -> None:
         """Render all PHP templates with validation and fallback support.
 
+        CRITICAL RULES:
+        1. Hard-locked templates (header.php) are ALWAYS rendered from fallback - NEVER from LLM
+        2. All PHP templates MUST be validated
+        3. If validation fails, ALWAYS use full fallback template - NEVER output stubs
+        4. All required templates MUST be present in the final theme
+        5. NO template may be omitted or replaced with placeholder/stub content
+
         Args:
             theme_dir: Theme directory path
             context: Template context
         """
         for output_file, template_file in WORDPRESS_TEMPLATES.items():
             try:
+                output_path = theme_dir / sanitize_filename(output_file)
+
+                # HARD-LOCKED TEMPLATES: Always use fallback, never render from main template
+                if output_file in HARD_LOCKED_TEMPLATES:
+                    logger.info(f"Using hard-locked fallback template for {output_file} (never LLM-generated)")
+                    try:
+                        fallback_template = self.fallback_env.get_template(template_file)
+                        content = fallback_template.render(**context)
+                        output_path.write_text(content, encoding="utf-8")
+
+                        # Validate the hard-locked template
+                        if output_file.endswith('.php'):
+                            if not validate_php_file(output_path):
+                                logger.error(f"CRITICAL: Hard-locked fallback template {output_file} failed validation")
+                                raise ValueError(f"Hard-locked fallback template {output_file} is invalid")
+
+                        logger.debug(f"Rendered hard-locked: {output_file}")
+                        continue
+                    except Exception as e:
+                        logger.error(f"CRITICAL: Failed to render hard-locked template {output_file}: {e}")
+                        raise ValueError(f"Hard-locked template {output_file} failed: {e}")
+
+                # REGULAR TEMPLATES: Try main template, fall back if validation fails
                 template = self.php_env.get_template(template_file)
                 content = template.render(**context)
-
-                # Sanitize output filename
-                output_path = theme_dir / sanitize_filename(output_file)
                 output_path.write_text(content, encoding="utf-8")
 
                 logger.debug(f"Rendered: {output_file}")
 
-                # Validate PHP syntax for critical files
-                if output_file.endswith('.php') and output_file in CRITICAL_TEMPLATES:
+                # Validate ALL PHP files (not just critical ones)
+                if output_file.endswith('.php'):
                     is_valid = validate_php_file(output_path)
 
                     if not is_valid:
                         logger.error(f"PHP validation failed for {output_file}, using fallback template")
 
-                        # Try to use fallback template
+                        # ALWAYS use fallback template, NEVER generate stubs
                         try:
                             fallback_template = self.fallback_env.get_template(template_file)
                             fallback_content = fallback_template.render(**context)
                             output_path.write_text(fallback_content, encoding="utf-8")
 
-                            # Validate fallback
+                            # Validate fallback - fallbacks MUST be valid
                             if validate_php_file(output_path):
                                 logger.info(f"Successfully used fallback template for {output_file}")
                             else:
-                                logger.error(f"Fallback template also failed validation for {output_file}")
-                                raise ValueError(f"Both primary and fallback templates failed for {output_file}")
+                                logger.error(f"CRITICAL: Fallback template {output_file} failed validation")
+                                raise ValueError(f"Fallback template {output_file} is invalid - this should never happen")
 
                         except Exception as fallback_error:
-                            logger.error(f"Failed to use fallback template for {output_file}: {fallback_error}")
-                            raise ValueError(f"Template rendering and fallback both failed for {output_file}")
+                            # If fallback fails, this is a critical error - no stubs allowed
+                            logger.error(f"CRITICAL: Failed to use fallback template for {output_file}: {fallback_error}")
+                            raise ValueError(f"Cannot generate valid {output_file} - fallback failed: {fallback_error}")
 
             except Exception as e:
                 logger.error(f"Failed to render {output_file}: {e}")
                 raise ValueError(f"Template rendering failed for {output_file}: {e}")
+
+        # ENFORCEMENT: Verify all required templates were generated
+        self._verify_required_templates(theme_dir)
 
     def _render_js_templates(self, theme_dir: Path, context: dict[str, Any]) -> None:
         """Render JavaScript templates.
@@ -342,6 +424,50 @@ class ThemeRenderer:
             except Exception as e:
                 logger.error(f"Failed to render {output_file}: {e}")
                 raise ValueError(f"Template rendering failed for {output_file}: {e}")
+
+    def _verify_required_templates(self, theme_dir: Path) -> None:
+        """Verify that all required WordPress templates are present.
+
+        This enforces that no required template can ever be omitted.
+        If any required template is missing, generation fails immediately.
+
+        Args:
+            theme_dir: Theme directory path
+
+        Raises:
+            ValueError: If any required template is missing
+        """
+        missing_templates = []
+
+        for required_file in REQUIRED_TEMPLATES:
+            file_path = theme_dir / sanitize_filename(required_file)
+            if not file_path.exists():
+                missing_templates.append(required_file)
+                logger.error(f"CRITICAL: Required template {required_file} is missing")
+
+        if missing_templates:
+            error_msg = (
+                f"Theme generation failed: Required templates are missing: {', '.join(missing_templates)}. "
+                f"ALL required templates MUST be present. NO templates may be omitted."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Verify no stub/placeholder files exist
+        for required_file in REQUIRED_TEMPLATES:
+            file_path = theme_dir / sanitize_filename(required_file)
+            if file_path.exists():
+                content = file_path.read_text(encoding="utf-8")
+                # Check for stub indicators
+                if "// Minimal fallback" in content and len(content.strip()) < 100:
+                    error_msg = (
+                        f"CRITICAL: Template {required_file} appears to be a stub/placeholder. "
+                        f"Stubs are FORBIDDEN. All templates must be fully functional."
+                    )
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+
+        logger.info(f"Verified all {len(REQUIRED_TEMPLATES)} required templates are present and non-stub")
 
     def _generate_additional_files(self, theme_dir: Path, spec: ThemeSpecification) -> None:
         """Generate additional theme files.
