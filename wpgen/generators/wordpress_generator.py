@@ -1273,19 +1273,11 @@ Use modern WordPress template tags and best practices."""
             self._validate_and_write_php(theme_dir, "index.php", fallback)
 
     def _generate_header_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
-        """Generate header.php template file with fixed boilerplate structure.
+        """Generate header.php template file with deterministic header layout."""
 
-        The header uses a fixed boilerplate that prevents LLM from generating malformed
-        HTML structure. The LLM only generates the inner header content (logo, nav, etc.)
-        which is inserted into the {{HEADER_CONTENT}} placeholder.
+        logger.info("Generating header.php with deterministic structure")
+        _ = requirements  # preserved for interface consistency
 
-        Args:
-            theme_dir: Theme directory path
-            requirements: Theme requirements
-        """
-        logger.info("Generating header.php with fixed boilerplate structure")
-
-        # Fixed boilerplate - LLM cannot modify this
         HEADER_BOILERPLATE = """<!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -1301,103 +1293,68 @@ Use modern WordPress template tags and best practices."""
 </header>
 """
 
-        context = {
-            "theme_name": requirements["theme_name"],
-            "navigation": requirements.get("navigation", []),
-        }
-
-        # Prompt the LLM to generate ONLY the inner header content
-        description = """CRITICAL: Generate ONLY the inner header markup (logo, nav, hero, etc.).
-DO NOT generate DOCTYPE, <html>, <head>, <body>, or <header> tags - these are provided by the template.
-DO NOT open or close <main> tags.
-
-Generate modern, semantic header content including:
-
-1. SITE BRANDING:
-   - <div class="site-branding"> container
-   - <?php the_custom_logo(); ?> for logo
-   - Conditional site title (h1 on home, p elsewhere):
-     <?php if ( is_front_page() && is_home() ) : ?>
-         <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
-     <?php else : ?>
-         <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
-     <?php endif; ?>
-   - Site description: <?php bloginfo( 'description' ); ?>
-
-2. NAVIGATION:
-   - <nav class="main-navigation"> with proper aria-label
-   - wp_nav_menu() with theme_location 'primary'
-   - Mobile menu toggle button with class "mobile-menu-toggle"
-
-3. EXAMPLE OUTPUT:
-<div class="header-inner container">
-    <div class="site-branding">
-        <?php the_custom_logo(); ?>
-        <?php if ( is_front_page() && is_home() ) : ?>
-            <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
-        <?php else : ?>
-            <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
-        <?php endif; ?>
-    </div>
-    <button class="mobile-menu-toggle" aria-label="Toggle menu">
-        <span class="menu-icon"></span>
-    </button>
-    <nav class="main-navigation" aria-label="Primary">
-        <?php wp_nav_menu( array( 'theme_location' => 'primary', 'menu_class' => 'primary-menu' ) ); ?>
-    </nav>
-</div>
-
-IMPORTANT: Output ONLY the inner content. No DOCTYPE, html, head, body, or header tags."""
+        header_layout = """    <div class="header-inner container">
+        <div class="site-branding">
+            <div class="site-logo-wrapper">
+                <?php the_custom_logo(); ?>
+            </div>
+            <?php if ( is_front_page() && is_home() ) : ?>
+                <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+            <?php else : ?>
+                <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+            <?php endif; ?>
+            <p class="site-description"><?php bloginfo( 'description' ); ?></p>
+        </div>
+        <button class="mobile-menu-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'theme' ); ?>" aria-expanded="false" aria-controls="primary-menu">
+            <span class="menu-icon" aria-hidden="true"></span>
+        </button>
+        <nav class="main-navigation" aria-label="<?php esc_attr_e( 'Primary menu', 'theme' ); ?>">
+            <?php
+            wp_nav_menu(
+                array(
+                    'theme_location' => 'primary',
+                    'menu_class'     => 'primary-menu',
+                    'container'      => false,
+                    'fallback_cb'    => function () {
+                        echo '<ul id="primary-menu" class="primary-menu">';
+                        echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'theme' ) . '</a></li>';
+                        echo '</ul>';
+                    },
+                )
+            );
+            ?>
+        </nav>
+    </div>"""
 
         try:
-            # Generate inner header content only
-            inner_content = self.llm_provider.generate_code(
-                description, "php", context, images=self.design_images
-            )
-
-            # Clean the generated content
             from ..utils.php_validation import sanitize_php_code
-            inner_content = clean_generated_code(inner_content, 'php')
-            inner_content = sanitize_php_code(inner_content)
 
-            # Strip any accidentally generated DOCTYPE, html, head, body, or header tags
-            inner_content = re.sub(r'<!DOCTYPE[^>]*>', '', inner_content, flags=re.IGNORECASE)
-            inner_content = re.sub(r'</?html[^>]*>', '', inner_content, flags=re.IGNORECASE)
-            inner_content = re.sub(r'<head>.*?</head>', '', inner_content, flags=re.DOTALL | re.IGNORECASE)
-            inner_content = re.sub(r'</?body[^>]*>', '', inner_content, flags=re.IGNORECASE)
-            inner_content = re.sub(r'<header[^>]*>|</header>', '', inner_content, flags=re.IGNORECASE)
-            # CRITICAL: Remove any <main> tags from header
-            inner_content = re.sub(r'</?main[^>]*>', '', inner_content, flags=re.IGNORECASE)
+            cleaned_header = sanitize_php_code(header_layout)
 
-            # Validate inner content has required elements
-            has_branding = 'site-branding' in inner_content
-            has_logo = 'the_custom_logo()' in inner_content
-            has_nav = 'main-navigation' in inner_content or 'wp_nav_menu' in inner_content
+            required_parts = [
+                "header-inner",
+                "site-branding",
+                "site-logo-wrapper",
+                "the_custom_logo()",
+                "site-title",
+                "main-navigation",
+                "wp_nav_menu",
+                "mobile-menu-toggle",
+            ]
 
-            if not (has_branding and has_logo and has_nav):
-                logger.warning("Generated header content missing required elements - using fallback")
-                raise ValueError("Generated header content incomplete")
+            if not all(part in cleaned_header for part in required_parts):
+                logger.warning("Header layout missing required structural elements")
+                raise ValueError("Header layout missing required structural elements")
 
-            # Insert inner content into boilerplate
-            php_code = HEADER_BOILERPLATE.replace('{{HEADER_CONTENT}}', inner_content)
-
+            php_code = HEADER_BOILERPLATE.replace("{{HEADER_CONTENT}}", cleaned_header)
             self._validate_and_write_php(theme_dir, "header.php", php_code)
 
         except Exception as e:
             logger.error(f"Failed to generate header.php: {str(e)}")
-            # Fallback with basic but complete header content
-            fallback_content = """    <div class="site-branding">
-        <?php the_custom_logo(); ?>
-        <?php if ( is_front_page() && is_home() ) : ?>
-            <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
-        <?php else : ?>
-            <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
-        <?php endif; ?>
-    </div>
-    <nav class="main-navigation">
-        <?php wp_nav_menu( array( 'theme_location' => 'primary', 'menu_class' => 'primary-menu' ) ); ?>
-    </nav>"""
-            fallback = HEADER_BOILERPLATE.replace('{{HEADER_CONTENT}}', fallback_content)
+            fallback_header = (
+                cleaned_header if "cleaned_header" in locals() else header_layout
+            )
+            fallback = HEADER_BOILERPLATE.replace("{{HEADER_CONTENT}}", fallback_header)
             self._validate_and_write_php(theme_dir, "header.php", fallback)
 
     def _generate_footer_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
