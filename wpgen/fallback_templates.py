@@ -412,7 +412,7 @@ get_header();
 
             <div class="no-content">
                 <h2><?php esc_html_e( 'No Posts Found', '{theme_name}' ); ?></h2>
-                <p><?php esc_html_e( 'This archive doesn\'t have any posts yet.', '{theme_name}' ); ?></p>
+                <p><?php esc_html_e( "This archive doesn't have any posts yet.", '{theme_name}' ); ?></p>
                 <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="btn btn-primary">
                     <?php esc_html_e( 'Back to Home', '{theme_name}' ); ?>
                 </a>
