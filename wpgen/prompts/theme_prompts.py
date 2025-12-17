@@ -12,6 +12,11 @@ import json
 import re
 from typing import Any
 
+from ..design_inspiration import (
+    get_ecommerce_best_practices,
+    get_inspiration_context,
+    get_modern_design_trends,
+)
 from ..schema import ThemeSpecification, get_default_theme_spec, validate_theme_spec
 from ..utils.logger import get_logger
 
@@ -233,6 +238,27 @@ def get_theme_spec_prompt(
             *feature_notes,
             "",
         ])
+
+    guidance_blocks: list[str] = []
+
+    if design_profile:
+        inspiration_context = get_inspiration_context(design_profile.get("name", ""))
+        if inspiration_context:
+            guidance_blocks.append(inspiration_context)
+
+    if design_profile or woocommerce_enabled:
+        design_trends = get_modern_design_trends()
+        if design_trends:
+            guidance_blocks.append(design_trends)
+
+    if woocommerce_enabled:
+        ecommerce_best_practices = get_ecommerce_best_practices()
+        if ecommerce_best_practices:
+            guidance_blocks.append(ecommerce_best_practices)
+
+    if guidance_blocks:
+        prompt_parts.extend(guidance_blocks)
+        prompt_parts.append("")
 
     # Add schema
     prompt_parts.extend([
