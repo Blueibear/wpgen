@@ -320,6 +320,7 @@ class WordPressGenerator:
         self.output_dir = Path(str(output_dir).replace('\\', '/'))
         self.config = config or {}
         self.safe_mode = self.config.get("safe_mode", False)
+        self.design_images: list[dict[str, Any | None]] | None = None
 
         if self.safe_mode:
             logger.warning("⚠️  SAFE MODE ENABLED - Using only validated fallback templates")
@@ -1147,7 +1148,6 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
         from ..utils.code_validator import (
             final_pass_sanitizer,
             validate_footer_php_syntax,
-            get_minimal_fallback
         )
 
         # Step 1: Read the written file back from disk
@@ -1547,6 +1547,86 @@ Include:
             fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
             self._validate_and_write_php(theme_dir, "sidebar.php", fallback)
 
+    def _apply_richness_checks(
+        self,
+        template_file: str,
+        php_code: str,
+        theme_name: str,
+        fallback_code: str | None,
+    ) -> tuple[str, bool]:
+        """Ensure generated templates include required rich sections.
+
+        Args:
+            template_file: Template filename being generated
+            php_code: Generated PHP content
+            theme_name: Theme slug for fallback generation
+            fallback_code: Preferred fallback content
+
+        Returns:
+            Tuple of possibly replaced PHP code and a boolean indicating
+            whether a richness fallback was applied.
+        """
+
+        missing_sections: list[str] = []
+        normalized_code = php_code.lower()
+
+        if template_file == "front-page.php":
+            has_hero = bool(re.search(r"hero[-_\s]?section|class=\"[^\"]*hero", normalized_code))
+            has_featured = bool(
+                re.search(
+                    r"(featured|products?)[^\n]{0,60}(grid|section)|grid[^\n]{0,20}(featured|products)",
+                    normalized_code,
+                )
+            )
+            has_cta = bool(re.search(r"cta[-_\s]?section|call-to-action|class=\"[^\"]*cta", normalized_code))
+
+            if not has_hero:
+                missing_sections.append("hero wrapper")
+            if not has_featured:
+                missing_sections.append("featured grid")
+            if not has_cta:
+                missing_sections.append("CTA")
+
+            if missing_sections:
+                if not fallback_code:
+                    from ..fallback_templates import get_rich_fallback_front_page
+
+                    fallback_code = get_rich_fallback_front_page(theme_name)
+
+                logger.warning(
+                    f"{template_file} missing required sections ({', '.join(missing_sections)}); using rich fallback"
+                )
+                return fallback_code, True
+
+        elif template_file == "archive.php":
+            has_archive_header = bool(
+                re.search(r"archive[-_\s]?title|the_archive_title|archive-description", normalized_code)
+            )
+            has_grid_layout = bool(re.search(r"archive[-_\s]?grid|posts?-grid|post-card", normalized_code))
+            has_pagination = bool(
+                re.search(r"the_posts_pagination|the_posts_navigation|paginate_links", normalized_code)
+            )
+
+            if not has_archive_header:
+                missing_sections.append("archive header")
+            if not has_grid_layout:
+                missing_sections.append("grid layout")
+            if not has_pagination:
+                missing_sections.append("pagination")
+
+            if missing_sections:
+                if not fallback_code:
+                    from ..fallback_templates import get_rich_fallback_archive
+
+                    fallback_code = get_rich_fallback_archive(theme_name)
+
+                logger.warning(
+                    f"{template_file} missing rich layout elements ({', '.join(missing_sections)}); using rich fallback"
+                )
+                return fallback_code, True
+
+        return php_code, False
+
     def _generate_templates(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate additional template files based on requirements.
 
@@ -1802,6 +1882,16 @@ Follow WordPress template hierarchy and coding standards."""
                     fallback = get_rich_fallback_archive(requirements["theme_name"])
                 else:
                     fallback = get_fallback_template(template_file, requirements["theme_name"])
+
+                php_code, richness_fallback = self._apply_richness_checks(
+                    template_file,
+                    php_code,
+                    requirements["theme_name"],
+                    fallback,
+                )
+
+                if richness_fallback and fallback:
+                    logger.info(f"Applied rich fallback for {template_file} due to missing sections")
 
                 self._validate_and_write_php(theme_dir, template_file, php_code, fallback if fallback else None)
                 logger.info(f"Generated {template_file} successfully")
