@@ -134,12 +134,20 @@ add_action( 'widgets_init', '{{ theme.theme_name | replace('-', '_') }}_widgets_
  * Enqueue scripts and styles.
  */
 function {{ theme.theme_name | replace('-', '_') }}_scripts() {
+    // Base layout stylesheet (structural styles)
+    wp_enqueue_style(
+        'theme-base-layout',
+        THEME_URI . '/assets/css/style.css',
+        array(),
+        '1.0.0'
+    );
+
     // Main stylesheet
     wp_enqueue_style(
         '{{ theme.theme_name }}-style',
         get_stylesheet_uri(),
-        array(),
-        THEME_VERSION
+        array( 'theme-base-layout' ),
+        wp_get_theme()->get( 'Version' )
     );
 
     // Theme JavaScript
