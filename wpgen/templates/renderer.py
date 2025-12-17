@@ -587,39 +587,144 @@ build/
 
         # Generate placeholder screenshot
         try:
-            from PIL import Image, ImageDraw, ImageFont
+            from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-            # Extract primary color
-            primary_color = spec.colors.primary
-            if primary_color.startswith('#'):
-                fg = tuple(int(primary_color.strip("#")[i:i+2], 16) for i in (0, 2, 4))
-            else:
-                fg = (26, 26, 46)
+            def _hex_to_rgb(value: str, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+                """Convert hex color to RGB tuple with graceful fallback."""
+                if not value or not isinstance(value, str) or not value.startswith("#"):
+                    return fallback
+                value = value.lstrip("#")
+                if len(value) != 6:
+                    return fallback
+                try:
+                    return tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                except ValueError:
+                    return fallback
 
-            bg = (248, 250, 252)
+            def _blend(color: tuple[int, int, int], other: tuple[int, int, int], ratio: float) -> tuple[int, int, int]:
+                return tuple(int(color[i] * (1 - ratio) + other[i] * ratio) for i in range(3))
 
-            img = Image.new("RGB", (1200, 900), bg)
+            primary = _hex_to_rgb(spec.colors.primary, (26, 26, 46))
+            secondary = _hex_to_rgb(spec.colors.secondary, _blend(primary, (255, 255, 255), 0.15))
+            accent = _hex_to_rgb(spec.colors.accent, _blend(primary, (255, 255, 255), 0.35))
+            background = _hex_to_rgb(spec.colors.background, (248, 250, 252))
+            surface = _hex_to_rgb(spec.colors.surface, (255, 255, 255))
+            text_primary = _hex_to_rgb(spec.colors.text_primary, (17, 24, 39))
+            text_secondary = _hex_to_rgb(spec.colors.text_secondary, (55, 65, 81))
+            border = _hex_to_rgb(spec.colors.border, (226, 232, 240))
+
+            img = Image.new("RGB", (1200, 900), background)
             draw = ImageDraw.Draw(img)
-            draw.rectangle([0, 600, 1200, 900], fill=fg)
+
+            hero_height = 360
+            hero = Image.new("RGB", (1200, hero_height))
+            hero_draw = ImageDraw.Draw(hero)
+            for y in range(hero_height):
+                ratio = y / max(hero_height - 1, 1)
+                gradient_color = _blend(primary, secondary, ratio)
+                hero_draw.line([(0, y), (1200, y)], fill=gradient_color)
+            img.paste(hero, (0, 0))
+
+            overlay = Image.new("RGBA", (1200, hero_height), (*accent, 30))
+            img.paste(overlay, (0, 0), overlay)
+
+            card_area_top = hero_height + 30
+            card_width = 320
+            card_height = 200
+            gap = 60
+            start_x = (1200 - (3 * card_width + 2 * gap)) // 2
+            shadow_color = (0, 0, 0, 60)
+
+            for i in range(3):
+                card_x = start_x + i * (card_width + gap)
+                card_y = card_area_top
+
+                shadow = Image.new("RGBA", (card_width + 20, card_height + 20), (0, 0, 0, 0))
+                shadow_draw = ImageDraw.Draw(shadow)
+                shadow_draw.rectangle([10, 10, card_width + 10, card_height + 10], fill=shadow_color)
+                shadow = shadow.filter(ImageFilter.GaussianBlur(radius=8))
+                img.paste(shadow, (card_x - 10, card_y - 6), shadow)
+
+                draw.rectangle(
+                    [card_x, card_y, card_x + card_width, card_y + card_height],
+                    fill=surface,
+                    outline=border,
+                    width=2,
+                )
+
+                draw.line(
+                    [card_x, card_y + 72, card_x + card_width, card_y + 72],
+                    fill=_blend(border, accent, 0.15),
+                    width=1,
+                )
 
             try:
                 font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 64)
-                font_sub = ImageFont.truetype("DejaVuSans.ttf", 28)
+                font_sub = ImageFont.truetype("DejaVuSans.ttf", 30)
+                font_button = ImageFont.truetype("DejaVuSans-Bold.ttf", 24)
+                font_small = ImageFont.truetype("DejaVuSans.ttf", 20)
             except Exception:
                 font_title = ImageFont.load_default()
                 font_sub = ImageFont.load_default()
+                font_button = ImageFont.load_default()
+                font_small = ImageFont.load_default()
 
-            # Draw title
             title = spec.theme_display_name
             bbox = draw.textbbox((0, 0), title, font=font_title)
             tw = bbox[2] - bbox[0]
-            draw.text(((1200 - tw) // 2, 330), title, fill=(17, 24, 39), font=font_title)
+            draw.text(((1200 - tw) // 2, 120), title, fill=surface, font=font_title)
 
-            # Draw subtitle
-            sub = "Generated by WPGen"
-            bbox2 = draw.textbbox((0, 0), sub, font=font_sub)
+            subtitle = f"Powered by {spec.typography.font_headings} & {spec.typography.font_primary}"
+            bbox2 = draw.textbbox((0, 0), subtitle, font=font_sub)
             sw = bbox2[2] - bbox2[0]
-            draw.text(((1200 - sw) // 2, 410), sub, fill=(55, 65, 81), font=font_sub)
+            draw.text(((1200 - sw) // 2, 200), subtitle, fill=_blend(surface, text_secondary, 0.1), font=font_sub)
+
+            cta_width = 280
+            cta_height = 64
+            cta_x = (1200 - cta_width) // 2
+            cta_y = 260
+            draw.rectangle([cta_x, cta_y, cta_x + cta_width, cta_y + cta_height], fill=accent, outline=_blend(accent, text_primary, 0.2), width=2)
+
+            cta_text = spec.hero.cta_text or "Explore the Theme"
+            bbox_cta = draw.textbbox((0, 0), cta_text, font=font_button)
+            draw.text(
+                (cta_x + (cta_width - (bbox_cta[2] - bbox_cta[0])) // 2, cta_y + (cta_height - (bbox_cta[3] - bbox_cta[1])) // 2),
+                cta_text,
+                fill=(255, 255, 255),
+                font=font_button,
+            )
+
+            secondary_cta_width = 200
+            secondary_cta_height = 54
+            secondary_cta_x = cta_x + cta_width + 24
+            secondary_cta_y = cta_y + 5
+            draw.rectangle(
+                [secondary_cta_x, secondary_cta_y, secondary_cta_x + secondary_cta_width, secondary_cta_y + secondary_cta_height],
+                fill=surface,
+                outline=border,
+                width=2,
+            )
+
+            secondary_text = spec.hero.secondary_cta_text or "View Components"
+            bbox_secondary = draw.textbbox((0, 0), secondary_text, font=font_small)
+            draw.text(
+                (
+                    secondary_cta_x + (secondary_cta_width - (bbox_secondary[2] - bbox_secondary[0])) // 2,
+                    secondary_cta_y + (secondary_cta_height - (bbox_secondary[3] - bbox_secondary[1])) // 2,
+                ),
+                secondary_text,
+                fill=text_primary,
+                font=font_small,
+            )
+
+            caption = "Designed palette • Hero • Cards • CTA"
+            bbox_caption = draw.textbbox((0, 0), caption, font=font_small)
+            draw.text(
+                ((1200 - (bbox_caption[2] - bbox_caption[0])) // 2, card_area_top + card_height + 40),
+                caption,
+                fill=text_secondary,
+                font=font_small,
+            )
 
             img.save(screenshot_path, format="PNG", optimize=True)
             logger.info("Generated placeholder screenshot")
