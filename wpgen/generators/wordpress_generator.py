@@ -828,7 +828,20 @@ The theme should look modern, professional, and visually impressive when activat
             )
             # CRITICAL: Clean LLM output to remove markdown fences and explanatory text
             css_code = clean_generated_code(css_code, 'css')
-            full_css = header + css_code
+
+            is_rich, reasons = self._is_css_rich(css_code)
+            if not is_rich:
+                logger.warning(
+                    "CSS richness check failed (%s). Applying curated fallback stylesheet.",
+                    "; ".join(reasons) if reasons else "unknown reason",
+                )
+                curated_fallback = self._get_base_layout_css_content()
+                combined_css = header + "\n" + curated_fallback
+                if css_code.strip():
+                    combined_css += "\n\n/* Additional LLM-generated styles */\n" + css_code
+                full_css = combined_css
+            else:
+                full_css = header + css_code
 
             style_file = theme_dir / "style.css"
             style_file.write_text(full_css, encoding="utf-8")
@@ -2254,6 +2267,24 @@ a {
 
         logger.info("Generated wpgen-ui assets successfully")
 
+    def _is_css_rich(self, css_code: str) -> tuple[bool, list[str]]:
+        """Check if generated CSS appears rich enough for production use."""
+
+        reasons: list[str] = []
+        normalized_css = css_code.strip()
+
+        # Basic length threshold to catch placeholder or overly minimal styles
+        if len(normalized_css) < 1500:
+            reasons.append("stylesheet too short (<1500 characters)")
+
+        # Ensure critical selectors exist to style key theme areas
+        required_selectors = [".hero-section", ".site-header", ".btn"]
+        missing = [selector for selector in required_selectors if selector not in normalized_css]
+        if missing:
+            reasons.append(f"missing required selectors: {', '.join(missing)}")
+
+        return len(reasons) == 0, reasons
+
     def _generate_base_layout_css(self, theme_dir: Path) -> None:
         """Generate base layout CSS file with structural styles for proper theme presentation.
 
@@ -2267,7 +2298,14 @@ a {
         css_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate base layout styles with modern CSS
-        css_content = """/* Modern Base Layout Styles
+        css_content = self._get_base_layout_css_content()
+
+        css_file = css_dir / "style.css"
+        css_file.write_text(css_content, encoding="utf-8")
+        logger.info("Generated base layout CSS successfully")
+
+    def _get_base_layout_css_content(self) -> str:
+        return """/* Modern Base Layout Styles
  * Production-ready structural and layout styles with modern CSS features
  * Includes: CSS Variables, Grid System, Button Styles, Card Components, Animations
  */
@@ -3109,11 +3147,7 @@ select:focus {
     background: var(--color-hover);
     transform: translateY(-2px);
 }
-"""
-
-        css_file = css_dir / "style.css"
-        css_file.write_text(css_content, encoding="utf-8")
-        logger.info("Generated base layout CSS successfully")
+        """
 
     def _generate_optional_features(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
         """Generate optional feature assets based on requirements.
