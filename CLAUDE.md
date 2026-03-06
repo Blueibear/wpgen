@@ -4,45 +4,80 @@
 
 - Fact: WPGen is a Python package that generates WordPress themes from natural language descriptions.
 - Fact: WPGen ships three interfaces:
-  - CLI via `wpgen` (entry point `wpgen.main:main`)
-  - Gradio GUI (invoked via `wpgen gui`)
+  - CLI via `wpgen` with entry point `wpgen.main:main`
+  - Gradio GUI via `wpgen gui`
   - Flask web app under `web/`
-- Fact: WPGen supports two generation modes:
-  - Hybrid (default): JSON specification from LLM, validated against a schema, rendered to theme files via Jinja templates
-  - Legacy (deprecated): direct LLM generated PHP, then repaired and validated
+- Fact: WPGen supports two generation modes today:
+  - Hybrid (default): LLM outputs a structured JSON specification, the JSON is validated against a schema, and Jinja templates render theme files
+  - Legacy (deprecated): direct LLM generated PHP path
+- Fact: The current production output model is a hardened classic WordPress PHP theme pipeline, not a block theme pipeline.
+  Evidence: `wpgen/service.py`, `wpgen/generators/hybrid_generator.py`, `wpgen/templates/renderer.py`
 
 What it is today
-- Fact: WPGen is primarily a theme scaffolding and generation tool with validation and optional integrations (GitHub push and WordPress REST API support).
+- Fact: WPGen is a structured theme generation and validation tool with optional GitHub push and optional WordPress REST API deployment.
+- Fact: WPGen already includes more than basic theme scaffolding. The service layer supports:
+  - prompt optimization
+  - blueprint injection
+  - design profiles
+  - guided mode
+  - optional feature overrides
+  - image analysis
+  - document text extraction
+  - GitHub push
+  - WordPress deploy and activate
+  Evidence: `wpgen/service.py`
 
 What it is not today
-- Fact: WPGen is not yet a “Kadence Pro equivalent” theme framework.
-- Inference (Confidence: High, would raise it: a builder and options architecture landing in repo): Current theme output is based on a small set of static Jinja templates and does not implement a full theme options system, header builder, or deep WooCommerce template overrides.
+- Fact: WPGen is not yet a Kadence Pro equivalent theme framework.
+- Fact: WPGen does not currently generate block theme artifacts such as:
+  - `theme.json`
+  - `templates/*.html`
+  - `parts/*.html`
+  - `patterns/`
+  Evidence: `wpgen/templates/renderer.py`, `wpgen/templates/`
+- Inference (Confidence: High, would raise it: a shipped block generator path and validator): The biggest gap between current repo state and repo goals is output architecture, not basic crash-proofing.
 
 Target vision for the repo
-- Hypothesis (Confidence: Medium, would raise it: a written product spec and acceptance tests): WPGen should evolve into a generator that can output themes with “Kadence-like capabilities,” meaning:
-  - A robust theme options system (Customizer or block theme configuration) for global design settings
-  - Modular header and footer builder behavior (desktop and mobile)
-  - Starter templates and reusable patterns
-  - Deep WooCommerce integration and styling
-  - Performance and accessibility baselines
-  - Strong compatibility and validation gates
+- Fact: The chosen target direction is Block Theme.
+- Inference (Confidence: High, would raise it: a contradictory repo product spec): WPGen should evolve into a generator that can output themes with Kadence-like capabilities through a deterministic block-theme architecture, meaning:
+  - block theme generation mode
+  - `theme.json` based global design system
+  - template parts and starter patterns
+  - deep WooCommerce support
+  - accessibility and performance baselines
+  - strong validation and compatibility gates
 
 ## Repo Structure
 
-- Fact: `wpgen/` main Python package.
-- Fact: `wpgen/main.py` Click CLI commands: `generate`, `gui`, `serve`, `validate`, `check-deps`, `init`.
-- Fact: `wpgen/service.py` unified service layer used by interfaces, default generator is Hybrid.
-- Fact: `wpgen/generators/hybrid_generator.py` JSON to Jinja pipeline.
-- Fact: `wpgen/templates/` Jinja templates for PHP, CSS, JS outputs.
-- Fact: `wpgen/schema/` and `wpgen/schema/theme_schema.py` define the validated JSON theme specification.
-- Fact: `tests/` pytest suite.
-- Fact: `web/app.py` Flask app.
-- Fact: `scripts/` maintenance scripts and checks.
+- Fact: `wpgen/` is the main Python package.
+- Fact: `wpgen/main.py` contains the CLI command surface.
+- Fact: Confirmed top-level CLI commands are:
+  - `check-deps`
+  - `generate`
+  - `gui`
+  - `init`
+  - `serve`
+  - `validate`
+  - `wordpress`
+  Evidence: `python -m wpgen --help`
+- Fact: The `wordpress` command group contains:
+  - `manage`
+  - `test`
+  Evidence: `python -m wpgen wordpress --help`
+- Fact: `wpgen/service.py` is the unified service layer used by interfaces.
+- Fact: `wpgen/generators/hybrid_generator.py` implements the default structured JSON to Jinja generation path.
+- Fact: `wpgen/templates/renderer.py` renders classic theme PHP and JS outputs.
+- Fact: `wpgen/schema/` defines the validated theme specification model.
+- Fact: `wpgen/utils/theme_validator.py` validates generated theme directories.
+- Fact: `tests/` contains a substantial pytest suite focused on generation safety, validation, fallback behavior, preview safety, and deployment-related logic.
+- Fact: `web/app.py` exists as the Flask web app entry.
+- Fact: `.github/workflows/ci.yml` defines the main CI workflow.
 
 ## Install
 
 Python support
-- Fact: Requires Python >= 3.10 (`pyproject.toml`).
+- Fact: Requires Python >= 3.10.
+  Evidence: `pyproject.toml`
 
 Canonical install commands used by CI
 - Fact:
@@ -50,45 +85,120 @@ Canonical install commands used by CI
   - `pip install -r requirements-dev.txt`
 
 Optional extras
-- Fact: Optional extras are defined in `pyproject.toml` under `[project.optional-dependencies]` (ui, wp, git, dev).
+- Fact: Optional extras are defined in `pyproject.toml` under `[project.optional-dependencies]`.
 
 ## Run
 
 CLI
-- Fact: `wpgen init` creates a `.env` file from `.env.example` style guidance.
-- Fact: `wpgen gui` launches the Gradio UI.
-- Fact: `wpgen serve` launches the service mode exposed by CLI.
-- Fact: `wpgen generate` generates a theme from a prompt.
-- Fact: `wpgen validate <theme_path>` validates a generated theme directory.
-- Fact: `wpgen check-deps` runs dependency checks.
+- Fact: `wpgen init` initializes WPGen configuration and creates a `.env` file flow.
+- Fact: `wpgen gui` launches the graphical user interface.
+- Fact: `wpgen serve` starts the web UI server.
+- Fact: `wpgen generate` generates a WordPress theme from a description.
+- Fact: `wpgen validate <theme_path>` validates a WordPress theme for syntax errors.
+- Fact: `wpgen check-deps` checks runtime dependencies.
+- Fact: `wpgen wordpress manage` executes WordPress management commands using natural language.
+- Fact: `wpgen wordpress test` tests the WordPress REST API connection.
+  Evidence: CLI help output from `python -m wpgen --help` and `python -m wpgen wordpress --help`
 
 Config
-- Fact: Default config is `config.yaml`.
+- Fact: Default config file is `config.yaml`.
 - Fact: CLI accepts `--config/-c` to override config path.
+
+## Current Generation Architecture
+
+- Fact: The current main pipeline is:
+
+  prompt
+  → optional image analysis
+  → optional document text extraction
+  → prompt optimization
+  → prompt parsing into requirements
+  → Hybrid generator
+  → JSON theme specification from LLM
+  → schema validation and parsing
+  → requirement overrides
+  → Jinja rendering
+  → classic PHP theme output
+  → post-generation validation
+  → optional GitHub push
+  → optional WordPress deployment
+
+  Evidence: `wpgen/service.py`, `wpgen/generators/hybrid_generator.py`
+
+- Fact: `GeneratorType` currently supports only:
+  - `hybrid`
+  - `legacy`
+  Evidence: `wpgen/service.py`
+- Fact: There is no block theme generator type yet.
+
+## Current Renderer and Validator Reality
+
+Renderer
+- Fact: `wpgen/templates/renderer.py` is currently hard-wired to classic theme output files such as:
+  - `style.css`
+  - `functions.php`
+  - `header.php`
+  - `footer.php`
+  - `index.php`
+  - `front-page.php`
+  - `single.php`
+  - `page.php`
+  - `archive.php`
+  - `search.php`
+  - `404.php`
+  - `sidebar.php`
+  - `comments.php`
+- Fact: The renderer includes strong hardening rules:
+  - hard-locked fallback rendering for `header.php`
+  - PHP lint validation via `php -l` when available
+  - fallback templates when rendering fails validation
+  - required template enforcement
+  - stub detection
+  Evidence: `wpgen/templates/renderer.py`
+
+Validator
+- Fact: `wpgen/utils/theme_validator.py` validates theme directories and runs PHP syntax checks when PHP is available.
+- Fact: The validator currently defines only:
+  - required files: `style.css`, `index.php`
+  - recommended files: `functions.php`, `header.php`, `footer.php`
+- Fact: This is weaker than renderer enforcement.
+- Inference (Confidence: High, would raise it: a shared validation policy module elsewhere): Validator and renderer are currently misaligned on what constitutes a valid generated theme.
 
 ## Test and Lint
 
 CI enforced commands
-- Fact: CI runs:
+- Fact: Main CI currently runs:
   - `ruff check .`
   - `pytest -q -m "not integration" --disable-warnings`
   Evidence: `.github/workflows/ci.yml`
 
+Additional CI behavior
+- Fact: CI also performs:
+  - import diagnostics for key modules
+  - package build using `python -m build`
+  - import verification of built package
+  - Trivy filesystem security scanning
+- Fact: CI runs on Python 3.10, 3.11, and 3.12 on Ubuntu.
+  Evidence: `.github/workflows/ci.yml`
+
 Offline deterministic tests
-- Fact: CI sets `WPGEN_PROVIDER=mock` and `WPGEN_OFFLINE_TESTS=1`.
-- Fact: Tests include a fixture that defaults to offline testing behavior.
+- Fact: CI sets `WPGEN_PROVIDER=mock`.
+- Fact: CI sets `WPGEN_OFFLINE_TESTS=1` in test-related steps.
+- Fact: CI sets `PYTHONDONTWRITEBYTECODE=1`.
+- Fact: Tests include fixtures supporting offline behavior.
   Evidence: `.github/workflows/ci.yml`, `tests/conftest.py`
 - Rule: New tests must be offline and deterministic by default.
 - Rule: Any test requiring network or external APIs must be marked `integration` and excluded from default CI.
 
 Ruff requirements
-- Fact: Ruff configuration exists in `pyproject.toml` under `[tool.ruff]`.
-- Rule: All code changes must pass `ruff check .`.
+- Fact: Ruff is configured in `pyproject.toml`.
+- Rule: All changes must pass `ruff check .`.
 
 Black requirements
-- Fact: Black configuration exists in `pyproject.toml` under `[tool.black]`.
-- Inference (Confidence: High, would raise it: CI step added): Black is not currently enforced in CI.
-- Rule: The repo target state is to enforce Black for formatting consistency. If Black enforcement is added to CI, this file must be updated to reflect the exact CI commands.
+- Fact: Black is configured in `pyproject.toml`.
+- Fact: Black is not currently enforced in CI.
+  Evidence: `.github/workflows/ci.yml`
+- Rule: Target state is to enforce Black in dev dependencies and CI.
 
 Scoped commands for changed files
 - Fact:
@@ -98,69 +208,98 @@ Scoped commands for changed files
 
 Repo hygiene
 - Rule: Working tree must stay clean after tests.
-- Rule: Tests must not modify tracked files. If a test writes artifacts, it must use temporary directories or paths excluded from the repo.
-- Inference (Confidence: Medium, would raise it: a CI step verifying clean git status): This is an expectation and should be enforced.
+- Rule: Tests must not modify tracked files.
+- Inference (Confidence: Medium, would raise it: an explicit CI git status gate): This is expected behavior but not fully enforced by CI today.
 
 ## Security and Secrets
 
 Secrets model
-- Fact: `.env.example` documents keys and credentials such as `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, and WordPress credentials.
-- Fact: `wpgen init` creates `.env`.
-- Rule: Never commit `.env`. Update `.env.example` when new variables are added.
+- Fact: `.env.example` documents keys and credentials such as:
+  - `OPENAI_API_KEY`
+  - `ANTHROPIC_API_KEY`
+  - `GITHUB_TOKEN`
+  - WordPress credentials and site settings
+- Fact: `wpgen init` participates in local configuration setup that results in `.env` usage.
+- Rule: Never commit `.env`.
+- Rule: Update `.env.example` when new variables are introduced.
 
 Redaction
-- Fact: Logger includes secret redaction patterns (`wpgen/utils/logger.py`).
-- Rule: Do not log secrets. Redaction is defense in depth, not a license to print secrets.
+- Fact: Logger includes secret redaction patterns in `wpgen/utils/logger.py`.
+- Rule: Do not log secrets. Redaction is defense in depth, not permission to expose credentials.
 
 ## CI Rules
 
-- Fact: CI workflow is `.github/workflows/ci.yml`.
-- Fact: It runs on pushes to `main` and `claude/**`, and on PRs targeting `main`.
+- Fact: Main CI workflow is `.github/workflows/ci.yml`.
+- Fact: It runs on:
+  - pushes to `main`
+  - pushes to `claude/**`
+  - pull requests targeting `main`
+  - manual dispatch
+- Fact: CI currently has three main jobs:
+  - test
+  - build
+  - security
+  Evidence: `.github/workflows/ci.yml`
 
 Commit and PR title rules
-- Fact: No Conventional Commits or PR title lint tooling is present in this repo state.
-- Rule: If commit rules are introduced, update this file with exact required formats and examples.
+- Fact: No Conventional Commits enforcement or PR title lint tooling was identified in the current repo state.
+- Rule: If commit or PR title rules are introduced later, update this file with the exact enforced format and examples.
 
 ## Integration Strategy
 
 LLM providers
-- Fact: Supported providers are `openai`, `anthropic`, `local-lmstudio`, `local-ollama` (`config.yaml`).
-- Rule: CI and unit tests must use mock provider and must not call real external services.
+- Fact: Supported providers include:
+  - `openai`
+  - `anthropic`
+  - `local-lmstudio`
+  - `local-ollama`
+  Evidence: `wpgen/service.py`, `config.yaml`
+- Rule: CI and default tests must use mock provider behavior and must not call real external services.
 
 GitHub integration
 - Fact: GitHub integration exists under `wpgen/github/`.
-- Rule: Do not embed tokens in URLs or git remotes. Follow existing security tests.
+- Rule: Do not embed tokens in git remotes or URLs.
+- Rule: Follow existing GitHub security tests when changing push behavior.
 
 WordPress integration
 - Fact: WordPress REST API integration exists under `wpgen/wordpress/`.
-- Rule: No real WordPress network calls in default CI tests.
+- Fact: CLI exposes WordPress site management and API connectivity testing.
+- Rule: Default CI tests must not hit real WordPress endpoints.
 
-## Kadence-like capability roadmap constraints
+## Kadence-like Capability Roadmap Constraints
 
-- Fact: Current generated theme templates are limited to baseline classic theme templates under `wpgen/templates/`.
-- Inference (Confidence: High, would raise it: additional templates and builder modules): To approach Kadence-like capabilities, WPGen needs a larger theme framework and additional generation templates, not just better prompting.
-- Rule: The generator should only claim Kadence-like feature support when it is backed by:
-  - Template outputs
-  - Theme self-tests and validators
-  - Offline unit tests asserting the presence and behavior of the feature
+Current reality
+- Fact: Current generated theme output is a hardened classic PHP theme, not a block theme.
+- Fact: Current validator logic is also classic-theme oriented.
+- Fact: Current repo does not yet generate block theme artifacts.
+
+Roadmap rule
+- Inference (Confidence: High, would raise it: shipped block-theme modules and tests): To approach Kadence-like capabilities, WPGen needs a new block-theme output architecture rather than indefinite expansion of the current classic-only renderer.
+- Rule: Do not claim Kadence-like feature support unless it is backed by:
+  - generator logic
+  - rendered output files
+  - validator rules
+  - offline tests asserting presence and behavior
 
 ## Agent Working Rules
 
 Read before writing
-- Rule: Before editing generator logic or templates, read:
+- Rule: Before editing generation logic or validation logic, read:
   - `README.md`
   - `.github/workflows/ci.yml`
   - `config.yaml`
+  - `wpgen/main.py`
   - `wpgen/service.py`
   - `wpgen/generators/hybrid_generator.py`
-  - `wpgen/schema/theme_schema.py`
-  - `wpgen/templates/`
+  - `wpgen/templates/renderer.py`
+  - `wpgen/utils/theme_validator.py`
+  - `wpgen/schema/`
   - `tests/conftest.py`
 
 Implementation discipline
-- Rule: No placeholders, no truncated code, no “omitted” sections.
+- Rule: No placeholders, no truncated code, no omitted sections.
 - Rule: Prefer minimal, testable changes.
 - Rule: Keep tests offline and deterministic.
 
-Update docs
-- Rule: Update `CLAUDE.md` and `BACKLOG.md` when commands, config keys, CI gates, or repo structure change.
+Docs updates
+- Rule: Update `CLAUDE.md` and `BACKLOG.md` whenever commands, config keys, CI gates, repo structure, or roadmap priorities change.
