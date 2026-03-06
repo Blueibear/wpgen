@@ -412,10 +412,38 @@ Must NOT close </main> tag""",
     def get_markup_structure(self) -> dict[str, str]:
         """Get semantic HTML structure requirements."""
         return {
-            "header": '<header class="site-header"><div class="header-inner"><div class="site-branding">...</div><nav class="main-navigation">...</nav><div class="header-cart">...</div></div></header>',
-            "hero": '<section class="hero"><div class="hero-content"><h1>...</h1><p>...</p><a class="cta-button">...</a></div><div class="hero-image">...</div></section>',
-            "product_grid": '<div class="products-grid"><div class="product-card"><img /><h3>...</h3><span class="price">...</span><button class="add-to-cart">...</button></div></div>',
-            "footer": '<footer class="site-footer"><div class="footer-widgets"><div class="footer-column">...</div></div><div class="footer-bottom"><p class="copyright">...</p></div></footer>',
+            "header": (
+                '<header class="site-header">'
+                '<div class="header-inner">'
+                '<div class="site-branding">...</div>'
+                '<nav class="main-navigation">...</nav>'
+                '<div class="header-cart">...</div>'
+                "</div></header>"
+            ),
+            "hero": (
+                '<section class="hero">'
+                '<div class="hero-content">'
+                "<h1>...</h1><p>...</p>"
+                '<a class="cta-button">...</a></div>'
+                '<div class="hero-image">...</div>'
+                "</section>"
+            ),
+            "product_grid": (
+                '<div class="products-grid">'
+                '<div class="product-card">'
+                "<img /><h3>...</h3>"
+                '<span class="price">...</span>'
+                '<button class="add-to-cart">...</button>'
+                "</div></div>"
+            ),
+            "footer": (
+                '<footer class="site-footer">'
+                '<div class="footer-widgets">'
+                '<div class="footer-column">...</div></div>'
+                '<div class="footer-bottom">'
+                '<p class="copyright">...</p>'
+                "</div></footer>"
+            ),
         }
 
     def get_accessibility_requirements(self) -> list[str]:

@@ -118,7 +118,9 @@ You MUST output valid JSON following this exact schema:
     "smooth_scroll": boolean,
     "lazy_load_images": boolean,
     "custom_blocks": [
-      {"name": "string", "title": "string", "description": "string", "category": "string", "icon": "string"}
+      {"name": "string", "title": "string",
+       "description": "string", "category": "string",
+       "icon": "string"}
     ],
     "social_links": ["facebook", "twitter", "instagram", ...]
   },
@@ -138,7 +140,9 @@ IMPORTANT RULES:
 """
 
 
-SYSTEM_PROMPT = """You are a WordPress theme specification generator. Your ONLY job is to output valid JSON that describes a WordPress theme's design and structure.
+SYSTEM_PROMPT = """You are a WordPress theme specification generator. \
+Your ONLY job is to output valid JSON that describes a \
+WordPress theme's design and structure.
 
 CRITICAL RULES:
 1. Output ONLY valid JSON - nothing else, no explanations, no markdown
@@ -148,9 +152,12 @@ CRITICAL RULES:
 5. All hex colors must be valid 6-digit codes (e.g., "#1a1a2e")
 6. Theme names must be lowercase with hyphens only
 
-Your JSON will be processed by a template engine to generate the actual WordPress theme files. You are NOT generating code - you are generating a specification.
+Your JSON will be processed by a template engine to generate \
+the actual WordPress theme files. You are NOT generating \
+code - you are generating a specification.
 
-Think of yourself as a designer creating a design document, not a developer writing code."""
+Think of yourself as a designer creating a design document, \
+not a developer writing code."""
 
 
 def get_theme_spec_system_prompt() -> str:
@@ -283,7 +290,7 @@ def get_theme_spec_prompt(
 
 
 def parse_llm_json_response(
-    response: str, fallback_to_defaults: bool = True
+    response: str | dict, fallback_to_defaults: bool = True
 ) -> tuple[bool, ThemeSpecification | None, list[str]]:
     """Parse LLM response and extract JSON theme specification.
 
@@ -350,16 +357,23 @@ def parse_llm_json_response(
     return True, spec, errors
 
 
-def _clean_json_response(response: str) -> str | None:
+def _clean_json_response(response: str | dict) -> str | None:
     """Clean LLM response to extract JSON.
 
     Args:
-        response: Raw response string
+        response: Raw response string or already-parsed dict
 
     Returns:
         Cleaned JSON string or None
     """
     if not response:
+        return None
+
+    # If response is already a dict, serialize it to JSON
+    if isinstance(response, dict):
+        return json.dumps(response)
+
+    if not isinstance(response, str):
         return None
 
     text = response.strip()

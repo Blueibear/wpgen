@@ -12,12 +12,12 @@ from flask import Flask, jsonify, render_template, request
 from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
 
+from wpgen.config_schema import get_redacted_config_summary, load_and_validate_config
+from wpgen.generators.hybrid_generator import HybridWordPressGenerator
 from wpgen.github.integration import GitHubIntegration
 from wpgen.parsers.prompt_parser import PromptParser
-from wpgen.generators.hybrid_generator import HybridWordPressGenerator
 from wpgen.utils.config import get_llm_provider as get_provider
 from wpgen.utils.logger import setup_logger
-from wpgen.config_schema import load_and_validate_config, get_redacted_config_summary
 
 
 def create_app(config: dict = None, validate_config: bool = True):
@@ -41,7 +41,7 @@ def create_app(config: dict = None, validate_config: bool = True):
                 validated_config = load_and_validate_config(str(config_file))
                 config = validated_config.model_dump()
             except ValidationError as e:
-                print(f"❌ Configuration validation failed:\n", file=sys.stderr)
+                print("❌ Configuration validation failed:\n", file=sys.stderr)
                 for error in e.errors():
                     field = " -> ".join(str(x) for x in error["loc"])
                     print(f"  • {field}: {error['msg']}", file=sys.stderr)

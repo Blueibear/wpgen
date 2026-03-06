@@ -100,7 +100,11 @@ def create_gradio_interface(config: dict) -> gr.Blocks:
                 )
 
             # IMMEDIATE FEEDBACK: Show generation started banner within 100ms
-            progress_msg = "**Status:** 🚀 Generation Started!\n\n⏳ Generating your WordPress theme... This may take 2-3 minutes."
+            progress_msg = (
+                "**Status:** 🚀 Generation Started!\n\n"
+                "⏳ Generating your WordPress theme... "
+                "This may take 2-3 minutes."
+            )
             status = """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚀 THEME GENERATION STARTED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -122,7 +126,9 @@ PROGRESS:
                     "❌ Error: Vision model required for image analysis\n\n"
                     "You have uploaded images but no vision model is configured.\n\n"
                     "**To fix this:**\n"
-                    "1. Set a vision model in the 'LLM Provider' section (e.g., 'Llama-3.2-Vision-11B-Instruct' for LM Studio or 'llama3.2-vision:11b-instruct' for Ollama), OR\n"
+                    "1. Set a vision model in the 'LLM Provider' section "
+                    "(e.g., 'Llama-3.2-Vision-11B-Instruct' for LM Studio "
+                    "or 'llama3.2-vision:11b-instruct' for Ollama), OR\n"
                     "2. Remove the uploaded images to use text-only generation\n\n"
                     "Vision models are required for analyzing design references and mockups."
                 )
@@ -152,7 +158,11 @@ PROGRESS:
             status += f"│  🤖 Provider: {llm_provider_choice}\n"
             if is_local:
                 if llm_vision_model:
-                    status += f"│  ✓ Dual-model: Brains ({llm_brains_model or 'default'}) + Vision ({llm_vision_model})\n"
+                    status += (
+                        f"│  ✓ Dual-model: Brains "
+                        f"({llm_brains_model or 'default'}) "
+                        f"+ Vision ({llm_vision_model})\n"
+                    )
                 else:
                     status += (
                         f"│  ✓ Brains model: {llm_brains_model or 'default'} (vision disabled)\n"
@@ -180,9 +190,14 @@ PROGRESS:
             # Check if images were uploaded but failed to process
             if image_paths and not processed_files["images"]:
                 logger.warning(
-                    f"User uploaded {len(image_paths)} image(s) but none were successfully processed!"
+                    f"User uploaded {len(image_paths)} image(s) "
+                    "but none were successfully processed!"
                 )
-                status += f"⚠️  Warning: {len(image_paths)} uploaded image(s) could not be processed. Generation will continue without image analysis.\n"
+                status += (
+                    f"⚠️  Warning: {len(image_paths)} uploaded "
+                    "image(s) could not be processed. Generation "
+                    "will continue without image analysis.\n"
+                )
                 yield progress_msg, status, "", ""
 
             image_summaries = None
@@ -356,7 +371,10 @@ PROGRESS:
             yield progress_msg, status, "", ""
 
             # Generate theme
-            progress_msg = "**Status:** 🛠️ Step 4/6 - Generating Theme Files...\n\n⚠️ This may take 2-3 minutes"
+            progress_msg = (
+                "**Status:** 🛠️ Step 4/6 - Generating "
+                "Theme Files...\n\n⚠️ This may take 2-3 minutes"
+            )
             status += "└─ ✓ Requirements analyzed\n\n"
             status += "┌─ STEP 4/6: Generate Theme Files\n"
             status += "│  STATUS: BUILDING\n"
@@ -605,13 +623,19 @@ PROGRESS:
                         "and contact form..."
                     ),
                     lines=5,
-                    info="Natural language brief describing your brand, pages, layout, colors, and tone. More detail = better results.",
+                    info=(
+                        "Natural language brief describing your brand, "
+                        "pages, layout, colors, and tone. "
+                        "More detail = better results."
+                    ),
                 )
 
                 # Design Profile Selection
                 gr.Markdown("### 🎨 Design Profile")
                 gr.Markdown(
-                    "Choose a visual style for your theme. This controls colors, typography, spacing, and component styling."
+                    "Choose a visual style for your theme. "
+                    "This controls colors, typography, spacing, "
+                    "and component styling."
                 )
 
                 from ..design_profiles import get_profile_names
@@ -626,7 +650,11 @@ PROGRESS:
                     label="Visual Style",
                     choices=profile_names,
                     value="streetwear_modern",
-                    info="Select a design profile that matches your brand aesthetic. Each profile has its own color palette, typography, and component styles.",
+                    info=(
+                        "Select a design profile that matches your "
+                        "brand aesthetic. Each profile has its own "
+                        "color palette, typography, and component styles."
+                    ),
                 )
 
                 # LLM Provider Selection (optional configuration)
@@ -639,7 +667,11 @@ PROGRESS:
                         label="Provider",
                         choices=["openai", "anthropic", "local-lmstudio", "local-ollama"],
                         value=config.get("llm", {}).get("provider", "openai"),
-                        info="Choose cloud (OpenAI/Anthropic) or local (LM Studio/Ollama). Local options require running local servers.",
+                        info=(
+                            "Choose cloud (OpenAI/Anthropic) or local "
+                            "(LM Studio/Ollama). Local options require "
+                            "running local servers."
+                        ),
                     )
 
                     # Dual-model fields for local providers (brains + vision)
@@ -650,24 +682,41 @@ PROGRESS:
                             llm_brains_model = gr.Textbox(
                                 label="Brains Model",
                                 placeholder="Meta-Llama-3.1-8B-Instruct",
-                                info="Text-only reasoning model for prompt analysis and code generation without images.",
+                                info=(
+                                    "Text-only reasoning model for "
+                                    "prompt analysis and code "
+                                    "generation without images."
+                                ),
                             )
                             llm_brains_base_url = gr.Textbox(
                                 label="Brains Base URL",
                                 placeholder="http://localhost:1234/v1",
-                                info="OpenAI-compatible endpoint for the brains model (LM Studio: 1234, Ollama: 11434).",
+                                info=(
+                                    "OpenAI-compatible endpoint for "
+                                    "the brains model "
+                                    "(LM Studio: 1234, Ollama: 11434)."
+                                ),
                             )
 
                         with gr.Row():
                             llm_vision_model = gr.Textbox(
                                 label="Vision Model (optional)",
                                 placeholder="Llama-3.2-Vision-11B-Instruct",
-                                info="Image-capable model for design analysis. REQUIRED if uploading images. Leave empty to disable vision.",
+                                info=(
+                                    "Image-capable model for design "
+                                    "analysis. REQUIRED if uploading "
+                                    "images. Leave empty to disable "
+                                    "vision."
+                                ),
                             )
                             llm_vision_base_url = gr.Textbox(
                                 label="Vision Base URL",
                                 placeholder="http://localhost:1234/v1",
-                                info="OpenAI-compatible endpoint for vision model. Can be same server as brains.",
+                                info=(
+                                    "OpenAI-compatible endpoint for "
+                                    "vision model. Can be same "
+                                    "server as brains."
+                                ),
                             )
 
                     # Show/hide dual-model fields based on provider selection
@@ -731,7 +780,11 @@ PROGRESS:
                         label="Primary goal",
                         choices=["inform", "convert", "sell"],
                         value="inform",
-                        info="Site purpose: inform (blog/magazine), convert (lead gen/services), sell (e-commerce).",
+                        info=(
+                            "Site purpose: inform (blog/magazine), "
+                            "convert (lead gen/services), "
+                            "sell (e-commerce)."
+                        ),
                     )
 
                     gm_pages = gr.CheckboxGroup(
@@ -746,7 +799,10 @@ PROGRESS:
                             "Portfolio",
                             "FAQ",
                         ],
-                        info="Select which top-level page templates to generate. Creates navigation structure.",
+                        info=(
+                            "Select which top-level page templates "
+                            "to generate. Creates navigation structure."
+                        ),
                     )
 
                     with gr.Row():
@@ -754,19 +810,31 @@ PROGRESS:
                             label="Mood",
                             choices=["modern-minimal", "playful", "brutalist", "elegant"],
                             value="modern-minimal",
-                            info="Visual style: modern-minimal (clean), playful (fun), brutalist (bold), elegant (refined).",
+                            info=(
+                                "Visual style: modern-minimal (clean), "
+                                "playful (fun), brutalist (bold), "
+                                "elegant (refined)."
+                            ),
                         )
                         gm_typography = gr.Dropdown(
                             label="Typography",
                             choices=["sans", "serif", "mono"],
                             value="sans",
-                            info="Font style: sans (clean, modern), serif (traditional, readable), mono (tech, code).",
+                            info=(
+                                "Font style: sans (clean, modern), "
+                                "serif (traditional, readable), "
+                                "mono (tech, code)."
+                            ),
                         )
 
                     gm_palette = gr.Textbox(
                         label="Primary colors (hex, comma-separated)",
                         placeholder="#0f172a, #f59e0b",
-                        info="Brand colors as hex codes (e.g., #0f172a, #f59e0b). Generates CSS custom properties.",
+                        info=(
+                            "Brand colors as hex codes "
+                            "(e.g., #0f172a, #f59e0b). "
+                            "Generates CSS custom properties."
+                        ),
                     )
 
                     with gr.Row():
@@ -774,13 +842,22 @@ PROGRESS:
                             label="Header",
                             choices=["centered", "split", "stacked"],
                             value="split",
-                            info="Header layout: centered (logo+nav center), split (logo left/nav right), stacked (vertical).",
+                            info=(
+                                "Header layout: centered "
+                                "(logo+nav center), split "
+                                "(logo left/nav right), "
+                                "stacked (vertical)."
+                            ),
                         )
                         gm_layout_hero = gr.Dropdown(
                             label="Hero",
                             choices=["image", "video", "text"],
                             value="image",
-                            info="Hero section style: image (background image), video (background video), text (text-only).",
+                            info=(
+                                "Hero section style: image "
+                                "(background image), video "
+                                "(background video), text (text-only)."
+                            ),
                         )
 
                     with gr.Row():
@@ -788,7 +865,11 @@ PROGRESS:
                             label="Sidebar",
                             choices=["none", "left", "right"],
                             value="none",
-                            info="Sidebar position: none (full-width), left (sidebar left), right (sidebar right).",
+                            info=(
+                                "Sidebar position: none (full-width), "
+                                "left (sidebar left), "
+                                "right (sidebar right)."
+                            ),
                         )
                         gm_container = gr.Dropdown(
                             label="Container width",
@@ -811,19 +892,32 @@ PROGRESS:
                             "cta",
                             "breadcrumbs",
                         ],
-                        info="UI components to include: blog posts, card grids, image galleries, testimonials, pricing tables, etc.",
+                        info=(
+                            "UI components to include: blog posts, "
+                            "card grids, image galleries, testimonials, "
+                            "pricing tables, etc."
+                        ),
                     )
 
                     gm_accessibility = gr.CheckboxGroup(
                         label="Accessibility",
                         choices=["keyboard", "high-contrast", "reduced-motion"],
-                        info="A11y features: keyboard nav (focus states), high-contrast (WCAG AA), reduced-motion (respects prefers-reduced-motion).",
+                        info=(
+                            "A11y features: keyboard nav "
+                            "(focus states), high-contrast (WCAG AA), "
+                            "reduced-motion "
+                            "(respects prefers-reduced-motion)."
+                        ),
                     )
 
                     gm_integrations = gr.CheckboxGroup(
                         label="Integrations",
                         choices=["woocommerce", "seo", "analytics", "newsletter"],
-                        info="Third-party integrations: WooCommerce, SEO meta tags, analytics scripts, newsletter signup forms.",
+                        info=(
+                            "Third-party integrations: WooCommerce, "
+                            "SEO meta tags, analytics scripts, "
+                            "newsletter signup forms."
+                        ),
                     )
 
                     gm_perf_lcp = gr.Slider(
@@ -832,7 +926,11 @@ PROGRESS:
                         maximum=5000,
                         step=100,
                         value=2500,
-                        info="Largest Contentful Paint target in milliseconds. Lower = faster perceived load. Affects asset loading strategy.",
+                        info=(
+                            "Largest Contentful Paint target in "
+                            "milliseconds. Lower = faster perceived "
+                            "load. Affects asset loading strategy."
+                        ),
                     )
 
                 with gr.Accordion("✨ Optional Features", open=False):
@@ -841,30 +939,49 @@ PROGRESS:
                     woo_checkbox = gr.Checkbox(
                         label="WooCommerce support & styling",
                         value=False,
-                        info="Adds WooCommerce templates, product loop styles, and shop page support. Safe even if WooCommerce isn't installed.",
+                        info=(
+                            "Adds WooCommerce templates, product loop "
+                            "styles, and shop page support. Safe even "
+                            "if WooCommerce isn't installed."
+                        ),
                     )
 
                     blocks_checkboxgroup = gr.CheckboxGroup(
                         label="Custom Gutenberg blocks",
                         choices=["featured_products", "lifestyle_image", "promo_banner"],
                         value=[],
-                        info="Custom Gutenberg blocks: featured_products (product showcase), lifestyle_image (image+overlay), promo_banner (CTA banner).",
+                        info=(
+                            "Custom Gutenberg blocks: featured_products "
+                            "(product showcase), lifestyle_image "
+                            "(image+overlay), promo_banner (CTA banner)."
+                        ),
                     )
 
                     darkmode_checkbox = gr.Checkbox(
                         label="Light/Dark mode toggle",
                         value=False,
-                        info="Floating toggle button with localStorage persistence and prefers-color-scheme support. Switches between light/dark themes.",
+                        info=(
+                            "Floating toggle button with localStorage "
+                            "persistence and prefers-color-scheme "
+                            "support. Switches between "
+                            "light/dark themes."
+                        ),
                     )
 
                     preloader_checkbox = gr.Checkbox(
                         label="Animated loading logo (preloader)",
                         value=False,
-                        info="Smooth page preloader with spinner. Auto-hides after load with 3-second max timeout.",
+                        info=(
+                            "Smooth page preloader with spinner. "
+                            "Auto-hides after load with "
+                            "3-second max timeout."
+                        ),
                     )
 
                     gr.Markdown(
-                        "*Note: Smooth page transitions and mobile-friendly navigation are always included.*"
+                        "*Note: Smooth page transitions and "
+                        "mobile-friendly navigation are "
+                        "always included.*"
                     )
 
                 gr.Markdown("### 🖼️ Upload Design References (Optional)")
@@ -891,19 +1008,31 @@ PROGRESS:
                     push_checkbox = gr.Checkbox(
                         label="Push to GitHub",
                         value=True,
-                        info="Automatically create GitHub repository and push generated theme. Requires GITHUB_TOKEN in .env.",
+                        info=(
+                            "Automatically create GitHub repository "
+                            "and push generated theme. "
+                            "Requires GITHUB_TOKEN in .env."
+                        ),
                     )
 
                     deploy_wp_checkbox = gr.Checkbox(
                         label="Deploy to WordPress",
                         value=False,
-                        info="Package and prepare theme for WordPress deployment. Requires WordPress credentials in .env.",
+                        info=(
+                            "Package and prepare theme for WordPress "
+                            "deployment. Requires WordPress "
+                            "credentials in .env."
+                        ),
                     )
 
                 repo_input = gr.Textbox(
                     label="Repository Name (Optional)",
                     placeholder="Leave empty for auto-generated name",
-                    info="Custom GitHub repository name. Leave blank for auto-generated (e.g., wp-theme-name-20250103).",
+                    info=(
+                        "Custom GitHub repository name. Leave blank "
+                        "for auto-generated "
+                        "(e.g., wp-theme-name-20250103)."
+                    ),
                 )
                 gr.Markdown(
                     "Enter a custom repository name or leave blank for an automatic choice."

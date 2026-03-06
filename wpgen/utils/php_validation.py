@@ -265,7 +265,6 @@ def detect_stray_backslashes(code: str) -> tuple[bool, list[str]]:
     lines = code.split("\n")
 
     # Valid escape sequences in PHP
-    valid_escapes = {r"\\", r"\"", r"\'", r"\n", r"\r", r"\t", r"\$", r"\0"}
 
     for i, line in enumerate(lines, 1):
         # Skip lines that are comments
@@ -379,7 +378,9 @@ def detect_mixed_html_in_php_blocks(php_code: str) -> tuple[bool, list[str]]:
         )
         if html_tags:
             issues.append(
-                f"HTML tags found inside PHP block at position {block_start}: {', '.join(html_tags[:3])}"
+                f"HTML tags found inside PHP block at "
+                f"position {block_start}: "
+                f"{', '.join(html_tags[:3])}"
             )
 
         # Look for CSS properties (common error: CSS mixed with PHP)
@@ -401,7 +402,9 @@ def detect_mixed_html_in_php_blocks(php_code: str) -> tuple[bool, list[str]]:
         )
         if open_tags != close_tags:
             issues.append(
-                f"Unmatched HTML tags inside PHP block at position {block_start} ({open_tags} open, {close_tags} close)"
+                f"Unmatched HTML tags inside PHP block at "
+                f"position {block_start} "
+                f"({open_tags} open, {close_tags} close)"
             )
 
     has_issues = len(issues) > 0

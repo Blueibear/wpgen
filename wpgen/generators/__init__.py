@@ -14,8 +14,8 @@ This module provides two generator implementations:
    - Guarantees no syntax errors or hallucinated functions
 """
 
-from .wordpress_generator import WordPressGenerator
 from .hybrid_generator import HybridWordPressGenerator, create_hybrid_generator
+from .wordpress_generator import WordPressGenerator
 
 __all__ = [
     "WordPressGenerator",

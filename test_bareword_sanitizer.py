@@ -5,8 +5,8 @@ This script tests the sanitize_barewords() function to ensure it correctly
 quotes unquoted barewords in PHP arrays.
 """
 
-import sys
 import re
+import sys
 from pathlib import Path
 
 # Add wpgen to path

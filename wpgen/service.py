@@ -17,18 +17,17 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, Field, field_validator
 
-from .generators import WordPressGenerator, HybridWordPressGenerator
+from .design_profiles import get_design_profile
+from .generators import HybridWordPressGenerator, WordPressGenerator
 from .github import GitHubIntegration
+from .optimizer import PromptOptimizer
 from .parsers import PromptParser
 from .utils import get_llm_provider, get_logger
+from .utils.code_validator import CodeValidator
 from .utils.image_analysis import ImageAnalyzer
 from .utils.text_utils import TextProcessor
-from .utils.code_validator import CodeValidator
 from .utils.theme_validator import ThemeValidator
 from .wordpress import WordPressAPI
-from .design_profiles import get_design_profile, get_profile_names
-from .optimizer import PromptOptimizer
-from .blueprints import get_blueprint
 
 logger = get_logger(__name__)
 
@@ -66,7 +65,10 @@ class GenerationRequest(BaseModel):
     # Generator selection
     generator_type: GeneratorType = Field(
         default=GeneratorType.HYBRID,
-        description="Generator type: 'hybrid' (JSON→Jinja→PHP, recommended) or 'legacy' (direct PHP generation)",
+        description=(
+            "Generator type: 'hybrid' (JSON->Jinja->PHP, recommended)"
+            " or 'legacy' (direct PHP generation)"
+        ),
     )
 
     # LLM configuration
@@ -85,7 +87,11 @@ class GenerationRequest(BaseModel):
     # Design profile
     design_profile: str | None = Field(
         default=None,
-        description="Design profile (streetwear_modern, minimalist, corporate, vibrant_bold, earthy_natural, bold_neon, dark_mode)",
+        description=(
+            "Design profile (streetwear_modern, minimalist, "
+            "corporate, vibrant_bold, earthy_natural, "
+            "bold_neon, dark_mode)"
+        ),
     )
 
     # Optional features
@@ -273,7 +279,10 @@ class ThemeGenerationService:
             ):
                 result.success = False
                 result.error = "Theme validation failed in strict mode"
-                result.error_details = f"Errors: {len(result.validation_errors)}, Warnings: {len(result.validation_warnings)}"
+                result.error_details = (
+                    f"Errors: {len(result.validation_errors)}, "
+                    f"Warnings: {len(result.validation_warnings)}"
+                )
                 return result
 
             # Push to GitHub if requested

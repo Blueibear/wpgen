@@ -448,7 +448,9 @@ class FileHandler:
 
             if excluded_count > 0:
                 logger.info(
-                    f"Excluded {excluded_count} files/directories from ZIP (.git, .github, node_modules, hidden files)"
+                    f"Excluded {excluded_count} files/directories "
+                    f"from ZIP (.git, .github, node_modules, "
+                    f"hidden files)"
                 )
 
             logger.info(f"Created ZIP archive: {zip_path}")

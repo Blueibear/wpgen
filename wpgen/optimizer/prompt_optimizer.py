@@ -7,8 +7,8 @@ It detects domain-specific intent and automatically applies appropriate blueprin
 """
 
 import re
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -251,7 +251,8 @@ class PromptOptimizer:
 
         domain_specific = {
             "ecommerce": [
-                "🛒 AUTO-GENERATED PRODUCT GRID SECTION (MANDATORY for store/shop/ecommerce themes):",
+                "🛒 AUTO-GENERATED PRODUCT GRID SECTION "
+                "(MANDATORY for store/shop/ecommerce themes):",
                 "  • Add product grid on front-page.php with WooCommerce product loop",
                 "  • Use woocommerce_product_loop_start() and woocommerce_product_loop_end()",
                 "  • Display 3-4 columns on desktop, 2 on tablet, 1 on mobile",
@@ -274,7 +275,9 @@ class PromptOptimizer:
                 "    }",
                 "    wp_reset_postdata();",
                 "",
-                "Product grid layout with CSS Grid (grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)))",
+                "Product grid layout with CSS Grid "
+                "(grid-template-columns: repeat(auto-fit, "
+                "minmax(280px, 1fr)))",
                 'Featured products section on homepage with "Shop Now" CTA',
                 "Category navigation and filtering UI",
                 "Shopping cart icon in header with item count badge",
@@ -314,7 +317,9 @@ class PromptOptimizer:
     def _get_template_requirements(self, domain: str, woocommerce: bool) -> list[str]:
         """Get template file requirements based on domain."""
         base_templates = [
-            'header.php: Must contain <header> tag, site-branding div, nav menu, and opening <main id="content">',
+            "header.php: Must contain <header> tag, "
+            "site-branding div, nav menu, and "
+            'opening <main id="content">',
             "footer.php: Must contain closing </main> tag, <footer> tag, and wp_footer() call",
             "index.php: Must contain the WordPress loop with get_header() and get_footer()",
             "functions.php: Theme setup, widget areas, enqueue scripts/styles",
@@ -451,7 +456,8 @@ class PromptOptimizer:
             "",
             "Component-based CSS organization (BEM or utility-first)",
             "Hover and focus states for all interactive elements",
-            "Accessibility: WCAG AA contrast ratios (4.5:1 text, 3:1 UI), focus indicators (2px ring)",
+            "Accessibility: WCAG AA contrast ratios "
+            "(4.5:1 text, 3:1 UI), focus indicators (2px ring)",
             "Print stylesheet considerations for blog/magazine themes",
         ]
 
@@ -648,7 +654,8 @@ class PromptOptimizer:
         sections.append("")
         sections.append("🚨 CRITICAL: QUOTE ALL ARRAY VALUES - NO BAREWORDS ALLOWED")
         sections.append(
-            "  PHP arrays REQUIRE all string values to be quoted. Unquoted barewords cause FATAL errors."
+            "  PHP arrays REQUIRE all string values to be quoted. "
+            "Unquoted barewords cause FATAL errors."
         )
         sections.append("")
         sections.append("  WRONG (causes PHP fatal error):")

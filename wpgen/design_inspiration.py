@@ -3,8 +3,6 @@ Design Inspiration Configuration for WPGen
 Non-code inspiration references for modern ecommerce theme generation
 """
 
-from typing import Any
-
 # Inspiration brand references (non-scraping, style guidance only)
 INSPIRATION_BRANDS = {
     "streetwear_modern": {

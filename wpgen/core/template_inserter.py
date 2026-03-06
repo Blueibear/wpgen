@@ -8,9 +8,10 @@ The key principle is: boilerplate provides structure, LLM provides styling/conte
 LLM-generated code is inserted into predetermined safe zones.
 """
 
-from typing import Dict, Any, Optional, List
-from .sanitizers import sanitize_file_complete
+from typing import Any, Dict, Optional
+
 from ..utils.logger import get_logger
+from .sanitizers import sanitize_file_complete
 
 logger = get_logger(__name__)
 

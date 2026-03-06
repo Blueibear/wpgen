@@ -14,10 +14,6 @@ This guarantees:
 - No WordPress preview white-screen
 """
 
-import json
-import os
-import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +23,7 @@ from ..prompts import (
     get_theme_spec_system_prompt,
     parse_llm_json_response,
 )
-from ..schema import ThemeSpecification, get_default_theme_spec, validate_theme_spec
+from ..schema import ThemeSpecification, get_default_theme_spec
 from ..templates import ThemeRenderer
 from ..utils.logger import get_logger
 

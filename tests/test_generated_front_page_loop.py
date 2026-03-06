@@ -9,17 +9,19 @@ Verifies that front-page.php (and other templates) contain:
 - Proper WordPress loop structure
 """
 
-import tempfile
-import shutil
 import re
+import shutil
+import tempfile
 from pathlib import Path
+
 import pytest
 
 
 def test_front_page_has_required_elements(tmp_path):
     """Generate a theme and verify front-page.php has required elements."""
-    from wpgen.generators.wordpress_generator import WordPressGenerator
     from unittest.mock import MagicMock
+
+    from wpgen.generators.wordpress_generator import WordPressGenerator
 
     # Create a minimal theme configuration
     requirements = {
@@ -124,8 +126,9 @@ def test_fallback_front_page_structure():
 
 def test_index_php_has_loop(tmp_path):
     """Verify that index.php has a proper WordPress loop."""
-    from wpgen.generators.wordpress_generator import WordPressGenerator
     from unittest.mock import MagicMock
+
+    from wpgen.generators.wordpress_generator import WordPressGenerator
 
     # Create a minimal theme configuration
     requirements = {
@@ -185,9 +188,10 @@ def test_index_php_has_loop(tmp_path):
 
 def test_no_parse_errors_in_front_page():
     """Verify fallback front-page.php has no common parse error patterns."""
+    import tempfile
+
     from wpgen.fallback_templates import get_rich_fallback_front_page
     from wpgen.utils.code_validator import check_invalid_php_patterns
-    import tempfile
 
     # Get fallback template
     theme_name = "test-theme"
@@ -204,9 +208,7 @@ def test_no_parse_errors_in_front_page():
         # Should have no violations
         assert results[
             "valid"
-        ], f"Fallback front-page.php contains invalid PHP patterns:\n" + "\n".join(
-            results["errors"]
-        )
+        ], "Fallback front-page.php contains invalid PHP patterns:\n" + "\n".join(results["errors"])
 
         assert (
             len(results["violations"]) == 0

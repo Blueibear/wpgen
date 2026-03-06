@@ -10,7 +10,7 @@ All prompts are designed to:
 Every prompt explicitly constrains the LLM to prevent known failure modes.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict
 
 
 def get_base_system_prompt() -> str:
@@ -22,7 +22,9 @@ def get_base_system_prompt() -> str:
     Returns:
         Base system prompt string
     """
-    return """You are a WordPress theme code generator. You generate ONLY valid, working PHP, HTML, CSS, and JavaScript code for WordPress themes.
+    return """You are a WordPress theme code generator. \
+You generate ONLY valid, working PHP, HTML, CSS, \
+and JavaScript code for WordPress themes.
 
 CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
 
@@ -55,7 +57,8 @@ CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
    - These functions DO NOT exist in WordPress
    - Use ONLY documented WordPress functions
 
-Your generated code will be validated. Invalid code will be automatically replaced with fallback templates."""
+Your generated code will be validated. Invalid code will be \
+automatically replaced with fallback templates."""
 
 
 def get_header_prompt(theme_name: str, theme_slug: str, requirements: Dict[str, Any]) -> str:

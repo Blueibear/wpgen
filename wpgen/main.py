@@ -91,7 +91,7 @@ def cli():
         case_sensitive=False,
     ),
     default=None,
-    help="Design profile for theme styling (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)",
+    help="Design profile for theme styling",
 )
 @click.option("--strict", is_flag=True, help="Enable strict validation mode (warnings = errors)")
 @click.option("--json-logs", is_flag=True, help="Output logs in JSON format to stdout")

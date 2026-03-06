@@ -11,16 +11,16 @@ When validation fails, the system automatically falls back to tested, safe templ
 instead of generating broken themes.
 """
 
+import re
 import subprocess
 import tempfile
-import re
-from pathlib import Path
-from typing import Tuple, List, Dict, Optional, Any
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
-from .sanitizers import sanitize_file_complete
-from .template_contracts import validate_template, get_contract, repair_template
 from ..utils.logger import get_logger
+from .sanitizers import sanitize_file_complete
+from .template_contracts import get_contract, repair_template, validate_template
 
 logger = get_logger(__name__)
 
@@ -488,7 +488,8 @@ class ThemeValidator:
         fallback_count = sum(1 for r in results if r.used_fallback)
 
         logger.info(
-            f"Theme validation complete: {valid}/{total} files valid, {fallback_count} used fallbacks"
+            f"Theme validation complete: {valid}/{total} files valid, "
+            f"{fallback_count} used fallbacks"
         )
 
         return validated_files, results

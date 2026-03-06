@@ -57,7 +57,9 @@ class CompositeLLMProvider(BaseLLMProvider):
         self.timeout = timeout
 
         logger.info(
-            f"Initialized CompositeLLMProvider: brains={brains_model}, vision={vision_model or 'disabled'}"
+            f"Initialized CompositeLLMProvider: "
+            f"brains={brains_model}, "
+            f"vision={vision_model or 'disabled'}"
         )
 
     def _route_client(self, images: list[dict[str, Any | None]] = None):
@@ -159,9 +161,12 @@ Requirements:
 
         if images and len(images) > 0:
             prompt_text += (
-                f"\n- Match the visual design from the {len(images)} reference image(s) provided"
-                "\n- Extract colors, typography, spacing, and layout patterns from the design mockups"
-                "\n- Ensure the generated code accurately reflects the visual style shown in the images"
+                f"\n- Match the visual design from the "
+                f"{len(images)} reference image(s) provided"
+                "\n- Extract colors, typography, spacing, "
+                "and layout patterns from the design mockups"
+                "\n- Ensure the generated code accurately "
+                "reflects the visual style shown in the images"
             )
 
         prompt_text += "\n\nOutput only the code, no explanations."
@@ -180,7 +185,10 @@ Requirements:
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                                "url": (
+                                    f"data:{image.get('mime_type', 'image/jpeg')}"
+                                    f";base64,{image['data']}"
+                                )
                             },
                         }
                     )
@@ -327,7 +335,10 @@ Requirements:
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                            "url": (
+                                f"data:{image.get('mime_type', 'image/jpeg')}"
+                                f";base64,{image['data']}"
+                            )
                         },
                     }
                 )
@@ -409,7 +420,10 @@ Return ONLY valid JSON, no other text."""
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:{image_data.get('mime_type', 'image/jpeg')};base64,{image_data['data']}"
+                        "url": (
+                            f"data:{image_data.get('mime_type', 'image/jpeg')}"
+                            f";base64,{image_data['data']}"
+                        )
                     },
                 },
             ]

@@ -1,9 +1,9 @@
 """Theme blueprints for WPGen."""
 
-from wpgen.blueprints.ecommerce_blueprint import EcommerceBlueprint
 from wpgen.blueprints.blog_blueprint import BlogBlueprint
-from wpgen.blueprints.portfolio_blueprint import PortfolioBlueprint
+from wpgen.blueprints.ecommerce_blueprint import EcommerceBlueprint
 from wpgen.blueprints.magazine_blueprint import MagazineBlueprint
+from wpgen.blueprints.portfolio_blueprint import PortfolioBlueprint
 
 __all__ = [
     "EcommerceBlueprint",

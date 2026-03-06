@@ -10,7 +10,7 @@ for WordPress themes. Every template generated is guaranteed to be:
 All templates follow strict contracts defined in template_contracts.py.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -34,7 +34,7 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
         Complete header.php template as string
     """
     # Extract configuration with safe defaults
-    primary_color = config.get("primary_color", "#2563eb")
+    config.get("primary_color", "#2563eb")
     show_search = config.get("show_search", True)
     sticky_header = config.get("sticky_header", False)
 
@@ -66,7 +66,9 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#primary"><?php esc_html_e( 'Skip to content', '{theme_slug}' ); ?></a>
+    <a class="skip-link screen-reader-text" href="#primary"><?php
+		esc_html_e( 'Skip to content', '{theme_slug}' );
+	?></a>
 
     <header id="masthead" class="{header_class}">
         <div class="site-branding">
@@ -93,9 +95,12 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
             ?>
         </div>
 
-        <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
+        <nav id="site-navigation" class="main-navigation"
+			aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
             <button class="menu-toggle" aria-controls="primary-menu" aria-expanded="false">
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{theme_slug}' ); ?></span>
+                <span class="screen-reader-text"><?php
+					esc_html_e( 'Menu', '{theme_slug}' );
+				?></span>
                 <span class="menu-icon" aria-hidden="true">
                     <span class="menu-bar"></span>
                     <span class="menu-bar"></span>
@@ -133,7 +138,7 @@ def _build_search_form_block(show_search: bool, theme_slug: str) -> str:
     if not show_search:
         return ""
 
-    return f"""
+    return """
         <div class="header-search">
             <?php get_search_form(); ?>
         </div>"""
@@ -159,7 +164,7 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
         Complete footer.php template as string
     """
     footer_columns = config.get("footer_columns", 3)
-    copyright_text = config.get("copyright_text", f"&copy; {theme_name}")
+    config.get("copyright_text", f"&copy; {theme_name}")
 
     return f"""<?php
 /**
@@ -174,7 +179,11 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 ?>
 
     <footer id="colophon" class="site-footer">
-        <?php if ( is_active_sidebar( 'footer-1' ) || is_active_sidebar( 'footer-2' ) || is_active_sidebar( 'footer-3' ) ) : ?>
+        <?php if (
+			is_active_sidebar( 'footer-1' )
+			|| is_active_sidebar( 'footer-2' )
+			|| is_active_sidebar( 'footer-3' )
+		) : ?>
             <div class="footer-widgets">
                 <div class="footer-widgets-inner">
                     {_build_footer_widget_areas(footer_columns)}
@@ -287,7 +296,9 @@ get_header();
                     <?php
                 else :
                     ?>
-                    <h1 class="page-title"><?php esc_html_e( 'Latest Posts', '{theme_slug}' ); ?></h1>
+                    <h1 class="page-title"><?php
+						esc_html_e( 'Latest Posts', '{theme_slug}' );
+					?></h1>
                     <?php
                 endif;
                 ?>
@@ -464,7 +475,10 @@ function {theme_slug}_widgets_init() {{
         array(
             'name'          => esc_html__( 'Sidebar', '{theme_slug}' ),
             'id'            => 'sidebar-1',
-            'description'   => esc_html__( 'Add widgets here to appear in your sidebar.', '{theme_slug}' ),
+            'description'   => esc_html__(
+				'Add widgets here to appear in your sidebar.',
+				'{theme_slug}'
+			),
             'before_widget' => '<section id="%1$s" class="widget %2$s">',
             'after_widget'  => '</section>',
             'before_title'  => '<h2 class="widget-title">',
@@ -529,7 +543,7 @@ def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
     if not enabled:
         return ""
 
-    return f"""
+    return """
     // Add theme support for Custom Logo
     add_theme_support(
         'custom-logo',
@@ -582,7 +596,10 @@ def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
         array(
             'name'          => esc_html__( 'Footer {i}', '{theme_slug}' ),
             'id'            => 'footer-{i}',
-            'description'   => esc_html__( 'Add widgets here to appear in footer column {i}.', '{theme_slug}' ),
+            'description'   => esc_html__(
+				'Add widgets here to appear in footer column {i}.',
+				'{theme_slug}'
+			),
             'before_widget' => '<section id="%1$s" class="widget %2$s">',
             'after_widget'  => '</section>',
             'before_title'  => '<h2 class="widget-title">',
@@ -618,14 +635,20 @@ def build_content_part_structure(theme_slug: str, post_type: str = "post") -> st
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+            the_title(
+				'<h2 class="entry-title"><a href="'
+				. esc_url( get_permalink() )
+				. '" rel="bookmark">',
+				'</a></h2>'
+			);
         endif;
         ?>
 
         <?php if ( '{post_type}' === 'post' ) : ?>
             <div class="entry-meta">
                 <span class="posted-on">
-                    <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                    <time class="entry-date published"
+						datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
                         <?php echo esc_html( get_the_date() ); ?>
                     </time>
                 </span>
@@ -699,7 +722,8 @@ def build_content_none_structure(theme_slug: str) -> str:
                 printf(
                     wp_kses(
                         /* translators: %s: Link to create a new post */
-                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.', '{theme_slug}' ),
+                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.',
+							'{theme_slug}' ),
                         array(
                             'a' => array(
                                 'href' => array(),
@@ -713,12 +737,22 @@ def build_content_none_structure(theme_slug: str) -> str:
 
         <?php elseif ( is_search() ) : ?>
 
-            <p><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with different keywords.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'Sorry, but nothing matched your search terms. Please try again with different keywords.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php else : ?>
 
-            <p><?php esc_html_e( 'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php endif; ?>

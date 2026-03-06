@@ -3,9 +3,8 @@ Pattern and Component Library for WPGen
 Provides reusable design patterns for modern WordPress themes
 """
 
-from typing import Any
-import json
 from pathlib import Path
+from typing import Any
 
 
 class PatternLibrary:

@@ -9,18 +9,20 @@ Checks for invalid PHP patterns like:
 - function name(); (function declaration with semicolon)
 """
 
-import tempfile
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+
 import pytest
 
 
 def test_no_invalid_php_patterns_in_generated_theme(tmp_path):
     """Generate a theme and ensure no invalid PHP patterns exist."""
+    from unittest.mock import MagicMock
+
     from wpgen.generators.wordpress_generator import WordPressGenerator
     from wpgen.utils.code_validator import check_invalid_php_patterns
-    from unittest.mock import MagicMock
 
     # Create a minimal theme configuration
     requirements = {
@@ -45,7 +47,7 @@ def test_no_invalid_php_patterns_in_generated_theme(tmp_path):
         results = check_invalid_php_patterns(theme_dir)
 
         # Assert no violations
-        assert results["valid"], f"Theme contains invalid PHP patterns:\n" + "\n".join(
+        assert results["valid"], "Theme contains invalid PHP patterns:\n" + "\n".join(
             results["errors"]
         )
 
@@ -107,8 +109,9 @@ function bad_function(); {
 
 def test_php_lint_if_available(tmp_path):
     """If php command is available, run php -l on all generated files."""
-    from wpgen.generators.wordpress_generator import WordPressGenerator
     from unittest.mock import MagicMock
+
+    from wpgen.generators.wordpress_generator import WordPressGenerator
 
     # Check if php is available
     php_available = shutil.which("php") is not None

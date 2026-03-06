@@ -6,9 +6,9 @@ is generated directly by the LLM.
 """
 
 from .theme_prompts import (
+    get_schema_description,
     get_theme_spec_prompt,
     get_theme_spec_system_prompt,
-    get_schema_description,
     parse_llm_json_response,
 )
 

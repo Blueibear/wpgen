@@ -13,9 +13,9 @@ Exit codes:
     1 - One or more files have PHP syntax errors
 """
 
-import sys
-import subprocess
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 

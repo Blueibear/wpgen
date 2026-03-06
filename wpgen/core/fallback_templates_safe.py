@@ -47,7 +47,9 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#primary"><?php esc_html_e( 'Skip to content', '{theme_slug}' ); ?></a>
+    <a class="skip-link screen-reader-text" href="#primary"><?php
+		esc_html_e( 'Skip to content', '{theme_slug}' );
+	?></a>
 
     <header id="masthead" class="site-header">
         <div class="site-branding">
@@ -74,9 +76,12 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
             ?>
         </div>
 
-        <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
+        <nav id="site-navigation" class="main-navigation"
+			aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
             <button class="menu-toggle" aria-controls="primary-menu" aria-expanded="false">
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{theme_slug}' ); ?></span>
+                <span class="screen-reader-text"><?php
+					esc_html_e( 'Menu', '{theme_slug}' );
+				?></span>
                 <span class="menu-icon" aria-hidden="true"></span>
             </button>
             <?php
@@ -114,7 +119,11 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
 ?>
 
     <footer id="colophon" class="site-footer">
-        <?php if ( is_active_sidebar( 'footer-1' ) || is_active_sidebar( 'footer-2' ) || is_active_sidebar( 'footer-3' ) ) : ?>
+        <?php if (
+			is_active_sidebar( 'footer-1' )
+			|| is_active_sidebar( 'footer-2' )
+			|| is_active_sidebar( 'footer-3' )
+		) : ?>
             <div class="footer-widgets">
                 <div class="footer-widgets-inner">
                     <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
@@ -203,7 +212,9 @@ get_header();
                     <?php
                 else :
                     ?>
-                    <h1 class="page-title"><?php esc_html_e( 'Latest Posts', '{theme_slug}' ); ?></h1>
+                    <h1 class="page-title"><?php
+						esc_html_e( 'Latest Posts', '{theme_slug}' );
+					?></h1>
                     <?php
                 endif;
                 ?>
@@ -273,8 +284,12 @@ get_header();
 
             the_post_navigation(
                 array(
-                    'prev_text' => '<span class="nav-subtitle">' . esc_html__( 'Previous:', '{theme_slug}' ) . '</span> <span class="nav-title">%title</span>',
-                    'next_text' => '<span class="nav-subtitle">' . esc_html__( 'Next:', '{theme_slug}' ) . '</span> <span class="nav-title">%title</span>',
+                    'prev_text' => '<span class="nav-subtitle">'
+						. esc_html__( 'Previous:', '{theme_slug}' )
+						. '</span> <span class="nav-title">%title</span>',
+                    'next_text' => '<span class="nav-subtitle">'
+						. esc_html__( 'Next:', '{theme_slug}' )
+						. '</span> <span class="nav-title">%title</span>',
                 )
             );
 
@@ -539,13 +554,19 @@ def get_safe_content_template(theme_slug: str) -> str:
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+            the_title(
+				'<h2 class="entry-title"><a href="'
+				. esc_url( get_permalink() )
+				. '" rel="bookmark">',
+				'</a></h2>'
+			);
         endif;
         ?>
 
         <div class="entry-meta">
             <span class="posted-on">
-                <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                <time class="entry-date published"
+					datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
                     <?php echo esc_html( get_the_date() ); ?>
                 </time>
             </span>
@@ -615,7 +636,8 @@ def get_safe_content_none_template(theme_slug: str) -> str:
                 <?php
                 printf(
                     wp_kses(
-                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.', '{theme_slug}' ),
+                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.',
+							'{theme_slug}' ),
                         array(
                             'a' => array(
                                 'href' => array(),
@@ -629,12 +651,22 @@ def get_safe_content_none_template(theme_slug: str) -> str:
 
         <?php elseif ( is_search() ) : ?>
 
-            <p><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with different keywords.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'Sorry, but nothing matched your search terms. Please try again with different keywords.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php else : ?>
 
-            <p><?php esc_html_e( 'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php endif; ?>

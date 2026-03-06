@@ -35,7 +35,7 @@ def test_block_configs_use_valid_categories():
     # We need to check the hardcoded block configurations
 
     # Create a minimal generator instance
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory():
         # We'll directly check the block_configs dictionary in the source
         # by inspecting the method
 
@@ -56,9 +56,10 @@ def test_block_configs_use_valid_categories():
                     category in VALID_CORE_CATEGORIES
                 ), f"Invalid block category '{category}'. Must be one of: {VALID_CORE_CATEGORIES}"
 
-                assert (
-                    category not in INVALID_CATEGORIES
-                ), f"Deprecated/invalid category '{category}' found. Use one of: {VALID_CORE_CATEGORIES}"
+                assert category not in INVALID_CATEGORIES, (
+                    f"Deprecated/invalid category '{category}' "
+                    f"found. Use one of: {VALID_CORE_CATEGORIES}"
+                )
 
 
 def test_generated_block_json_has_valid_category():
@@ -97,9 +98,11 @@ def test_generated_block_json_has_valid_category():
                     category = block_data.get("category")
 
                     assert category, f"Block {block_name} missing category in block.json"
-                    assert (
-                        category in VALID_CORE_CATEGORIES
-                    ), f"Block {block_name} has invalid category '{category}'. Must be one of: {VALID_CORE_CATEGORIES}"
+                    assert category in VALID_CORE_CATEGORIES, (
+                        f"Block {block_name} has invalid category "
+                        f"'{category}'. Must be one of: "
+                        f"{VALID_CORE_CATEGORIES}"
+                    )
                     assert (
                         category not in INVALID_CATEGORIES
                     ), f"Block {block_name} has deprecated category '{category}'"
@@ -107,8 +110,8 @@ def test_generated_block_json_has_valid_category():
 
 def test_no_design_layout_category_in_codebase():
     """Test that the invalid 'design_layout' category doesn't appear anywhere."""
-    from pathlib import Path
     import os
+    from pathlib import Path
 
     # Get the wpgen directory
     wpgen_dir = Path(__file__).parent.parent / "wpgen"

@@ -9,8 +9,8 @@ safe templates, preventing broken themes from being generated.
 """
 
 import re
-from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass

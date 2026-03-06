@@ -4,13 +4,12 @@ This module performs comprehensive pre-packaging validation to ensure
 generated themes are complete, valid, and ready for deployment.
 """
 
-import re
 from pathlib import Path
 from typing import Any
 
-from .logger import get_logger
-from .php_validation import PHPValidator, validate_and_fix_php
 from .filename_sanitizer import FilenameSanitizer
+from .logger import get_logger
+from .php_validation import PHPValidator
 
 logger = get_logger(__name__)
 
@@ -150,7 +149,7 @@ class ThemeSelfTest:
         for php_file in php_files:
             try:
                 code = php_file.read_text(encoding="utf-8")
-                file_type = self._determine_file_type(php_file.name)
+                self._determine_file_type(php_file.name)
 
                 # Validate syntax
                 is_valid, error_msg = self.validator.validate_php_syntax(code, php_file.name)

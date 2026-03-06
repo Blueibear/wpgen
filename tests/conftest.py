@@ -1,8 +1,10 @@
 # tests/conftest.py
 from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
+
 import pytest
 
 # Ensure the project root is on sys.path so the wpgen package can be imported

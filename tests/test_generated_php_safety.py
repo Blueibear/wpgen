@@ -242,7 +242,7 @@ def test_comprehensive_safety_scanner(generated_theme):
     # Collect all errors
     all_errors = results.get("all_errors", [])
 
-    assert results["valid"], f"Theme failed comprehensive safety scan:\n" + "\n".join(
+    assert results["valid"], "Theme failed comprehensive safety scan:\n" + "\n".join(
         all_errors[:10]
     )  # Show first 10 errors
 

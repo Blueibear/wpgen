@@ -36,16 +36,14 @@ The LLM never outputs PHP directly - it outputs JSON which is rendered
 through these safe, pre-validated templates.
 """
 
-import os
 import re
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 
-from ..schema import ThemeSpecification, get_default_theme_spec
+from ..schema import ThemeSpecification
 from ..utils.logger import get_logger
 from ..utils.theme_constants import REQUIRED_CLASSIC_THEME_FILES
 
@@ -335,7 +333,8 @@ class ThemeRenderer:
                 # HARD-LOCKED TEMPLATES: Always use fallback, never render from main template
                 if output_file in HARD_LOCKED_TEMPLATES:
                     logger.info(
-                        f"Using hard-locked fallback template for {output_file} (never LLM-generated)"
+                        f"Using hard-locked fallback template "
+                        f"for {output_file} (never LLM-generated)"
                     )
                     try:
                         fallback_template = self.fallback_env.get_template(template_file)
@@ -346,7 +345,8 @@ class ThemeRenderer:
                         if output_file.endswith(".php"):
                             if not validate_php_file(output_path):
                                 logger.error(
-                                    f"CRITICAL: Hard-locked fallback template {output_file} failed validation"
+                                    f"CRITICAL: Hard-locked fallback template "
+                                    f"{output_file} failed validation"
                                 )
                                 raise ValueError(
                                     f"Hard-locked fallback template {output_file} is invalid"
@@ -389,19 +389,25 @@ class ThemeRenderer:
                                 )
                             else:
                                 logger.error(
-                                    f"CRITICAL: Fallback template {output_file} failed validation"
+                                    f"CRITICAL: Fallback template "
+                                    f"{output_file} failed validation"
                                 )
                                 raise ValueError(
-                                    f"Fallback template {output_file} is invalid - this should never happen"
+                                    f"Fallback template {output_file} is "
+                                    f"invalid - this should never happen"
                                 )
 
                         except Exception as fallback_error:
                             # If fallback fails, this is a critical error - no stubs allowed
                             logger.error(
-                                f"CRITICAL: Failed to use fallback template for {output_file}: {fallback_error}"
+                                f"CRITICAL: Failed to use fallback "
+                                f"template for {output_file}: "
+                                f"{fallback_error}"
                             )
                             raise ValueError(
-                                f"Cannot generate valid {output_file} - fallback failed: {fallback_error}"
+                                f"Cannot generate valid {output_file}"
+                                f" - fallback failed: "
+                                f"{fallback_error}"
                             )
 
             except Exception as e:
@@ -456,8 +462,10 @@ class ThemeRenderer:
 
         if missing_templates:
             error_msg = (
-                f"Theme generation failed: Required templates are missing: {', '.join(missing_templates)}. "
-                f"ALL required templates MUST be present. NO templates may be omitted."
+                f"Theme generation failed: Required templates "
+                f"are missing: {', '.join(missing_templates)}. "
+                f"ALL required templates MUST be present. "
+                f"NO templates may be omitted."
             )
             logger.error(error_msg)
             raise ValueError(error_msg)

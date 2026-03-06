@@ -10,17 +10,19 @@ Themes should NEVER define:
 These belong in wp-config.php, not theme files.
 """
 
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
+
 import pytest
 
 
 def test_no_wp_debug_in_generated_theme(tmp_path):
     """Generate a theme and ensure no WP_DEBUG redefinitions exist."""
+    from unittest.mock import MagicMock
+
     from wpgen.generators.wordpress_generator import WordPressGenerator
     from wpgen.utils.code_validator import check_forbidden_config_directives
-    from unittest.mock import MagicMock
 
     # Create a minimal theme configuration
     requirements = {
@@ -45,7 +47,7 @@ def test_no_wp_debug_in_generated_theme(tmp_path):
         results = check_forbidden_config_directives(theme_dir)
 
         # Assert no violations
-        assert results["valid"], f"Theme contains forbidden config directives:\n" + "\n".join(
+        assert results["valid"], "Theme contains forbidden config directives:\n" + "\n".join(
             results["errors"]
         )
 

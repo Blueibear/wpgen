@@ -9,8 +9,8 @@ to produce PHP, CSS, and JavaScript files with guaranteed valid syntax.
 
 from .renderer import (
     ThemeRenderer,
-    render_theme,
     get_template_list,
+    render_theme,
 )
 
 __all__ = [

@@ -9,12 +9,10 @@ This module handles theme packaging operations including:
 All operations are deterministic and safe.
 """
 
-import os
 import shutil
 import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional
-from datetime import datetime
 
 from ..utils.logger import get_logger
 

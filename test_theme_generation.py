@@ -2,7 +2,6 @@
 """Test script to verify theme generation works with the validation fixes."""
 
 import sys
-import os
 from pathlib import Path
 
 # Add wpgen to path

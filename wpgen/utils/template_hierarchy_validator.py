@@ -8,7 +8,7 @@ Reference: https://developer.wordpress.org/themes/basics/template-hierarchy/
 
 import re
 from pathlib import Path
-from typing import Set
+
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -110,7 +110,9 @@ class TemplateHierarchyValidator:
             lowercase_name = filename.lower()
             return (
                 False,
-                f"Invalid capitalized template name '{filename}'. Use '{lowercase_name}' or 'page-{lowercase_name[:-4]}.php' instead",
+                f"Invalid capitalized template name "
+                f"'{filename}'. Use '{lowercase_name}' or "
+                f"'page-{lowercase_name[:-4]}.php' instead",
             )
 
         # Check for uppercase letters in PHP templates
@@ -147,7 +149,9 @@ class TemplateHierarchyValidator:
                 if "product" in filename and not woocommerce_enabled:
                     return (
                         False,
-                        f"WooCommerce template '{filename}' requires WooCommerce support to be enabled",
+                        f"WooCommerce template '{filename}' "
+                        f"requires WooCommerce support "
+                        f"to be enabled",
                     )
                 return True, ""
 
@@ -160,7 +164,9 @@ class TemplateHierarchyValidator:
         # Not a recognized WordPress template
         return (
             False,
-            f"Unrecognized WordPress template: '{filename}'. Must follow WordPress template hierarchy naming conventions.",
+            f"Unrecognized WordPress template: '{filename}'. "
+            f"Must follow WordPress template hierarchy "
+            f"naming conventions.",
         )
 
     def normalize_page_name(self, page_name: str) -> str:

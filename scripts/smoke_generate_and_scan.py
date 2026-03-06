@@ -214,21 +214,21 @@ def check_wordpress_loop(theme_dir: Path) -> tuple[bool, list[str]]:
         has_get_footer = "get_footer()" in content
 
         if has_have_posts and has_the_post:
-            print_success(f"  Has WordPress Loop (have_posts/the_post)")
+            print_success("  Has WordPress Loop (have_posts/the_post)")
         else:
-            print_error(f"  Missing WordPress Loop")
+            print_error("  Missing WordPress Loop")
             errors.append(f"{template_name} missing WordPress Loop (have_posts/the_post)")
             passed = False
 
         if has_get_header and has_get_footer:
-            print_success(f"  Calls get_header() and get_footer()")
+            print_success("  Calls get_header() and get_footer()")
         else:
             if not has_get_header:
-                print_error(f"  Missing get_header()")
+                print_error("  Missing get_header()")
                 errors.append(f"{template_name} missing get_header()")
                 passed = False
             if not has_get_footer:
-                print_error(f"  Missing get_footer()")
+                print_error("  Missing get_footer()")
                 errors.append(f"{template_name} missing get_footer()")
                 passed = False
 
@@ -239,9 +239,9 @@ def check_wordpress_loop(theme_dir: Path) -> tuple[bool, list[str]]:
                 "no-content" in content or "Nothing" in content or "not found" in content.lower()
             )
             if has_else_clause:
-                print_success(f"  Has fallback content for empty sites")
+                print_success("  Has fallback content for empty sites")
             else:
-                print_warning(f"  Missing fallback content (Customizer may show blank)")
+                print_warning("  Missing fallback content (Customizer may show blank)")
 
     return passed, errors
 

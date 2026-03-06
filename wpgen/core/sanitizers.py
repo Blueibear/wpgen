@@ -15,7 +15,7 @@ Every function is pure and predictable - same input always produces same output.
 
 import re
 import unicodedata
-from typing import Tuple, List
+from typing import Dict, List, Tuple
 
 # Invisible Unicode characters that cause syntax errors
 INVISIBLE_CHARS = [

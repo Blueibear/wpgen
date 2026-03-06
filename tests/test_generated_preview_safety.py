@@ -328,7 +328,7 @@ def test_hooks_present_in_all_templates(sample_theme_dir):
 
     for template_name in templates:
         template_file = sample_theme_dir / template_name
-        template_content = f"""<?php get_header(); ?>
+        template_content = """<?php get_header(); ?>
 <main>
     <?php if ( have_posts() ) : while ( have_posts() ) : the_post(); ?>
         <?php the_content(); ?>

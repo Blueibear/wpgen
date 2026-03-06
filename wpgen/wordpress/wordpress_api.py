@@ -22,8 +22,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..utils.logger import get_logger
 from ..utils.http_errors import handle_http_error
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 

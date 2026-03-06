@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from wpgen.utils.code_validator import scan_mixed_content, get_fallback_functions_php
+from wpgen.utils.code_validator import get_fallback_functions_php, scan_mixed_content
 
 
 def test_scan_mixed_content_utility():

@@ -112,5 +112,6 @@ def log_model_deprecation_warning(model_name: str, provider: str = "unknown") ->
         if suggested:
             logger.info(f"💡 Suggested model: {suggested}")
             logger.info(
-                f"   You can override the model using the WPGEN_{provider.upper()}_MODEL environment variable"
+                f"   You can override the model using the "
+                f"WPGEN_{provider.upper()}_MODEL environment variable"
             )

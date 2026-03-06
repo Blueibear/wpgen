@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from wpgen.utils.php_validation import remove_stray_backslashes, validate_and_fix_php
 from wpgen.utils.code_validator import sanitize_footer_php
+from wpgen.utils.php_validation import remove_stray_backslashes, validate_and_fix_php
 
 
 class TestBackslashSanitization:
@@ -69,7 +69,7 @@ class TestBackslashSanitization:
         problematic_footer = """
         <footer class="site-footer">
             <div class="site-info">
-                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>. All rights reserved.</p>
+                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>.</p>
             </div>
         </footer>
         <?php wp_footer(); ?>
@@ -229,7 +229,7 @@ class TestRegressionPrevention:
         footer_code = """
         <footer class="site-footer">
             <div class="site-info">
-                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>. All rights reserved.</p>
+                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>.</p>
             </div>
         </footer>
         <?php wp_footer(); ?>

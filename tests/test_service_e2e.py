@@ -1,7 +1,6 @@
 """End-to-end test for theme generation service (mocked)."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -91,7 +90,7 @@ def test_service_generate_theme_success(
     with (
         patch("wpgen.service.get_llm_provider") as mock_get_llm,
         patch("wpgen.service.PromptParser") as MockParser,
-        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.HybridWordPressGenerator") as MockHybridGen,
         patch("wpgen.service.CodeValidator") as MockCodeValidator,
         patch("wpgen.service.ThemeValidator") as MockThemeValidator,
     ):
@@ -107,8 +106,8 @@ def test_service_generate_theme_success(
             "features": ["responsive"],
         }
 
-        mock_generator = MockGenerator.return_value
-        mock_generator.generate.return_value = minimal_theme_structure
+        mock_hybrid = MockHybridGen.return_value
+        mock_hybrid.generate.return_value = minimal_theme_structure
 
         # Mock validators to pass
         mock_code_val = MockCodeValidator.return_value
@@ -152,7 +151,7 @@ def test_service_generate_theme_validation_error_strict_mode(
     with (
         patch("wpgen.service.get_llm_provider") as mock_get_llm,
         patch("wpgen.service.PromptParser") as MockParser,
-        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.HybridWordPressGenerator") as MockHybridGen,
         patch("wpgen.service.CodeValidator") as MockCodeValidator,
         patch("wpgen.service.ThemeValidator") as MockThemeValidator,
     ):
@@ -167,8 +166,8 @@ def test_service_generate_theme_validation_error_strict_mode(
             "features": [],
         }
 
-        mock_generator = MockGenerator.return_value
-        mock_generator.generate.return_value = minimal_theme_structure
+        mock_hybrid = MockHybridGen.return_value
+        mock_hybrid.generate.return_value = minimal_theme_structure
 
         # Mock validators to return warnings
         mock_code_val = MockCodeValidator.return_value
@@ -212,7 +211,7 @@ def test_service_generate_theme_with_github_push(
     with (
         patch("wpgen.service.get_llm_provider") as mock_get_llm,
         patch("wpgen.service.PromptParser") as MockParser,
-        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.HybridWordPressGenerator") as MockHybridGen,
         patch("wpgen.service.GitHubIntegration") as MockGitHub,
         patch("wpgen.service.CodeValidator") as MockCodeValidator,
         patch("wpgen.service.ThemeValidator") as MockThemeValidator,
@@ -228,15 +227,22 @@ def test_service_generate_theme_with_github_push(
             "features": [],
         }
 
-        mock_generator = MockGenerator.return_value
-        mock_generator.generate.return_value = minimal_theme_structure
+        mock_hybrid = MockHybridGen.return_value
+        mock_hybrid.generate.return_value = minimal_theme_structure
 
         # Mock validators
         mock_code_val = MockCodeValidator.return_value
-        mock_code_val.validate_directory.return_value = {"errors": [], "warnings": []}
+        mock_code_val.validate_directory.return_value = {
+            "errors": [],
+            "warnings": [],
+        }
 
         mock_theme_val = MockThemeValidator.return_value
-        mock_theme_val.validate.return_value = {"errors": [], "warnings": [], "valid": True}
+        mock_theme_val.validate.return_value = {
+            "errors": [],
+            "warnings": [],
+            "valid": True,
+        }
 
         # Mock GitHub
         mock_github = MockGitHub.return_value
@@ -247,7 +253,7 @@ def test_service_generate_theme_with_github_push(
 
         # Assertions
         assert result.success is True
-        assert result.github_url == "https://github.com/user/test-repo"
+        assert result.github_url == ("https://github.com/user/test-repo")
         mock_github.push_to_github.assert_called_once()
 
 

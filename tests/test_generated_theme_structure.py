@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 
 from wpgen.utils.code_validator import (
-    get_fallback_header_php,
     get_fallback_footer_php,
     get_fallback_functions_php,
+    get_fallback_header_php,
 )
 
 

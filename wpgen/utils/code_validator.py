@@ -12,10 +12,9 @@ from typing import Any
 
 from .logger import get_logger
 from .php_validation import (
-    validate_and_fix_php,
     clean_llm_output,
-    PHPValidator,
     remove_stray_backslashes,
+    validate_and_fix_php,
 )
 
 logger = get_logger(__name__)
@@ -669,7 +668,7 @@ def normalize_php_output(
         # Revalidate
         syntax_valid, syntax_error = validate_php_syntax(php_code)
         if not syntax_valid:
-            repairs.append(f"Could not fix PHP syntax, using minimal fallback")
+            repairs.append("Could not fix PHP syntax, using minimal fallback")
             php_code = get_minimal_fallback(filename, theme_name)
 
     return php_code, repairs
@@ -930,11 +929,11 @@ def validate_and_repair_php_file(
             # STEP 3: Footer-specific validation and PHP syntax check
             if file_type == "footer" and filename == "footer.php":
                 # Step 3a: Validate footer requirements (structure, no duplicates, etc.)
-                logger.info(f"🔍 Validating footer.php requirements")
+                logger.info("🔍 Validating footer.php requirements")
                 requirements_valid, requirement_errors = validate_footer_requirements(fixed_code)
 
                 if not requirements_valid:
-                    log_messages.append(f"✗ FOOTER VALIDATION FAILED:")
+                    log_messages.append("✗ FOOTER VALIDATION FAILED:")
                     for error in requirement_errors:
                         log_messages.append(f"  - {error}")
                         logger.error(f"  Footer requirement error: {error}")
@@ -943,8 +942,8 @@ def validate_and_repair_php_file(
                     current_code = fixed_code
                     continue
                 else:
-                    log_messages.append(f"✓ FOOTER REQUIREMENTS: All checks passed")
-                    logger.info(f"✓ Footer.php meets all structural requirements")
+                    log_messages.append("✓ FOOTER REQUIREMENTS: All checks passed")
+                    logger.info("✓ Footer.php meets all structural requirements")
 
                 # Step 3b: PHP syntax check using php -l
                 if theme_dir:
@@ -1007,7 +1006,6 @@ def validate_functions_php_no_output(php_code: str) -> tuple[bool, list[str]]:
     lines = php_code.split("\n")
     in_function = 0
     in_class = 0
-    in_string = False
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -1123,14 +1121,22 @@ add_action( 'after_setup_theme', '{safe_function_name}_setup' );
  */
 function {safe_function_name}_scripts() {{
     // Enqueue base layout stylesheet (structural styles)
-    wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+    $base_css = get_template_directory_uri() . '/assets/css/style.css';
+    wp_enqueue_style( 'theme-base-layout', $base_css, array(), '1.0.0' );
 
     // Enqueue main theme stylesheet
-    wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array( 'theme-base-layout' ), wp_get_theme()->get( 'Version' ) );
+    wp_enqueue_style(
+        '{theme_name}-style',
+        get_stylesheet_uri(),
+        array( 'theme-base-layout' ),
+        wp_get_theme()->get( 'Version' )
+    );
 
     // Enqueue wpgen-ui assets (front-end only, no editor deps)
-    wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
-    wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
+    $ui_css = get_template_directory_uri() . '/assets/css/wpgen-ui.css';
+    wp_enqueue_style( 'wpgen-ui', $ui_css, array(), '1.0.0' );
+    $ui_js = get_template_directory_uri() . '/assets/js/wpgen-ui.js';
+    wp_enqueue_script( 'wpgen-ui', $ui_js, array(), '1.0.0', true );
 }}
 add_action( 'wp_enqueue_scripts', '{safe_function_name}_scripts' );
 
@@ -1146,7 +1152,8 @@ function {safe_function_name}_editor_assets() {{
     // wp_enqueue_script(
     //     '{theme_name}-editor',
     //     get_template_directory_uri() . '/assets/js/editor.js',
-    //     array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-data', 'wp-edit-post' ),
+    //     array( 'wp-blocks', 'wp-element', 'wp-i18n',
+    //            'wp-components', 'wp-data', 'wp-edit-post' ),
     //     wp_get_theme()->get( 'Version' ),
     //     true
     // );
@@ -1204,7 +1211,11 @@ function {safe_function_name}_get_the_image( $size = 'large' ) {{
         the_post_thumbnail( $size );
     }} else {{
         // Optional: Display a placeholder image
-        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+        $placeholder_url = get_template_directory_uri()
+            . '/assets/images/placeholder.png';
+        echo '<img src="' . esc_url( $placeholder_url )
+            . '" alt="' . esc_attr( get_the_title() )
+            . '" class="placeholder-image" />';
     }}
 }}
 
@@ -1272,9 +1283,11 @@ def ensure_base_layout_enqueue(php_code: str, theme_name: str) -> tuple[str, lis
 // Auto-injected by WPGen: ensure structural CSS always loads
 if ( ! function_exists('{safe_name}_enqueue_base_layout') ) {{
     function {safe_name}_enqueue_base_layout() {{
-        wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+        $base_css = get_template_directory_uri() . '/assets/css/style.css';
+        wp_enqueue_style( 'theme-base-layout', $base_css, array(), '1.0.0' );
         if ( ! wp_style_is( 'wpgen-ui', 'enqueued' ) ) {{
-            wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
+            $ui_css = get_template_directory_uri() . '/assets/css/wpgen-ui.css';
+            wp_enqueue_style( 'wpgen-ui', $ui_css, array(), '1.0.0' );
         }}
     }}
     add_action( 'wp_enqueue_scripts', '{safe_name}_enqueue_base_layout', 5 );
@@ -1481,7 +1494,9 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
             # Check for invalid/undefined WordPress functions
             if "post_loop(" in content:
                 issues.append(
-                    f"{php_file.name}: Uses undefined function 'post_loop()' - should use 'have_posts()' and 'the_post()'"
+                    f"{php_file.name}: Uses undefined function"
+                    " 'post_loop()' - should use"
+                    " 'have_posts()' and 'the_post()'"
                 )
 
             # Check for get_template_part calls and verify referenced files exist
@@ -1504,7 +1519,9 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
                         )
                         if not alt_file.exists():
                             issues.append(
-                                f"{php_file.name}: References template part '{slug}-{name}.php' which doesn't exist"
+                                f"{php_file.name}: References"
+                                f" template part '{slug}-{name}.php'"
+                                " which doesn't exist"
                             )
                 else:
                     # Check for {slug}.php
@@ -1514,7 +1531,9 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
                         alt_file = template_parts_dir / f"{slug.replace('template-parts/', '')}.php"
                         if not alt_file.exists():
                             issues.append(
-                                f"{php_file.name}: References template part '{slug}.php' which doesn't exist"
+                                f"{php_file.name}: References"
+                                f" template part '{slug}.php'"
+                                " which doesn't exist"
                             )
 
             # Track templates with get_header() and get_footer()
@@ -1540,7 +1559,11 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
 
                         if not has_check:
                             issues.append(
-                                f"{php_file.name}: Line {i+1} calls wp_pagenavi() without function_exists() check - will crash if plugin not installed"
+                                f"{php_file.name}: Line {i+1}"
+                                " calls wp_pagenavi() without"
+                                " function_exists() check -"
+                                " will crash if plugin not"
+                                " installed"
                             )
                             break  # Only report first occurrence to avoid spam
 
@@ -1590,7 +1613,7 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
     Returns:
         Guaranteed-safe header.php code
     """
-    site_name = (
+    (
         requirements.get("theme_display_name", "My WordPress Site")
         if requirements
         else "My WordPress Site"
@@ -1612,7 +1635,10 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', '{text_domain}' ); ?></a>
+    <a class="skip-link screen-reader-text"
+        href="#content"><?php
+        esc_html_e( 'Skip to content', '{text_domain}' );
+    ?></a>
 
     <header class="site-header">
         <div class="header-inner container">
@@ -1647,16 +1673,27 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
                 <?php endif; ?>
             </div><!-- .site-branding -->
 
-            <button class="mobile-menu-toggle" aria-label="<?php esc_attr_e( 'Toggle Menu', '{text_domain}' ); ?>" aria-expanded="false" aria-controls="site-navigation">
+            <button class="mobile-menu-toggle"
+                aria-label="<?php
+                    esc_attr_e( 'Toggle Menu', '{text_domain}' );
+                ?>"
+                aria-expanded="false"
+                aria-controls="site-navigation">
                 <span class="menu-icon">
                     <span class="menu-line"></span>
                     <span class="menu-line"></span>
                     <span class="menu-line"></span>
                 </span>
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{text_domain}' ); ?></span>
+                <span class="screen-reader-text"><?php
+                    esc_html_e( 'Menu', '{text_domain}' );
+                ?></span>
             </button>
 
-            <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{text_domain}' ); ?>">
+            <nav id="site-navigation"
+                class="main-navigation"
+                aria-label="<?php
+                    esc_attr_e( 'Primary Navigation', '{text_domain}' );
+                ?>">
                 <?php
                 wp_nav_menu(
                     array(
@@ -1720,8 +1757,14 @@ def get_fallback_footer_php(theme_name: str) -> str:
                         </div>
                     <?php else : ?>
                         <div class="footer-widget-area footer-widget-1">
-                            <h3 class="widget-title"><?php esc_html_e( 'About', '{text_domain}' ); ?></h3>
-                            <p><?php echo esc_html( get_bloginfo( 'description', 'display' ) ); ?></p>
+                            <h3 class="widget-title"><?php
+                                esc_html_e( 'About', '{text_domain}' );
+                            ?></h3>
+                            <p><?php
+                                echo esc_html(
+                                    get_bloginfo( 'description', 'display' )
+                                );
+                            ?></p>
                         </div>
                     <?php endif; ?>
 
@@ -1755,7 +1798,10 @@ def get_fallback_footer_php(theme_name: str) -> str:
                             /* translators: 1: Copyright symbol and year, 2: Site name */
                             esc_html__( '%1$s %2$s. All rights reserved.', '{text_domain}' ),
                             '&copy; ' . esc_html( gmdate( 'Y' ) ),
-                            '<a href="' . esc_url( home_url( '/' ) ) . '" rel="home">' . esc_html( get_bloginfo( 'name' ) ) . '</a>'
+                            '<a href="' . esc_url( home_url( '/' ) )
+                            . '" rel="home">'
+                            . esc_html( get_bloginfo( 'name' ) )
+                            . '</a>'
                         );
                         ?>
                     </p>
@@ -1886,7 +1932,10 @@ get_header();
 
 <header class="page-header">
     <h1 class="page-title">
-        <?php printf( esc_html__( 'Search Results for: %s', '{theme_name}' ), '<span>' . get_search_query() . '</span>' ); ?>
+        <?php printf(
+            esc_html__( 'Search Results for: %s', '{theme_name}' ),
+            '<span>' . get_search_query() . '</span>'
+        ); ?>
     </h1>
 </header>
 
@@ -1960,7 +2009,6 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
         Tuple of (repaired_code, list_of_repairs_made)
     """
     repairs = []
-    original_code = php_code
 
     # 1. Fix wp_pagenavi() calls without function_exists() wrapper
     # Pattern: Find wp_pagenavi() not already wrapped in function_exists
@@ -1977,7 +2025,8 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
             context_start = max(0, i - 3)
             context_lines = lines[context_start:i]
 
-            # Check if already wrapped: look for "function_exists" AND "wp_pagenavi" in preceding lines
+            # Check if already wrapped: look for "function_exists"
+            # AND "wp_pagenavi" in preceding lines
             already_wrapped = False
             for prev_line in context_lines:
                 if "function_exists" in prev_line and "wp_pagenavi" in prev_line:
@@ -2059,7 +2108,11 @@ function {safe_function_name}_get_the_image( $size = 'large' ) {{
     if ( has_post_thumbnail() ) {{
         the_post_thumbnail( $size );
     }} else {{
-        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+        $placeholder_url = get_template_directory_uri()
+            . '/assets/images/placeholder.png';
+        echo '<img src="' . esc_url( $placeholder_url )
+            . '" alt="' . esc_attr( get_the_title() )
+            . '" class="placeholder-image" />';
     }}
 }}
 """
@@ -2106,7 +2159,6 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
         Tuple of (sanitized_code, list_of_cleanups_with_line_numbers)
     """
     cleanups = []
-    original_code = php_code
     lines = php_code.split("\n")
 
     # STEP 1: Fix common escape errors
@@ -2134,13 +2186,13 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     php_code = re.sub(r"\\<", "<", php_code)
     php_code = re.sub(r"\\>", ">", php_code)
     if php_code != before:
-        cleanups.append(f"[SANITIZER] Removed backslashes before HTML tags (\\< and \\>)")
+        cleanups.append("[SANITIZER] Removed backslashes before HTML tags (\\< and \\>)")
 
     # STEP 3: Remove backslashes before spaces
     before = php_code
     php_code = re.sub(r"\\ ", " ", php_code)
     if php_code != before:
-        cleanups.append(f"[SANITIZER] Removed backslashes before spaces (\\ )")
+        cleanups.append("[SANITIZER] Removed backslashes before spaces (\\ )")
 
     # STEP 4: Remove unpaired/illegal backslashes
     # This regex keeps only valid PHP escapes: \n, \r, \t, \\, \', \", \$
@@ -2151,7 +2203,9 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     if php_code != before:
         removed_count = len(before) - len(php_code)
         cleanups.append(
-            f"[SANITIZER] Removed {removed_count} illegal backslash(es) (preserving \\n, \\r, \\t, \\\\, \\', \\\", \\$)"
+            f"[SANITIZER] Removed {removed_count} illegal"
+            " backslash(es) (preserving"
+            " \\n, \\r, \\t, \\\\, \\', \\\", \\$)"
         )
 
     # STEP 5: Remove backslashes before letters (except valid escapes)
@@ -2163,7 +2217,7 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     php_code = re.sub(r"\\([a-mo-qs-zA-MO-QS-Z])", r"\1", php_code)
     if php_code != before:
         cleanups.append(
-            f"[SANITIZER] Removed backslashes before non-escape letters (\\a, \\b, etc.)"
+            "[SANITIZER] Removed backslashes before non-escape letters (\\a, \\b, etc.)"
         )
 
     # STEP 6: Repair malformed PHP blocks
@@ -2276,7 +2330,7 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 """
 
     elif filename == "header.php":
-        return f"""<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>">
@@ -2293,7 +2347,9 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
             <?php if ( has_custom_logo() ) : ?>
                 <?php the_custom_logo(); ?>
             <?php else : ?>
-                <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+                <h1 class="site-title"><a href="<?php
+                    echo esc_url( home_url( '/' ) );
+                ?>"><?php bloginfo( 'name' ); ?></a></h1>
             <?php endif; ?>
         </div>
 
@@ -2313,14 +2369,16 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 """
 
     elif filename == "index.php":
-        return f"""<?php get_header(); ?>
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php if ( have_posts() ) : ?>
         <?php while ( have_posts() ) : the_post(); ?>
             <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
                 <header class="entry-header">
-                    <h2 class="entry-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                    <h2 class="entry-title"><a
+                        href="<?php the_permalink(); ?>"
+                        ><?php the_title(); ?></a></h2>
                 </header>
                 <div class="entry-content">
                     <?php the_excerpt(); ?>
@@ -2337,7 +2395,7 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 """
 
     elif filename == "single.php":
-        return f"""<?php get_header(); ?>
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php while ( have_posts() ) : the_post(); ?>
@@ -2356,7 +2414,7 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 """
 
     elif filename == "page.php":
-        return f"""<?php get_header(); ?>
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php while ( have_posts() ) : the_post(); ?>
@@ -2375,7 +2433,7 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 """
 
     elif filename == "sidebar.php":
-        return f"""<aside class="sidebar">
+        return """<aside class="sidebar">
     <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
         <?php dynamic_sidebar( 'sidebar-1' ); ?>
     <?php endif; ?>
@@ -2428,7 +2486,8 @@ add_action( 'widgets_init', '{safe_name}_widgets_init' );
         # The system should use Jinja2 fallback templates instead
         raise ValueError(
             f"No minimal fallback available for {filename}. "
-            f"Stub templates are FORBIDDEN. Use Jinja2 fallback templates from the template directory instead."
+            "Stub templates are FORBIDDEN. Use Jinja2 fallback"
+            " templates from the template directory instead."
         )
 
 
@@ -2450,7 +2509,6 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
         Tuple of (sanitized_code, list_of_cleanups_performed)
     """
     cleanups = []
-    original_code = php_code
 
     # Step 0: Footer-specific WordPress function sanitization
     # Fix common LLM errors in copyright lines
@@ -2572,8 +2630,8 @@ def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, st
     issues = []
 
     # Create a temporary file with the PHP code
-    import tempfile
     import os
+    import tempfile
 
     try:
         with tempfile.NamedTemporaryFile(
@@ -2613,7 +2671,7 @@ def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, st
             # Clean up temp file
             try:
                 os.unlink(tmp_path)
-            except:
+            except OSError:
                 pass
 
     except Exception as e:
@@ -2707,7 +2765,9 @@ def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
             <?php endif; ?>
         </div>
         <div class="site-info">
-            <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+            <p>&copy; <?php echo date( 'Y' ); ?>
+                <?php bloginfo( 'name' ); ?>.
+                All rights reserved.</p>
         </div>
     </div>
 </footer>
@@ -2975,14 +3035,23 @@ def _add_missing_element(content: str, template_name: str, element: str) -> tupl
             if "wp_footer()" in content:
                 content = re.sub(
                     r"(<\?php\s+wp_footer\(\);?\s*\?>)",
-                    r'<footer class="site-footer">\n    <div class="footer-content">\n        <p>&copy; <?php echo date(\'Y\'); ?> <?php bloginfo(\'name\'); ?></p>\n    </div>\n</footer>\n\n\1',
+                    r'<footer class="site-footer">\n'
+                    r'    <div class="footer-content">\n'
+                    r"        <p>&copy; <?php echo date('Y'); ?>"
+                    r" <?php bloginfo('name'); ?></p>\n"
+                    r"    </div>\n"
+                    r"</footer>\n\n\1",
                     content,
                     count=1,
                 )
             else:
                 content = (
-                    "<footer class=\"site-footer\">\n    <div class=\"footer-content\">\n        <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?></p>\n    </div>\n</footer>\n"
-                    + content
+                    '<footer class="site-footer">\n'
+                    '    <div class="footer-content">\n'
+                    "        <p>&copy; <?php echo date('Y'); ?>"
+                    " <?php bloginfo('name'); ?></p>\n"
+                    "    </div>\n"
+                    "</footer>\n" + content
                 )
             repair_msg = "Added <footer> tag"
 
@@ -3103,7 +3172,7 @@ def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
     # Strip any leading "page-" prefix that LLMs sometimes add
     if filename.startswith("page-"):
         filename = filename[5:]  # Remove "page-"
-        changes.append(f"Removed 'page-' prefix")
+        changes.append("Removed 'page-' prefix")
 
     # Remove duplicate extensions (.php.php, .css.css, etc.)
     while True:
@@ -3158,7 +3227,7 @@ def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
     if base_name in php_templates:
         if not filename.endswith(".php"):
             filename = base_name + ".php"
-            changes.append(f"Corrected extension to .php for template file")
+            changes.append("Corrected extension to .php for template file")
 
     # Ensure style.css is exactly that
     if "style" in filename.lower() and filename != "style.css":
@@ -3181,7 +3250,7 @@ def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
                 core_name = match.group(1)
                 if core_name in php_templates:
                     filename = f"{core_name}.php"
-                    changes.append(f"Removed invalid prefix from filename")
+                    changes.append("Removed invalid prefix from filename")
 
     if changes:
         logger.info(f"Sanitized filename: '{original}' → '{filename}'")
@@ -3222,7 +3291,8 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
 
     validator = TemplateHierarchyValidator()
 
-    # Check if WooCommerce is enabled (check for woocommerce.php or functions.php with WooCommerce support)
+    # Check if WooCommerce is enabled (check for woocommerce.php
+    # or functions.php with WooCommerce support)
     woocommerce_enabled = False
     functions_php = theme_dir / "functions.php"
     if functions_php.exists():
@@ -3293,7 +3363,8 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
                                     f"{original_name} → {lowercase_name} (WordPress hierarchy fix)"
                                 )
                                 logger.info(
-                                    f"Auto-fixed capitalized template: {original_name} → {lowercase_name}"
+                                    "Auto-fixed capitalized template:"
+                                    f" {original_name} → {lowercase_name}"
                                 )
                                 # Remove from errors since we fixed it
                                 results["errors"].pop()
@@ -3413,7 +3484,9 @@ def check_forbidden_config_directives(theme_dir: Path) -> dict[str, Any]:
         Dictionary with scan results:
         {
             'valid': bool,
-            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'violations': list of dicts with
+                {'file': str, 'line': int,
+                 'pattern': str, 'context': str},
             'errors': list of error messages
         }
     """
@@ -3515,7 +3588,9 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
         Dictionary with scan results:
         {
             'valid': bool,
-            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'violations': list of dicts with
+                {'file': str, 'line': int,
+                 'pattern': str, 'context': str},
             'errors': list of error messages
         }
     """

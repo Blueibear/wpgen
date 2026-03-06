@@ -603,8 +603,13 @@ Layout:
 - Border Radius: {profile.layout['border_radius']}
 
 Component Styles:
-- Buttons: {profile.components['buttons']['style']}, {profile.components['buttons']['size']}, {profile.components['buttons']['hover_effect']} hover
-- Cards: {'with shadow' if profile.components['cards']['shadow'] != 'none' else 'flat'}, {'with border' if profile.components['cards']['border'] else 'borderless'}
-- Navigation: {profile.components['navigation']['style']}, {profile.components['navigation']['weight']} weight
+- Buttons: {profile.components['buttons']['style']}, \
+{profile.components['buttons']['size']}, \
+{profile.components['buttons']['hover_effect']} hover
+- Cards: \
+{'with shadow' if profile.components['cards']['shadow'] != 'none' else 'flat'}, \
+{'with border' if profile.components['cards']['border'] else 'borderless'}
+- Navigation: {profile.components['navigation']['style']}, \
+{profile.components['navigation']['weight']} weight
 """
     return context.strip()
