@@ -5,83 +5,82 @@ Non-code inspiration references for modern ecommerce theme generation
 
 from typing import Any
 
-
 # Inspiration brand references (non-scraping, style guidance only)
 INSPIRATION_BRANDS = {
-    'streetwear_modern': {
-        'brands': ['Palace', 'Supreme', 'Kith', 'ASOS', 'Fear of God', 'Stussy'],
-        'style_keywords': [
-            'bold typography',
-            'generous whitespace',
-            'strong product cards',
-            'minimal navigation',
-            'high-contrast imagery',
-            'clean grid layouts',
-            'large hero images',
-            'simple checkout flow'
+    "streetwear_modern": {
+        "brands": ["Palace", "Supreme", "Kith", "ASOS", "Fear of God", "Stussy"],
+        "style_keywords": [
+            "bold typography",
+            "generous whitespace",
+            "strong product cards",
+            "minimal navigation",
+            "high-contrast imagery",
+            "clean grid layouts",
+            "large hero images",
+            "simple checkout flow",
         ],
-        'layout_characteristics': [
-            'Full-width hero sections',
-            'Product grids with 3-4 columns',
-            'Sticky header navigation',
-            'Large, tappable CTAs',
-            'Image-first design',
-            'Minimal text, maximum impact'
-        ]
+        "layout_characteristics": [
+            "Full-width hero sections",
+            "Product grids with 3-4 columns",
+            "Sticky header navigation",
+            "Large, tappable CTAs",
+            "Image-first design",
+            "Minimal text, maximum impact",
+        ],
     },
-    'minimal_clean': {
-        'brands': ['Apple', 'Everlane', 'Muji', 'COS', 'APC'],
-        'style_keywords': [
-            'subtle colors',
-            'generous whitespace',
-            'refined typography',
-            'soft shadows',
-            'clean lines',
-            'understated elegance'
+    "minimal_clean": {
+        "brands": ["Apple", "Everlane", "Muji", "COS", "APC"],
+        "style_keywords": [
+            "subtle colors",
+            "generous whitespace",
+            "refined typography",
+            "soft shadows",
+            "clean lines",
+            "understated elegance",
         ],
-        'layout_characteristics': [
-            'Breathing room around elements',
-            'Simple grid structures',
-            'Soft color palettes',
-            'Serif or sans-serif typography',
-            'Minimal borders'
-        ]
+        "layout_characteristics": [
+            "Breathing room around elements",
+            "Simple grid structures",
+            "Soft color palettes",
+            "Serif or sans-serif typography",
+            "Minimal borders",
+        ],
     },
-    'bold_neon': {
-        'brands': ['Cyberpunk aesthetics', 'Tech startups', 'Gaming brands'],
-        'style_keywords': [
-            'neon accents',
-            'dark backgrounds',
-            'high contrast',
-            'electric colors',
-            'futuristic vibes',
-            'glow effects'
+    "bold_neon": {
+        "brands": ["Cyberpunk aesthetics", "Tech startups", "Gaming brands"],
+        "style_keywords": [
+            "neon accents",
+            "dark backgrounds",
+            "high contrast",
+            "electric colors",
+            "futuristic vibes",
+            "glow effects",
         ],
-        'layout_characteristics': [
-            'Dark mode first',
-            'Glowing CTAs',
-            'Neon borders',
-            'Tech-inspired typography',
-            'High energy design'
-        ]
+        "layout_characteristics": [
+            "Dark mode first",
+            "Glowing CTAs",
+            "Neon borders",
+            "Tech-inspired typography",
+            "High energy design",
+        ],
     },
-    'dark_mode': {
-        'brands': ['Spotify', 'Twitter', 'Discord', 'GitHub'],
-        'style_keywords': [
-            'sophisticated dark theme',
-            'excellent readability',
-            'subtle accents',
-            'reduced eye strain',
-            'modern interface'
+    "dark_mode": {
+        "brands": ["Spotify", "Twitter", "Discord", "GitHub"],
+        "style_keywords": [
+            "sophisticated dark theme",
+            "excellent readability",
+            "subtle accents",
+            "reduced eye strain",
+            "modern interface",
         ],
-        'layout_characteristics': [
-            'Dark background (#0F172A)',
-            'Light text (#F1F5F9)',
-            'Subtle borders',
-            'Elevated cards',
-            'Blue/purple accents'
-        ]
-    }
+        "layout_characteristics": [
+            "Dark background (#0F172A)",
+            "Light text (#F1F5F9)",
+            "Subtle borders",
+            "Elevated cards",
+            "Blue/purple accents",
+        ],
+    },
 }
 
 

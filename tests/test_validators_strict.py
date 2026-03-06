@@ -54,9 +54,7 @@ def test_code_validator_syntax_error():
         # Reset mock for syntax check
         mock_run.reset_mock()
         mock_run.return_value = Mock(
-            returncode=1,
-            stderr="Parse error: syntax error, unexpected end of file",
-            stdout=""
+            returncode=1, stderr="Parse error: syntax error, unexpected end of file", stdout=""
         )
 
         is_valid, message, is_warning = validator.validate_php_syntax("<?php echo 'test'")
@@ -111,14 +109,22 @@ def test_theme_validator_missing_required_files(tmp_path):
 
 def test_theme_validator_warnings_in_strict_mode(tmp_path):
     """Test ThemeValidator treats warnings as errors in strict mode."""
+    from wpgen.utils.theme_constants import (
+        RECOMMENDED_CLASSIC_THEME_FILES,
+        REQUIRED_CLASSIC_THEME_FILES,
+    )
+
     theme_dir = tmp_path / "test-theme"
     theme_dir.mkdir()
 
-    # Create required files
-    (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-    (theme_dir / "index.php").write_text("<?php // Test ?>")
+    # Create all required files so only recommended-file warnings remain
+    for f in REQUIRED_CLASSIC_THEME_FILES:
+        if f.endswith(".css"):
+            (theme_dir / f).write_text("/* Theme Name: Test */")
+        else:
+            (theme_dir / f).write_text("<?php // Test ?>")
 
-    # Missing recommended files will generate warnings
+    # Do NOT create recommended files -> warnings expected
     with patch("subprocess.run") as mock_run:
         # PHP available
         mock_run.return_value = Mock(returncode=0, stdout="PHP 8.0.0")
@@ -158,8 +164,8 @@ def test_validation_summary_table_output(tmp_path, capsys):
 
     assert "Validation Summary" in output
     assert "10" in output  # files_checked
-    assert "8" in output   # valid_files
-    assert "2" in output   # errors
+    assert "8" in output  # valid_files
+    assert "2" in output  # errors
     assert "ERROR" in output or "✗" in output
 
 

@@ -34,15 +34,15 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
         Complete header.php template as string
     """
     # Extract configuration with safe defaults
-    primary_color = config.get('primary_color', '#2563eb')
-    show_search = config.get('show_search', True)
-    sticky_header = config.get('sticky_header', False)
+    primary_color = config.get("primary_color", "#2563eb")
+    show_search = config.get("show_search", True)
+    sticky_header = config.get("sticky_header", False)
 
-    header_class = 'site-header'
+    header_class = "site-header"
     if sticky_header:
-        header_class += ' sticky-header'
+        header_class += " sticky-header"
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Header Template
  *
@@ -117,7 +117,7 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 
         {_build_search_form_block(show_search, theme_slug)}
     </header>
-'''
+"""
 
 
 def _build_search_form_block(show_search: bool, theme_slug: str) -> str:
@@ -131,12 +131,12 @@ def _build_search_form_block(show_search: bool, theme_slug: str) -> str:
         Search form HTML or empty string
     """
     if not show_search:
-        return ''
+        return ""
 
-    return f'''
+    return f"""
         <div class="header-search">
             <?php get_search_form(); ?>
-        </div>'''
+        </div>"""
 
 
 def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -158,10 +158,10 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
     Returns:
         Complete footer.php template as string
     """
-    footer_columns = config.get('footer_columns', 3)
-    copyright_text = config.get('copyright_text', f'&copy; {theme_name}')
+    footer_columns = config.get("footer_columns", 3)
+    copyright_text = config.get("copyright_text", f"&copy; {theme_name}")
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Footer Template
  *
@@ -214,7 +214,7 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 
 </body>
 </html>
-'''
+"""
 
 
 def _build_footer_widget_areas(columns: int) -> str:
@@ -230,11 +230,11 @@ def _build_footer_widget_areas(columns: int) -> str:
 
     areas = []
     for i in range(1, columns + 1):
-        areas.append(f'''                    <div class="footer-widget-area footer-widget-{i}">
+        areas.append(f"""                    <div class="footer-widget-area footer-widget-{i}">
                         <?php dynamic_sidebar( 'footer-{i}' ); ?>
-                    </div>''')
+                    </div>""")
 
-    return '\n'.join(areas)
+    return "\n".join(areas)
 
 
 def build_index_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -257,10 +257,10 @@ def build_index_structure(theme_name: str, theme_slug: str, config: Dict[str, An
     Returns:
         Complete index.php template as string
     """
-    layout_class = config.get('layout_class', 'content-area')
-    show_sidebar = config.get('show_sidebar', False)
+    layout_class = config.get("layout_class", "content-area")
+    show_sidebar = config.get("show_sidebar", False)
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Main Index Template
  *
@@ -327,7 +327,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def _build_sidebar_block(show_sidebar: bool) -> str:
@@ -340,10 +340,10 @@ def _build_sidebar_block(show_sidebar: bool) -> str:
         Sidebar HTML or empty string
     """
     if not show_sidebar:
-        return ''
+        return ""
 
-    return '''
-<?php get_sidebar(); ?>'''
+    return """
+<?php get_sidebar(); ?>"""
 
 
 def build_functions_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -367,11 +367,11 @@ def build_functions_structure(theme_name: str, theme_slug: str, config: Dict[str
     Returns:
         Complete functions.php template as string
     """
-    woocommerce_support = config.get('woocommerce_support', False)
-    custom_logo_support = config.get('custom_logo', True)
-    footer_columns = config.get('footer_columns', 3)
+    woocommerce_support = config.get("woocommerce_support", False)
+    custom_logo_support = config.get("custom_logo", True)
+    footer_columns = config.get("footer_columns", 3)
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Theme Functions
  *
@@ -513,7 +513,7 @@ require get_template_directory() . '/inc/template-tags.php';
  * Customizer additions.
  */
 require get_template_directory() . '/inc/customizer.php';
-'''
+"""
 
 
 def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
@@ -527,9 +527,9 @@ def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
         Custom logo support code or empty string
     """
     if not enabled:
-        return ''
+        return ""
 
-    return f'''
+    return f"""
     // Add theme support for Custom Logo
     add_theme_support(
         'custom-logo',
@@ -539,7 +539,7 @@ def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
             'flex-width'  => true,
             'flex-height' => true,
         )
-    );'''
+    );"""
 
 
 def _build_woocommerce_support(enabled: bool) -> str:
@@ -552,14 +552,14 @@ def _build_woocommerce_support(enabled: bool) -> str:
         WooCommerce support code or empty string
     """
     if not enabled:
-        return ''
+        return ""
 
-    return '''
+    return """
     // Add WooCommerce support
     add_theme_support( 'woocommerce' );
     add_theme_support( 'wc-product-gallery-zoom' );
     add_theme_support( 'wc-product-gallery-lightbox' );
-    add_theme_support( 'wc-product-gallery-slider' );'''
+    add_theme_support( 'wc-product-gallery-slider' );"""
 
 
 def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
@@ -576,7 +576,7 @@ def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
 
     registrations = []
     for i in range(1, columns + 1):
-        registrations.append(f'''
+        registrations.append(f"""
     // Footer widget area {i}
     register_sidebar(
         array(
@@ -588,12 +588,12 @@ def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
             'before_title'  => '<h2 class="widget-title">',
             'after_title'   => '</h2>',
         )
-    );''')
+    );""")
 
-    return ''.join(registrations)
+    return "".join(registrations)
 
 
-def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> str:
+def build_content_part_structure(theme_slug: str, post_type: str = "post") -> str:
     """Build template-parts/content.php structure.
 
     Args:
@@ -603,7 +603,7 @@ def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> st
     Returns:
         Complete content template part
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying post content
  *
@@ -665,7 +665,7 @@ def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> st
         <?php endif; ?>
     </footer>
 </article>
-'''
+"""
 
 
 def build_content_none_structure(theme_slug: str) -> str:
@@ -677,7 +677,7 @@ def build_content_none_structure(theme_slug: str) -> str:
     Returns:
         Complete no-content template part
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying a message when no content is found
  *
@@ -724,4 +724,4 @@ def build_content_none_structure(theme_slug: str) -> str:
         <?php endif; ?>
     </div>
 </section>
-'''
+"""

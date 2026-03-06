@@ -36,38 +36,104 @@ class PromptOptimizer:
 
     # Keywords for domain detection
     ECOMMERCE_KEYWORDS = {
-        'store', 'shop', 'ecommerce', 'woocommerce', 'sell', 'product', 'products',
-        'cart', 'checkout', 'payment', 'merch', 'merchandise', 'clothing', 'apparel',
-        'shirts', 'tees', 't-shirts', 'fashion', 'boutique', 'retail', 'purchase',
-        'buy', 'sale', 'catalog', 'inventory'
+        "store",
+        "shop",
+        "ecommerce",
+        "woocommerce",
+        "sell",
+        "product",
+        "products",
+        "cart",
+        "checkout",
+        "payment",
+        "merch",
+        "merchandise",
+        "clothing",
+        "apparel",
+        "shirts",
+        "tees",
+        "t-shirts",
+        "fashion",
+        "boutique",
+        "retail",
+        "purchase",
+        "buy",
+        "sale",
+        "catalog",
+        "inventory",
     }
 
     BLOG_KEYWORDS = {
-        'blog', 'article', 'posts', 'writing', 'journal', 'news', 'magazine',
-        'publication', 'editorial', 'content', 'stories', 'author', 'blogger'
+        "blog",
+        "article",
+        "posts",
+        "writing",
+        "journal",
+        "news",
+        "magazine",
+        "publication",
+        "editorial",
+        "content",
+        "stories",
+        "author",
+        "blogger",
     }
 
     PORTFOLIO_KEYWORDS = {
-        'portfolio', 'showcase', 'gallery', 'work', 'projects', 'creative',
-        'designer', 'developer', 'artist', 'photographer', 'freelancer',
-        'agency', 'studio', 'case studies', 'examples'
+        "portfolio",
+        "showcase",
+        "gallery",
+        "work",
+        "projects",
+        "creative",
+        "designer",
+        "developer",
+        "artist",
+        "photographer",
+        "freelancer",
+        "agency",
+        "studio",
+        "case studies",
+        "examples",
     }
 
     MAGAZINE_KEYWORDS = {
-        'magazine', 'news', 'publication', 'editorial', 'articles', 'journal',
-        'media', 'press', 'stories', 'featured', 'trending', 'latest'
+        "magazine",
+        "news",
+        "publication",
+        "editorial",
+        "articles",
+        "journal",
+        "media",
+        "press",
+        "stories",
+        "featured",
+        "trending",
+        "latest",
     }
 
     PHOTOGRAPHY_KEYWORDS = {
-        'photography', 'photo', 'photos', 'images', 'photographer', 'camera',
-        'portrait', 'wedding', 'event', 'visual', 'shoot', 'picture'
+        "photography",
+        "photo",
+        "photos",
+        "images",
+        "photographer",
+        "camera",
+        "portrait",
+        "wedding",
+        "event",
+        "visual",
+        "shoot",
+        "picture",
     }
 
     def __init__(self):
         """Initialize the prompt optimizer."""
         pass
 
-    def optimize(self, raw_prompt: str, additional_context: dict[str, Any] | None = None) -> OptimizedPrompt:
+    def optimize(
+        self, raw_prompt: str, additional_context: dict[str, Any] | None = None
+    ) -> OptimizedPrompt:
         """
         Optimize a raw user prompt into a structured technical instruction.
 
@@ -86,7 +152,7 @@ class PromptOptimizer:
 
         # Override domain if WooCommerce detected
         if woocommerce_detected:
-            detected_domain = 'ecommerce'
+            detected_domain = "ecommerce"
 
         # Select appropriate blueprint
         blueprint_name = self._select_blueprint(detected_domain)
@@ -96,10 +162,7 @@ class PromptOptimizer:
 
         # Rewrite the prompt
         optimized_prompt = self._rewrite_prompt(
-            raw_prompt,
-            detected_domain,
-            woocommerce_detected,
-            injected_requirements
+            raw_prompt, detected_domain, woocommerce_detected, injected_requirements
         )
 
         return OptimizedPrompt(
@@ -108,7 +171,7 @@ class PromptOptimizer:
             detected_domain=detected_domain,
             blueprint_name=blueprint_name,
             injected_requirements=injected_requirements,
-            woocommerce_detected=woocommerce_detected
+            woocommerce_detected=woocommerce_detected,
         )
 
     def _detect_domain(self, prompt_lower: str) -> str:
@@ -118,17 +181,17 @@ class PromptOptimizer:
         Returns: 'ecommerce', 'blog', 'portfolio', 'magazine', 'photography', or 'general'
         """
         scores = {
-            'ecommerce': self._count_keywords(prompt_lower, self.ECOMMERCE_KEYWORDS),
-            'blog': self._count_keywords(prompt_lower, self.BLOG_KEYWORDS),
-            'portfolio': self._count_keywords(prompt_lower, self.PORTFOLIO_KEYWORDS),
-            'magazine': self._count_keywords(prompt_lower, self.MAGAZINE_KEYWORDS),
-            'photography': self._count_keywords(prompt_lower, self.PHOTOGRAPHY_KEYWORDS),
+            "ecommerce": self._count_keywords(prompt_lower, self.ECOMMERCE_KEYWORDS),
+            "blog": self._count_keywords(prompt_lower, self.BLOG_KEYWORDS),
+            "portfolio": self._count_keywords(prompt_lower, self.PORTFOLIO_KEYWORDS),
+            "magazine": self._count_keywords(prompt_lower, self.MAGAZINE_KEYWORDS),
+            "photography": self._count_keywords(prompt_lower, self.PHOTOGRAPHY_KEYWORDS),
         }
 
         # Return domain with highest score, or 'general' if no clear winner
         max_score = max(scores.values())
         if max_score == 0:
-            return 'general'
+            return "general"
 
         return max(scores, key=scores.get)
 
@@ -141,109 +204,109 @@ class PromptOptimizer:
         count = 0
         for keyword in keywords:
             # Use word boundaries to avoid partial matches
-            if re.search(r'\b' + re.escape(keyword) + r'\b', text):
+            if re.search(r"\b" + re.escape(keyword) + r"\b", text):
                 count += 1
         return count
 
     def _select_blueprint(self, domain: str) -> str | None:
         """Select the appropriate blueprint based on detected domain."""
         blueprint_map = {
-            'ecommerce': 'ecommerce_blueprint',
-            'blog': 'blog_blueprint',
-            'portfolio': 'portfolio_blueprint',
-            'magazine': 'magazine_blueprint',
-            'photography': 'portfolio_blueprint',  # Use portfolio blueprint for photography
-            'general': None
+            "ecommerce": "ecommerce_blueprint",
+            "blog": "blog_blueprint",
+            "portfolio": "portfolio_blueprint",
+            "magazine": "magazine_blueprint",
+            "photography": "portfolio_blueprint",  # Use portfolio blueprint for photography
+            "general": None,
         }
         return blueprint_map.get(domain)
 
     def _generate_requirements(self, domain: str, woocommerce: bool) -> dict[str, Any]:
         """Generate structured requirements based on domain and WooCommerce detection."""
         requirements = {
-            'domain': domain,
-            'visual_requirements': self._get_visual_requirements(domain),
-            'template_requirements': self._get_template_requirements(domain, woocommerce),
-            'css_requirements': self._get_css_requirements(domain),
-            'layout_defaults': self._get_layout_defaults(domain),
-            'ux_elements': self._get_ux_elements(domain)
+            "domain": domain,
+            "visual_requirements": self._get_visual_requirements(domain),
+            "template_requirements": self._get_template_requirements(domain, woocommerce),
+            "css_requirements": self._get_css_requirements(domain),
+            "layout_defaults": self._get_layout_defaults(domain),
+            "ux_elements": self._get_ux_elements(domain),
         }
 
         if woocommerce:
-            requirements['woocommerce'] = self._get_woocommerce_requirements()
+            requirements["woocommerce"] = self._get_woocommerce_requirements()
 
         return requirements
 
     def _get_visual_requirements(self, domain: str) -> list[str]:
         """Get visual requirements based on domain."""
         base_requirements = [
-            'Hero section on homepage with compelling headline and CTA',
-            'Professional header with logo/branding and navigation menu',
-            'Footer with widgets, social links, and copyright',
-            'Visual hierarchy with proper heading structure (H1, H2, H3)',
-            'CSS custom properties for theme colors and typography',
-            'Responsive grid and flexbox layouts',
-            'Professional spacing and whitespace',
-            'Modern typography with proper font pairing'
+            "Hero section on homepage with compelling headline and CTA",
+            "Professional header with logo/branding and navigation menu",
+            "Footer with widgets, social links, and copyright",
+            "Visual hierarchy with proper heading structure (H1, H2, H3)",
+            "CSS custom properties for theme colors and typography",
+            "Responsive grid and flexbox layouts",
+            "Professional spacing and whitespace",
+            "Modern typography with proper font pairing",
         ]
 
         domain_specific = {
-            'ecommerce': [
-                '🛒 AUTO-GENERATED PRODUCT GRID SECTION (MANDATORY for store/shop/ecommerce themes):',
-                '  • Add product grid on front-page.php with WooCommerce product loop',
-                '  • Use woocommerce_product_loop_start() and woocommerce_product_loop_end()',
-                '  • Display 3-4 columns on desktop, 2 on tablet, 1 on mobile',
-                '  • Modern card layout with:',
-                '    - Product image with object-fit: cover and aspect-ratio: 1',
-                '    - Product title and price',
-                '    - Sale badge for discounted items',
-                '    - Add to cart button',
-                '    - Hover effects: image zoom (scale: 1.05), card lift (translateY: -4px)',
-                '  • Example WooCommerce loop code:',
-                '    $args = array(',
+            "ecommerce": [
+                "🛒 AUTO-GENERATED PRODUCT GRID SECTION (MANDATORY for store/shop/ecommerce themes):",
+                "  • Add product grid on front-page.php with WooCommerce product loop",
+                "  • Use woocommerce_product_loop_start() and woocommerce_product_loop_end()",
+                "  • Display 3-4 columns on desktop, 2 on tablet, 1 on mobile",
+                "  • Modern card layout with:",
+                "    - Product image with object-fit: cover and aspect-ratio: 1",
+                "    - Product title and price",
+                "    - Sale badge for discounted items",
+                "    - Add to cart button",
+                "    - Hover effects: image zoom (scale: 1.05), card lift (translateY: -4px)",
+                "  • Example WooCommerce loop code:",
+                "    $args = array(",
                 '        "post_type" => "product",',
                 '        "posts_per_page" => 12,',
-                '    );',
-                '    $loop = new WP_Query($args);',
-                '    if ($loop->have_posts()) {',
-                '        while ($loop->have_posts()) : $loop->the_post();',
+                "    );",
+                "    $loop = new WP_Query($args);",
+                "    if ($loop->have_posts()) {",
+                "        while ($loop->have_posts()) : $loop->the_post();",
                 '            wc_get_template_part("content", "product");',
-                '        endwhile;',
-                '    }',
-                '    wp_reset_postdata();',
-                '',
-                'Product grid layout with CSS Grid (grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)))',
+                "        endwhile;",
+                "    }",
+                "    wp_reset_postdata();",
+                "",
+                "Product grid layout with CSS Grid (grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)))",
                 'Featured products section on homepage with "Shop Now" CTA',
-                'Category navigation and filtering UI',
-                'Shopping cart icon in header with item count badge',
-                'Trust badges and testimonials section for credibility',
-                'Promotional banner area for sales and discounts',
-                'Product quick view modal (optional)',
-                'Related products section on single product pages'
+                "Category navigation and filtering UI",
+                "Shopping cart icon in header with item count badge",
+                "Trust badges and testimonials section for credibility",
+                "Promotional banner area for sales and discounts",
+                "Product quick view modal (optional)",
+                "Related products section on single product pages",
             ],
-            'blog': [
-                'Featured posts section with thumbnails',
-                'Article grid/list with excerpts',
-                'Sidebar with widgets (categories, recent posts, search)',
-                'Author bio section',
-                'Social sharing buttons',
-                'Comment section styling'
+            "blog": [
+                "Featured posts section with thumbnails",
+                "Article grid/list with excerpts",
+                "Sidebar with widgets (categories, recent posts, search)",
+                "Author bio section",
+                "Social sharing buttons",
+                "Comment section styling",
             ],
-            'portfolio': [
-                'Project showcase grid with image previews',
-                'Case study layout with before/after sections',
-                'Skills and services section',
-                'Client testimonials carousel',
-                'Contact form with professional styling',
-                'About section with profile image'
+            "portfolio": [
+                "Project showcase grid with image previews",
+                "Case study layout with before/after sections",
+                "Skills and services section",
+                "Client testimonials carousel",
+                "Contact form with professional styling",
+                "About section with profile image",
             ],
-            'magazine': [
-                'Featured story hero with large image',
-                'Multi-column article layout',
-                'Category sections with horizontal scrolling',
-                'Trending/popular articles widget',
-                'Newsletter signup form',
-                'Advertisement placeholder areas'
-            ]
+            "magazine": [
+                "Featured story hero with large image",
+                "Multi-column article layout",
+                "Category sections with horizontal scrolling",
+                "Trending/popular articles widget",
+                "Newsletter signup form",
+                "Advertisement placeholder areas",
+            ],
         }
 
         return base_requirements + domain_specific.get(domain, [])
@@ -252,45 +315,47 @@ class PromptOptimizer:
         """Get template file requirements based on domain."""
         base_templates = [
             'header.php: Must contain <header> tag, site-branding div, nav menu, and opening <main id="content">',
-            'footer.php: Must contain closing </main> tag, <footer> tag, and wp_footer() call',
-            'index.php: Must contain the WordPress loop with get_header() and get_footer()',
-            'functions.php: Theme setup, widget areas, enqueue scripts/styles',
-            'style.css: WordPress theme header with proper metadata',
-            'front-page.php: Custom homepage with hero and feature sections',
-            'page.php: Single page template',
-            'single.php: Single post template with navigation',
-            'archive.php: Archive template with post loop',
-            'search.php: Search results template',
-            'sidebar.php: Sidebar with widget areas',
-            '404.php: Custom 404 error page'
+            "footer.php: Must contain closing </main> tag, <footer> tag, and wp_footer() call",
+            "index.php: Must contain the WordPress loop with get_header() and get_footer()",
+            "functions.php: Theme setup, widget areas, enqueue scripts/styles",
+            "style.css: WordPress theme header with proper metadata",
+            "front-page.php: Custom homepage with hero and feature sections",
+            "page.php: Single page template",
+            "single.php: Single post template with navigation",
+            "archive.php: Archive template with post loop",
+            "search.php: Search results template",
+            "sidebar.php: Sidebar with widget areas",
+            "404.php: Custom 404 error page",
         ]
 
         if woocommerce:
-            base_templates.extend([
-                'woocommerce.php: WooCommerce compatibility template',
-                'woocommerce/archive-product.php: Product archive/shop page',
-                'woocommerce/single-product.php: Single product page',
-                'woocommerce/cart.php: Shopping cart template (optional override)',
-                'woocommerce/checkout.php: Checkout template (optional override)'
-            ])
+            base_templates.extend(
+                [
+                    "woocommerce.php: WooCommerce compatibility template",
+                    "woocommerce/archive-product.php: Product archive/shop page",
+                    "woocommerce/single-product.php: Single product page",
+                    "woocommerce/cart.php: Shopping cart template (optional override)",
+                    "woocommerce/checkout.php: Checkout template (optional override)",
+                ]
+            )
 
         domain_specific = {
-            'blog': [
-                'home.php: Blog index page',
-                'category.php: Category archive',
-                'tag.php: Tag archive',
-                'author.php: Author archive'
+            "blog": [
+                "home.php: Blog index page",
+                "category.php: Category archive",
+                "tag.php: Tag archive",
+                "author.php: Author archive",
             ],
-            'portfolio': [
-                'archive-portfolio.php: Portfolio archive',
-                'single-portfolio.php: Single portfolio item',
-                'page-portfolio.php: Portfolio landing page template'
+            "portfolio": [
+                "archive-portfolio.php: Portfolio archive",
+                "single-portfolio.php: Single portfolio item",
+                "page-portfolio.php: Portfolio landing page template",
             ],
-            'magazine': [
-                'home.php: Magazine-style homepage with sections',
-                'category.php: Category pages with featured posts',
-                'single.php: Article template with related posts'
-            ]
+            "magazine": [
+                "home.php: Magazine-style homepage with sections",
+                "category.php: Category pages with featured posts",
+                "single.php: Article template with related posts",
+            ],
         }
 
         return base_templates + domain_specific.get(domain, [])
@@ -298,162 +363,162 @@ class PromptOptimizer:
     def _get_css_requirements(self, domain: str) -> list[str]:
         """Get CSS structure requirements with modern design system."""
         return [
-            'CSS custom properties (variables) for colors, spacing, and typography',
-            'Mobile-first responsive design with breakpoints (768px, 992px, 1200px)',
-            'Flexbox and CSS Grid for modern layouts',
-            '',
-            '=== DESIGN SYSTEM - SPACING SCALE ===',
-            'Use a consistent spacing scale (T-shirt sizing or 8px base):',
-            '  --space-3xs: 0.25rem (4px)',
-            '  --space-2xs: 0.5rem (8px)',
-            '  --space-xs: 0.75rem (12px)',
-            '  --space-sm: 1rem (16px)',
-            '  --space-md: 1.5rem (24px)',
-            '  --space-lg: 2rem (32px)',
-            '  --space-xl: 3rem (48px)',
-            '  --space-2xl: 4rem (64px)',
-            '  --space-3xl: 6rem (96px)',
-            '',
-            '=== DESIGN SYSTEM - TYPOGRAPHY ===',
-            'Professional typography pairings (choose one per theme):',
-            '  Modern Sans: Inter + Georgia',
-            '  Classic: Playfair Display + Source Sans Pro',
-            '  Tech/Startup: Space Grotesk + IBM Plex Sans',
-            '  Editorial: Merriweather + Open Sans',
-            '',
-            'Typography Scale (Major Third 1.25):',
-            '  --font-size-xs: 0.64rem (10px)',
-            '  --font-size-sm: 0.8rem (13px)',
-            '  --font-size-base: 1rem (16px)',
-            '  --font-size-md: 1.25rem (20px)',
-            '  --font-size-lg: 1.563rem (25px)',
-            '  --font-size-xl: 1.953rem (31px)',
-            '  --font-size-2xl: 2.441rem (39px)',
-            '  --font-size-3xl: 3.052rem (49px)',
-            '',
-            'Line heights for readability:',
-            '  Headings: 1.2-1.3',
-            '  Body text: 1.5-1.6',
-            '  UI elements: 1.4',
-            '',
-            '=== MODERN CSS FEATURES ===',
-            'Use modern CSS for better design:',
-            '  • clamp() for fluid typography (font-size: clamp(1rem, 2vw, 1.5rem))',
-            '  • CSS Grid with auto-fit/auto-fill for responsive layouts',
-            '  • aspect-ratio for images and cards',
-            '  • gap for spacing in Grid/Flexbox (no more margins on children)',
-            '  • Custom properties with fallbacks',
-            '',
-            '=== BUTTON STYLES ===',
-            'Professional button system:',
-            '  Primary button: Solid background, high contrast, hover lift effect',
-            '  Secondary button: Outline style, hover fill',
-            '  Tertiary button: Text only, hover underline',
-            '  Button states: Default, Hover (+translateY), Active, Focus (ring), Disabled',
-            '  Border radius: 0.375rem (6px) for modern look',
-            '  Padding: 0.75rem 1.5rem (12px 24px)',
-            '',
-            '=== ANIMATIONS & TRANSITIONS ===',
-            'Smooth, performant animations:',
-            '  • Transitions: 150-300ms for UI interactions',
-            '  • Transform for performance (translate, scale, rotate)',
-            '  • Hover effects: Subtle lift (translateY(-2px)), scale(1.02)',
-            '  • Card shadows: Elevate on hover with box-shadow transition',
-            '  • Respect prefers-reduced-motion for accessibility',
-            '  • Loading states: Skeleton screens or subtle pulse animation',
-            '',
-            '=== COLOR SYSTEM ===',
-            'Professional color palette with CSS custom properties:',
-            '  Primary colors: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900 shades',
-            '  Neutral grays: For text and backgrounds',
-            '  Semantic colors: success, warning, error, info',
-            '  Dark mode support: Use color-scheme and prefers-color-scheme',
-            '',
-            '=== COMPONENT LIBRARY ===',
-            'Reusable component styles:',
-            '  • Cards: Rounded corners, subtle shadow, hover state',
-            '  • Forms: Consistent input styling, focus rings, validation states',
-            '  • Navigation: Clear active states, dropdown menus',
-            '  • Hero sections: Full-height with gradient overlay options',
-            '  • Image galleries: CSS Grid with gap, aspect-ratio, object-fit: cover',
-            '',
-            '=== RESPONSIVE BREAKPOINTS ===',
-            'Mobile-first media queries:',
-            '  @media (min-width: 768px) { /* Tablet */ }',
-            '  @media (min-width: 992px) { /* Desktop */ }',
-            '  @media (min-width: 1200px) { /* Large desktop */ }',
-            '  Container max-width: min(1200px, 90vw) for fluid responsiveness',
-            '',
-            'Component-based CSS organization (BEM or utility-first)',
-            'Hover and focus states for all interactive elements',
-            'Accessibility: WCAG AA contrast ratios (4.5:1 text, 3:1 UI), focus indicators (2px ring)',
-            'Print stylesheet considerations for blog/magazine themes'
+            "CSS custom properties (variables) for colors, spacing, and typography",
+            "Mobile-first responsive design with breakpoints (768px, 992px, 1200px)",
+            "Flexbox and CSS Grid for modern layouts",
+            "",
+            "=== DESIGN SYSTEM - SPACING SCALE ===",
+            "Use a consistent spacing scale (T-shirt sizing or 8px base):",
+            "  --space-3xs: 0.25rem (4px)",
+            "  --space-2xs: 0.5rem (8px)",
+            "  --space-xs: 0.75rem (12px)",
+            "  --space-sm: 1rem (16px)",
+            "  --space-md: 1.5rem (24px)",
+            "  --space-lg: 2rem (32px)",
+            "  --space-xl: 3rem (48px)",
+            "  --space-2xl: 4rem (64px)",
+            "  --space-3xl: 6rem (96px)",
+            "",
+            "=== DESIGN SYSTEM - TYPOGRAPHY ===",
+            "Professional typography pairings (choose one per theme):",
+            "  Modern Sans: Inter + Georgia",
+            "  Classic: Playfair Display + Source Sans Pro",
+            "  Tech/Startup: Space Grotesk + IBM Plex Sans",
+            "  Editorial: Merriweather + Open Sans",
+            "",
+            "Typography Scale (Major Third 1.25):",
+            "  --font-size-xs: 0.64rem (10px)",
+            "  --font-size-sm: 0.8rem (13px)",
+            "  --font-size-base: 1rem (16px)",
+            "  --font-size-md: 1.25rem (20px)",
+            "  --font-size-lg: 1.563rem (25px)",
+            "  --font-size-xl: 1.953rem (31px)",
+            "  --font-size-2xl: 2.441rem (39px)",
+            "  --font-size-3xl: 3.052rem (49px)",
+            "",
+            "Line heights for readability:",
+            "  Headings: 1.2-1.3",
+            "  Body text: 1.5-1.6",
+            "  UI elements: 1.4",
+            "",
+            "=== MODERN CSS FEATURES ===",
+            "Use modern CSS for better design:",
+            "  • clamp() for fluid typography (font-size: clamp(1rem, 2vw, 1.5rem))",
+            "  • CSS Grid with auto-fit/auto-fill for responsive layouts",
+            "  • aspect-ratio for images and cards",
+            "  • gap for spacing in Grid/Flexbox (no more margins on children)",
+            "  • Custom properties with fallbacks",
+            "",
+            "=== BUTTON STYLES ===",
+            "Professional button system:",
+            "  Primary button: Solid background, high contrast, hover lift effect",
+            "  Secondary button: Outline style, hover fill",
+            "  Tertiary button: Text only, hover underline",
+            "  Button states: Default, Hover (+translateY), Active, Focus (ring), Disabled",
+            "  Border radius: 0.375rem (6px) for modern look",
+            "  Padding: 0.75rem 1.5rem (12px 24px)",
+            "",
+            "=== ANIMATIONS & TRANSITIONS ===",
+            "Smooth, performant animations:",
+            "  • Transitions: 150-300ms for UI interactions",
+            "  • Transform for performance (translate, scale, rotate)",
+            "  • Hover effects: Subtle lift (translateY(-2px)), scale(1.02)",
+            "  • Card shadows: Elevate on hover with box-shadow transition",
+            "  • Respect prefers-reduced-motion for accessibility",
+            "  • Loading states: Skeleton screens or subtle pulse animation",
+            "",
+            "=== COLOR SYSTEM ===",
+            "Professional color palette with CSS custom properties:",
+            "  Primary colors: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900 shades",
+            "  Neutral grays: For text and backgrounds",
+            "  Semantic colors: success, warning, error, info",
+            "  Dark mode support: Use color-scheme and prefers-color-scheme",
+            "",
+            "=== COMPONENT LIBRARY ===",
+            "Reusable component styles:",
+            "  • Cards: Rounded corners, subtle shadow, hover state",
+            "  • Forms: Consistent input styling, focus rings, validation states",
+            "  • Navigation: Clear active states, dropdown menus",
+            "  • Hero sections: Full-height with gradient overlay options",
+            "  • Image galleries: CSS Grid with gap, aspect-ratio, object-fit: cover",
+            "",
+            "=== RESPONSIVE BREAKPOINTS ===",
+            "Mobile-first media queries:",
+            "  @media (min-width: 768px) { /* Tablet */ }",
+            "  @media (min-width: 992px) { /* Desktop */ }",
+            "  @media (min-width: 1200px) { /* Large desktop */ }",
+            "  Container max-width: min(1200px, 90vw) for fluid responsiveness",
+            "",
+            "Component-based CSS organization (BEM or utility-first)",
+            "Hover and focus states for all interactive elements",
+            "Accessibility: WCAG AA contrast ratios (4.5:1 text, 3:1 UI), focus indicators (2px ring)",
+            "Print stylesheet considerations for blog/magazine themes",
         ]
 
     def _get_layout_defaults(self, domain: str) -> dict[str, str]:
         """Get layout defaults based on domain."""
         layouts = {
-            'ecommerce': 'full-width with sidebar on product pages',
-            'blog': 'sidebar-right for posts, full-width for pages',
-            'portfolio': 'full-width with grid layouts',
-            'magazine': 'multi-column with featured areas',
-            'general': 'responsive with optional sidebar'
+            "ecommerce": "full-width with sidebar on product pages",
+            "blog": "sidebar-right for posts, full-width for pages",
+            "portfolio": "full-width with grid layouts",
+            "magazine": "multi-column with featured areas",
+            "general": "responsive with optional sidebar",
         }
 
         return {
-            'primary_layout': layouts.get(domain, layouts['general']),
-            'container_width': '1200px',
-            'content_width': '800px',
-            'sidebar_width': '300px',
-            'grid_columns': '3' if domain == 'ecommerce' else '2',
-            'mobile_breakpoint': '768px',
-            'tablet_breakpoint': '992px',
-            'desktop_breakpoint': '1200px'
+            "primary_layout": layouts.get(domain, layouts["general"]),
+            "container_width": "1200px",
+            "content_width": "800px",
+            "sidebar_width": "300px",
+            "grid_columns": "3" if domain == "ecommerce" else "2",
+            "mobile_breakpoint": "768px",
+            "tablet_breakpoint": "992px",
+            "desktop_breakpoint": "1200px",
         }
 
     def _get_ux_elements(self, domain: str) -> list[str]:
         """Get UX element requirements."""
         base_elements = [
-            'Hero section with headline, subheadline, and CTA button',
-            'Clear navigation menu with dropdown support',
-            'Mobile-responsive hamburger menu',
-            'Breadcrumbs for navigation context',
-            'Search functionality',
-            'Social media links',
-            'Contact information in footer',
-            'Back to top button for long pages',
-            'Loading states and transitions',
-            'Form validation feedback'
+            "Hero section with headline, subheadline, and CTA button",
+            "Clear navigation menu with dropdown support",
+            "Mobile-responsive hamburger menu",
+            "Breadcrumbs for navigation context",
+            "Search functionality",
+            "Social media links",
+            "Contact information in footer",
+            "Back to top button for long pages",
+            "Loading states and transitions",
+            "Form validation feedback",
         ]
 
         domain_specific = {
-            'ecommerce': [
-                'Add to cart buttons',
-                'Product quick view',
-                'Shopping cart widget',
-                'Wishlist functionality',
-                'Product filtering and sorting',
-                'Customer reviews section',
-                'Related products carousel'
+            "ecommerce": [
+                "Add to cart buttons",
+                "Product quick view",
+                "Shopping cart widget",
+                "Wishlist functionality",
+                "Product filtering and sorting",
+                "Customer reviews section",
+                "Related products carousel",
             ],
-            'blog': [
-                'Post navigation (prev/next)',
-                'Category and tag filters',
-                'Author bio box',
-                'Social sharing buttons',
-                'Comment form',
-                'Related posts section',
-                'Newsletter signup'
+            "blog": [
+                "Post navigation (prev/next)",
+                "Category and tag filters",
+                "Author bio box",
+                "Social sharing buttons",
+                "Comment form",
+                "Related posts section",
+                "Newsletter signup",
             ],
-            'portfolio': [
-                'Project showcase grid',
-                'Lightbox/modal for images',
-                'Case study navigation',
-                'Contact form',
-                'Skills/services list',
-                'Client logo grid',
-                'Testimonials carousel'
-            ]
+            "portfolio": [
+                "Project showcase grid",
+                "Lightbox/modal for images",
+                "Case study navigation",
+                "Contact form",
+                "Skills/services list",
+                "Client logo grid",
+                "Testimonials carousel",
+            ],
         }
 
         return base_elements + domain_specific.get(domain, [])
@@ -461,56 +526,48 @@ class PromptOptimizer:
     def _get_woocommerce_requirements(self) -> dict[str, Any]:
         """Get WooCommerce-specific requirements."""
         return {
-            'theme_support': [
-                'woocommerce',
-                'wc-product-gallery-zoom',
-                'wc-product-gallery-lightbox',
-                'wc-product-gallery-slider'
+            "theme_support": [
+                "woocommerce",
+                "wc-product-gallery-zoom",
+                "wc-product-gallery-lightbox",
+                "wc-product-gallery-slider",
             ],
-            'templates': [
-                'archive-product.php',
-                'single-product.php',
-                'woocommerce.php'
+            "templates": ["archive-product.php", "single-product.php", "woocommerce.php"],
+            "hooks": [
+                "woocommerce_before_main_content",
+                "woocommerce_after_main_content",
+                "woocommerce_sidebar",
+                "woocommerce_before_shop_loop",
+                "woocommerce_after_shop_loop",
+                "woocommerce_before_single_product",
+                "woocommerce_after_single_product",
             ],
-            'hooks': [
-                'woocommerce_before_main_content',
-                'woocommerce_after_main_content',
-                'woocommerce_sidebar',
-                'woocommerce_before_shop_loop',
-                'woocommerce_after_shop_loop',
-                'woocommerce_before_single_product',
-                'woocommerce_after_single_product'
+            "css_selectors": [
+                ".woocommerce",
+                ".woocommerce-page",
+                ".products",
+                ".product",
+                ".cart",
+                ".checkout",
+                ".woocommerce-cart",
+                ".woocommerce-checkout",
             ],
-            'css_selectors': [
-                '.woocommerce',
-                '.woocommerce-page',
-                '.products',
-                '.product',
-                '.cart',
-                '.checkout',
-                '.woocommerce-cart',
-                '.woocommerce-checkout'
+            "features": [
+                "Product grid with responsive columns",
+                "Product image gallery",
+                "Add to cart button styling",
+                "Cart icon in header with item count",
+                "Product categories widget",
+                "Price display formatting",
+                "Sale badge styling",
+                "Product pagination",
+                "Breadcrumb navigation",
+                "Product search widget",
             ],
-            'features': [
-                'Product grid with responsive columns',
-                'Product image gallery',
-                'Add to cart button styling',
-                'Cart icon in header with item count',
-                'Product categories widget',
-                'Price display formatting',
-                'Sale badge styling',
-                'Product pagination',
-                'Breadcrumb navigation',
-                'Product search widget'
-            ]
         }
 
     def _rewrite_prompt(
-        self,
-        raw_prompt: str,
-        domain: str,
-        woocommerce: bool,
-        requirements: dict[str, Any]
+        self, raw_prompt: str, domain: str, woocommerce: bool, requirements: dict[str, Any]
     ) -> str:
         """
         Rewrite the user's prompt into a structured, technical instruction.
@@ -530,48 +587,48 @@ class PromptOptimizer:
 
         # Visual requirements
         sections.append("\n--- VISUAL DESIGN REQUIREMENTS ---")
-        for req in requirements['visual_requirements']:
+        for req in requirements["visual_requirements"]:
             sections.append(f"• {req}")
 
         # Template requirements
         sections.append("\n--- REQUIRED TEMPLATE FILES ---")
-        for template in requirements['template_requirements']:
+        for template in requirements["template_requirements"]:
             sections.append(f"• {template}")
 
         # CSS requirements
         sections.append("\n--- CSS ARCHITECTURE ---")
-        for css_req in requirements['css_requirements']:
+        for css_req in requirements["css_requirements"]:
             sections.append(f"• {css_req}")
 
         # Layout defaults
         sections.append("\n--- LAYOUT CONFIGURATION ---")
-        for key, value in requirements['layout_defaults'].items():
+        for key, value in requirements["layout_defaults"].items():
             sections.append(f"• {key}: {value}")
 
         # UX elements
         sections.append("\n--- USER EXPERIENCE ELEMENTS ---")
-        for ux_elem in requirements['ux_elements']:
+        for ux_elem in requirements["ux_elements"]:
             sections.append(f"• {ux_elem}")
 
         # WooCommerce specifics
         if woocommerce:
             sections.append("\n--- WOOCOMMERCE INTEGRATION ---")
-            wc_reqs = requirements['woocommerce']
+            wc_reqs = requirements["woocommerce"]
 
             sections.append("\nTheme Support:")
-            for support in wc_reqs['theme_support']:
+            for support in wc_reqs["theme_support"]:
                 sections.append(f"  • add_theme_support('{support}');")
 
             sections.append("\nRequired Templates:")
-            for template in wc_reqs['templates']:
+            for template in wc_reqs["templates"]:
                 sections.append(f"  • {template}")
 
             sections.append("\nWooCommerce Hooks to Use:")
-            for hook in wc_reqs['hooks']:
+            for hook in wc_reqs["hooks"]:
                 sections.append(f"  • {hook}")
 
             sections.append("\nFeatures to Implement:")
-            for feature in wc_reqs['features']:
+            for feature in wc_reqs["features"]:
                 sections.append(f"  • {feature}")
 
         # Code quality requirements - CRITICAL for preventing theme breakage
@@ -585,10 +642,14 @@ class PromptOptimizer:
         sections.append("  • ALWAYS ensure every opening brace { has a closing brace }")
         sections.append("  • NEVER insert invisible Unicode characters (zero-width spaces, etc.)")
         sections.append("  • NEVER include markdown code fences (```) in generated code")
-        sections.append("  • NEVER include explanatory text before code (start with <?php or <!DOCTYPE)")
+        sections.append(
+            "  • NEVER include explanatory text before code (start with <?php or <!DOCTYPE)"
+        )
         sections.append("")
         sections.append("🚨 CRITICAL: QUOTE ALL ARRAY VALUES - NO BAREWORDS ALLOWED")
-        sections.append("  PHP arrays REQUIRE all string values to be quoted. Unquoted barewords cause FATAL errors.")
+        sections.append(
+            "  PHP arrays REQUIRE all string values to be quoted. Unquoted barewords cause FATAL errors."
+        )
         sections.append("")
         sections.append("  WRONG (causes PHP fatal error):")
         sections.append("    'height' => auto,           // ❌ FATAL ERROR")
@@ -620,8 +681,10 @@ class PromptOptimizer:
         sections.append("")
         sections.append("REQUIRED WORDPRESS TEMPLATE TAGS:")
         sections.append("  • header.php MUST include wp_head() before </head>")
-        sections.append("  • header.php MUST include <!DOCTYPE html>, <meta charset>, <meta viewport>")
-        sections.append("  • header.php MUST open <main id=\"content\"> but NOT close it")
+        sections.append(
+            "  • header.php MUST include <!DOCTYPE html>, <meta charset>, <meta viewport>"
+        )
+        sections.append('  • header.php MUST open <main id="content"> but NOT close it')
         sections.append("  • footer.php MUST close </main> and include wp_footer() before </body>")
         sections.append("  • footer.php MUST include closing </body> and </html> tags")
         sections.append("  • All page templates MUST call get_header() and get_footer()")
@@ -633,7 +696,9 @@ class PromptOptimizer:
         sections.append("  • NEVER call wp_pagenavi() without function_exists() check")
         sections.append("")
         sections.append("REQUIRED WORDPRESS PRACTICES:")
-        sections.append("  • Use proper WordPress loop: if (have_posts()) : while (have_posts()) : the_post()")
+        sections.append(
+            "  • Use proper WordPress loop: if (have_posts()) : while (have_posts()) : the_post()"
+        )
         sections.append("  • Escape ALL output: esc_html(), esc_url(), esc_attr()")
         sections.append("  • Use get_template_part() ONLY for files that will exist")
         sections.append("  • Wrap plugin functions in function_exists() checks")
@@ -643,7 +708,9 @@ class PromptOptimizer:
         sections.append("  • Follow WordPress coding standards (spaces, braces, naming)")
         sections.append("")
         sections.append("TEMPLATE STRUCTURE:")
-        sections.append("  • Every template that displays content needs get_header() + get_footer()")
+        sections.append(
+            "  • Every template that displays content needs get_header() + get_footer()"
+        )
         sections.append("  • Templates MUST NOT have trailing commas in get_template_part() calls")
         sections.append("  • Use semantic HTML5: <header>, <main>, <footer>, <article>, <section>")
         sections.append("  • Add proper classes: .site-header, .site-main, .site-footer")
@@ -671,13 +738,13 @@ class PromptOptimizer:
         Get requirements for a specific blueprint.
         This is a convenience method for external modules.
         """
-        if blueprint_name == 'ecommerce_blueprint':
-            return self._generate_requirements('ecommerce', woocommerce=True)
-        elif blueprint_name == 'blog_blueprint':
-            return self._generate_requirements('blog', woocommerce=False)
-        elif blueprint_name == 'portfolio_blueprint':
-            return self._generate_requirements('portfolio', woocommerce=False)
-        elif blueprint_name == 'magazine_blueprint':
-            return self._generate_requirements('magazine', woocommerce=False)
+        if blueprint_name == "ecommerce_blueprint":
+            return self._generate_requirements("ecommerce", woocommerce=True)
+        elif blueprint_name == "blog_blueprint":
+            return self._generate_requirements("blog", woocommerce=False)
+        elif blueprint_name == "portfolio_blueprint":
+            return self._generate_requirements("portfolio", woocommerce=False)
+        elif blueprint_name == "magazine_blueprint":
+            return self._generate_requirements("magazine", woocommerce=False)
         else:
             return None

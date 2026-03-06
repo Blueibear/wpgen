@@ -19,78 +19,80 @@ class TemplateHierarchyValidator:
 
     # Core WordPress template files (always lowercase, .php extension)
     CORE_TEMPLATES = {
-        'index.php',
-        'front-page.php',
-        'home.php',
-        'single.php',
-        'page.php',
-        'archive.php',
-        'category.php',
-        'tag.php',
-        'taxonomy.php',
-        'author.php',
-        'date.php',
-        'search.php',
-        '404.php',
+        "index.php",
+        "front-page.php",
+        "home.php",
+        "single.php",
+        "page.php",
+        "archive.php",
+        "category.php",
+        "tag.php",
+        "taxonomy.php",
+        "author.php",
+        "date.php",
+        "search.php",
+        "404.php",
     }
 
     # Theme structure files (always lowercase, .php extension)
     STRUCTURE_FILES = {
-        'functions.php',
-        'header.php',
-        'footer.php',
-        'sidebar.php',
-        'comments.php',
+        "functions.php",
+        "header.php",
+        "footer.php",
+        "sidebar.php",
+        "comments.php",
     }
 
     # WooCommerce template files (only when WooCommerce is enabled)
     WOOCOMMERCE_TEMPLATES = {
-        'woocommerce.php',
-        'archive-product.php',
-        'single-product.php',
-        'taxonomy-product_cat.php',
-        'taxonomy-product_tag.php',
+        "woocommerce.php",
+        "archive-product.php",
+        "single-product.php",
+        "taxonomy-product_cat.php",
+        "taxonomy-product_tag.php",
     }
 
     # Valid page template pattern: page-{slug}.php
-    PAGE_TEMPLATE_PATTERN = re.compile(r'^page-[a-z0-9]+(-[a-z0-9]+)*\.php$')
+    PAGE_TEMPLATE_PATTERN = re.compile(r"^page-[a-z0-9]+(-[a-z0-9]+)*\.php$")
 
     # Valid custom taxonomy template pattern: taxonomy-{taxonomy}(-{term})?.php
-    TAXONOMY_TEMPLATE_PATTERN = re.compile(r'^taxonomy-[a-z0-9_]+(-[a-z0-9_-]+)?\.php$')
+    TAXONOMY_TEMPLATE_PATTERN = re.compile(r"^taxonomy-[a-z0-9_]+(-[a-z0-9_-]+)?\.php$")
 
     # Valid custom post type template patterns
     CUSTOM_POST_TYPE_PATTERNS = [
-        re.compile(r'^single-[a-z0-9_-]+\.php$'),  # single-{posttype}.php
-        re.compile(r'^archive-[a-z0-9_-]+\.php$'),  # archive-{posttype}.php (not product)
+        re.compile(r"^single-[a-z0-9_-]+\.php$"),  # single-{posttype}.php
+        re.compile(r"^archive-[a-z0-9_-]+\.php$"),  # archive-{posttype}.php (not product)
     ]
 
     # Forbidden template names (common mistakes that break WordPress)
     FORBIDDEN_NAMES = {
-        'Home.php',
-        'Account.php',
-        'Cart.php',
-        'Product.php',
-        'Category.php',
-        'About.php',
-        'Contact.php',
-        'Service.php',
-        'Services.php',
-        'Portfolio.php',
-        'Blog.php',
-        'Shop.php',
+        "Home.php",
+        "Account.php",
+        "Cart.php",
+        "Product.php",
+        "Category.php",
+        "About.php",
+        "Contact.php",
+        "Service.php",
+        "Services.php",
+        "Portfolio.php",
+        "Blog.php",
+        "Shop.php",
     }
 
     # Files that must always be CSS
     CSS_ONLY_FILES = {
-        'style.css',
-        'editor-style.css',
+        "style.css",
+        "editor-style.css",
     }
 
     def __init__(self):
         """Initialize the template hierarchy validator."""
         self._all_valid_core = self.CORE_TEMPLATES | self.STRUCTURE_FILES
 
-    def is_valid_template_name(self, filename: str, woocommerce_enabled: bool = False) -> tuple[bool, str]:
+    def is_valid_template_name(
+        self, filename: str, woocommerce_enabled: bool = False
+    ) -> tuple[bool, str]:
         """Check if a template filename is valid according to WordPress hierarchy.
 
         Args:
@@ -106,11 +108,17 @@ class TemplateHierarchyValidator:
         # Check for forbidden capitalized names
         if filename in self.FORBIDDEN_NAMES:
             lowercase_name = filename.lower()
-            return False, f"Invalid capitalized template name '{filename}'. Use '{lowercase_name}' or 'page-{lowercase_name[:-4]}.php' instead"
+            return (
+                False,
+                f"Invalid capitalized template name '{filename}'. Use '{lowercase_name}' or 'page-{lowercase_name[:-4]}.php' instead",
+            )
 
         # Check for uppercase letters in PHP templates
-        if filename.endswith('.php') and filename != filename.lower():
-            return False, f"Template names must be lowercase: '{filename}' should be '{filename.lower()}'"
+        if filename.endswith(".php") and filename != filename.lower():
+            return (
+                False,
+                f"Template names must be lowercase: '{filename}' should be '{filename.lower()}'",
+            )
 
         # Allow CSS files
         if filename in self.CSS_ONLY_FILES:
@@ -136,18 +144,24 @@ class TemplateHierarchyValidator:
         for pattern in self.CUSTOM_POST_TYPE_PATTERNS:
             if pattern.match(filename):
                 # Ensure it's not a WooCommerce template without WooCommerce enabled
-                if 'product' in filename and not woocommerce_enabled:
-                    return False, f"WooCommerce template '{filename}' requires WooCommerce support to be enabled"
+                if "product" in filename and not woocommerce_enabled:
+                    return (
+                        False,
+                        f"WooCommerce template '{filename}' requires WooCommerce support to be enabled",
+                    )
                 return True, ""
 
         # Check template-parts (in subdirectories)
-        if '/' in filename:
-            parts = filename.split('/')
-            if parts[0] == 'template-parts' and parts[-1].endswith('.php'):
+        if "/" in filename:
+            parts = filename.split("/")
+            if parts[0] == "template-parts" and parts[-1].endswith(".php"):
                 return True, ""
 
         # Not a recognized WordPress template
-        return False, f"Unrecognized WordPress template: '{filename}'. Must follow WordPress template hierarchy naming conventions."
+        return (
+            False,
+            f"Unrecognized WordPress template: '{filename}'. Must follow WordPress template hierarchy naming conventions.",
+        )
 
     def normalize_page_name(self, page_name: str) -> str:
         """Normalize a page name to WordPress-safe format.
@@ -171,16 +185,16 @@ class TemplateHierarchyValidator:
         normalized = page_name.lower()
 
         # Replace underscores and spaces with hyphens
-        normalized = re.sub(r'[_\s]+', '-', normalized)
+        normalized = re.sub(r"[_\s]+", "-", normalized)
 
         # Remove any characters that aren't alphanumeric or hyphens
-        normalized = re.sub(r'[^a-z0-9-]+', '', normalized)
+        normalized = re.sub(r"[^a-z0-9-]+", "", normalized)
 
         # Remove consecutive hyphens
-        normalized = re.sub(r'-+', '-', normalized)
+        normalized = re.sub(r"-+", "-", normalized)
 
         # Remove leading/trailing hyphens
-        normalized = normalized.strip('-')
+        normalized = normalized.strip("-")
 
         return normalized
 
@@ -203,7 +217,9 @@ class TemplateHierarchyValidator:
 
         return f"page-{normalized}.php"
 
-    def validate_theme_templates(self, theme_dir: Path, woocommerce_enabled: bool = False) -> list[str]:
+    def validate_theme_templates(
+        self, theme_dir: Path, woocommerce_enabled: bool = False
+    ) -> list[str]:
         """Validate all template files in a theme directory.
 
         Args:
@@ -240,9 +256,9 @@ class TemplateHierarchyValidator:
         for css_file in theme_dir.rglob("*.css"):
             relative_path = css_file.relative_to(theme_dir)
             # Only validate root-level CSS files
-            if relative_path.parent == Path('.'):
+            if relative_path.parent == Path("."):
                 filename = str(relative_path)
-                if filename not in self.CSS_ONLY_FILES and not filename.startswith('assets/'):
+                if filename not in self.CSS_ONLY_FILES and not filename.startswith("assets/"):
                     logger.warning(f"Unexpected CSS file in theme root: {filename}")
 
         return errors
@@ -258,7 +274,7 @@ class TemplateHierarchyValidator:
         """
         # Remove extension
         name_without_ext = invalid_name
-        if name_without_ext.endswith('.php'):
+        if name_without_ext.endswith(".php"):
             name_without_ext = name_without_ext[:-4]
 
         # Normalize the name

@@ -21,18 +21,11 @@ def mock_config():
             "openai": {
                 "model": "gpt-4-turbo",
                 "max_tokens": 4096,
-            }
+            },
         },
-        "output": {
-            "output_dir": "output"
-        },
-        "wordpress": {
-            "theme_prefix": "wpgen",
-            "author": "Test"
-        },
-        "validation": {
-            "strict": False
-        }
+        "output": {"output_dir": "output"},
+        "wordpress": {"theme_prefix": "wpgen", "author": "Test"},
+        "validation": {"strict": False},
     }
 
 
@@ -80,7 +73,9 @@ Version: 1.0.0
     return theme_dir
 
 
-def test_service_generate_theme_success(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path):
+def test_service_generate_theme_success(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path
+):
     """Test successful theme generation through service."""
     # Update config to use temp directory
     mock_config["output"]["output_dir"] = str(tmp_path)
@@ -93,11 +88,13 @@ def test_service_generate_theme_success(mock_config, mock_llm_provider, minimal_
     )
 
     # Mock the necessary components
-    with patch("wpgen.service.get_llm_provider") as mock_get_llm, \
-         patch("wpgen.service.PromptParser") as MockParser, \
-         patch("wpgen.service.WordPressGenerator") as MockGenerator, \
-         patch("wpgen.service.CodeValidator") as MockCodeValidator, \
-         patch("wpgen.service.ThemeValidator") as MockThemeValidator:
+    with (
+        patch("wpgen.service.get_llm_provider") as mock_get_llm,
+        patch("wpgen.service.PromptParser") as MockParser,
+        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.CodeValidator") as MockCodeValidator,
+        patch("wpgen.service.ThemeValidator") as MockThemeValidator,
+    ):
 
         # Setup mocks
         mock_get_llm.return_value = mock_llm_provider
@@ -139,7 +136,9 @@ def test_service_generate_theme_success(mock_config, mock_llm_provider, minimal_
         assert len(result.validation_warnings) == 0
 
 
-def test_service_generate_theme_validation_error_strict_mode(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path):
+def test_service_generate_theme_validation_error_strict_mode(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path
+):
     """Test theme generation fails in strict mode with validation warnings."""
     mock_config["output"]["output_dir"] = str(tmp_path)
 
@@ -150,11 +149,13 @@ def test_service_generate_theme_validation_error_strict_mode(mock_config, mock_l
         strict_validation=True,
     )
 
-    with patch("wpgen.service.get_llm_provider") as mock_get_llm, \
-         patch("wpgen.service.PromptParser") as MockParser, \
-         patch("wpgen.service.WordPressGenerator") as MockGenerator, \
-         patch("wpgen.service.CodeValidator") as MockCodeValidator, \
-         patch("wpgen.service.ThemeValidator") as MockThemeValidator:
+    with (
+        patch("wpgen.service.get_llm_provider") as mock_get_llm,
+        patch("wpgen.service.PromptParser") as MockParser,
+        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.CodeValidator") as MockCodeValidator,
+        patch("wpgen.service.ThemeValidator") as MockThemeValidator,
+    ):
 
         mock_get_llm.return_value = mock_llm_provider
 
@@ -192,7 +193,9 @@ def test_service_generate_theme_validation_error_strict_mode(mock_config, mock_l
         assert len(result.validation_warnings) > 0
 
 
-def test_service_generate_theme_with_github_push(mock_config, mock_llm_provider, minimal_theme_structure, tmp_path, monkeypatch):
+def test_service_generate_theme_with_github_push(
+    mock_config, mock_llm_provider, minimal_theme_structure, tmp_path, monkeypatch
+):
     """Test theme generation with GitHub push."""
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_test123")
     mock_config["output"]["output_dir"] = str(tmp_path)
@@ -206,12 +209,14 @@ def test_service_generate_theme_with_github_push(mock_config, mock_llm_provider,
         strict_validation=False,
     )
 
-    with patch("wpgen.service.get_llm_provider") as mock_get_llm, \
-         patch("wpgen.service.PromptParser") as MockParser, \
-         patch("wpgen.service.WordPressGenerator") as MockGenerator, \
-         patch("wpgen.service.GitHubIntegration") as MockGitHub, \
-         patch("wpgen.service.CodeValidator") as MockCodeValidator, \
-         patch("wpgen.service.ThemeValidator") as MockThemeValidator:
+    with (
+        patch("wpgen.service.get_llm_provider") as mock_get_llm,
+        patch("wpgen.service.PromptParser") as MockParser,
+        patch("wpgen.service.WordPressGenerator") as MockGenerator,
+        patch("wpgen.service.GitHubIntegration") as MockGitHub,
+        patch("wpgen.service.CodeValidator") as MockCodeValidator,
+        patch("wpgen.service.ThemeValidator") as MockThemeValidator,
+    ):
 
         mock_get_llm.return_value = mock_llm_provider
 

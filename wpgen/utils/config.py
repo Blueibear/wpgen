@@ -56,7 +56,8 @@ def get_llm_provider(config: dict[str, Any]) -> "BaseLLMProvider":
 
         # Default base URLs based on provider type
         default_base_url = (
-            "http://localhost:1234/v1" if provider_name == "local-lmstudio"
+            "http://localhost:1234/v1"
+            if provider_name == "local-lmstudio"
             else "http://localhost:11434/v1"
         )
 
@@ -65,22 +66,23 @@ def get_llm_provider(config: dict[str, Any]) -> "BaseLLMProvider":
         if not brains_model:
             # Default brains models
             brains_model = (
-                "Meta-Llama-3.1-8B-Instruct" if provider_name == "local-lmstudio"
+                "Meta-Llama-3.1-8B-Instruct"
+                if provider_name == "local-lmstudio"
                 else "llama3.1:8b-instruct"
             )
 
         brains_base_url = (
-            provider_config.get("brains_base_url") or
-            llm_config.get("brains_base_url") or
-            default_base_url
+            provider_config.get("brains_base_url")
+            or llm_config.get("brains_base_url")
+            or default_base_url
         )
 
         # --- Vision model configuration (image analysis) ---
         vision_model = provider_config.get("vision_model") or llm_config.get("vision_model")
         vision_base_url = (
-            provider_config.get("vision_base_url") or
-            llm_config.get("vision_base_url") or
-            brains_base_url  # Default to same server as brains
+            provider_config.get("vision_base_url")
+            or llm_config.get("vision_base_url")
+            or brains_base_url  # Default to same server as brains
         )
 
         # --- Global parameters ---

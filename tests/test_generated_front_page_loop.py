@@ -28,11 +28,7 @@ def test_front_page_has_required_elements(tmp_path):
         "description": "Test theme to verify front-page.php",
         "author": "Test",
         "version": "1.0.0",
-        "features": {
-            "responsive": True,
-            "dark_mode": False,
-            "woocommerce": False
-        }
+        "features": {"responsive": True, "dark_mode": False, "woocommerce": False},
     }
 
     # Generate theme in temp directory with mock LLM
@@ -51,30 +47,35 @@ def test_front_page_has_required_elements(tmp_path):
         # If it doesn't exist, check index.php instead
         if not front_page_file.exists():
             front_page_file = theme_dir / "index.php"
-            assert front_page_file.exists(), \
-                "Neither front-page.php nor index.php exists"
+            assert front_page_file.exists(), "Neither front-page.php nor index.php exists"
 
         # Read the file
-        content = front_page_file.read_text(encoding='utf-8', errors='ignore')
+        content = front_page_file.read_text(encoding="utf-8", errors="ignore")
 
         # Check for required elements
-        assert 'get_header()' in content or 'get_header(' in content, \
-            f"{front_page_file.name} must call get_header()"
+        assert (
+            "get_header()" in content or "get_header(" in content
+        ), f"{front_page_file.name} must call get_header()"
 
-        assert 'get_footer()' in content or 'get_footer(' in content, \
-            f"{front_page_file.name} must call get_footer()"
+        assert (
+            "get_footer()" in content or "get_footer(" in content
+        ), f"{front_page_file.name} must call get_footer()"
 
-        assert 'have_posts()' in content or 'have_posts(' in content, \
-            f"{front_page_file.name} must check have_posts()"
+        assert (
+            "have_posts()" in content or "have_posts(" in content
+        ), f"{front_page_file.name} must check have_posts()"
 
         # Check for at least one of these content output methods
-        has_content_output = any([
-            'the_content()' in content,
-            'the_content(' in content,
-            'get_the_content()' in content,
-        ])
-        assert has_content_output, \
-            f"{front_page_file.name} must output content using the_content() or similar"
+        has_content_output = any(
+            [
+                "the_content()" in content,
+                "the_content(" in content,
+                "get_the_content()" in content,
+            ]
+        )
+        assert (
+            has_content_output
+        ), f"{front_page_file.name} must output content using the_content() or similar"
 
     finally:
         # Cleanup
@@ -91,29 +92,34 @@ def test_fallback_front_page_structure():
     front_page_content = get_rich_fallback_front_page(theme_name)
 
     # Verify it's not empty
-    assert len(front_page_content) > 100, \
-        "Fallback front-page.php should not be empty"
+    assert len(front_page_content) > 100, "Fallback front-page.php should not be empty"
 
     # Check for required elements
-    assert 'get_header()' in front_page_content or 'get_header(' in front_page_content, \
-        "Fallback front-page.php must call get_header()"
+    assert (
+        "get_header()" in front_page_content or "get_header(" in front_page_content
+    ), "Fallback front-page.php must call get_header()"
 
-    assert 'get_footer()' in front_page_content or 'get_footer(' in front_page_content, \
-        "Fallback front-page.php must call get_footer()"
+    assert (
+        "get_footer()" in front_page_content or "get_footer(" in front_page_content
+    ), "Fallback front-page.php must call get_footer()"
 
-    assert 'have_posts()' in front_page_content or 'have_posts(' in front_page_content, \
-        "Fallback front-page.php should check have_posts() or display static content"
+    assert (
+        "have_posts()" in front_page_content or "have_posts(" in front_page_content
+    ), "Fallback front-page.php should check have_posts() or display static content"
 
     # Should start with <?php tag
-    assert front_page_content.strip().startswith('<?php'), \
-        "Fallback front-page.php should start with <?php"
+    assert front_page_content.strip().startswith(
+        "<?php"
+    ), "Fallback front-page.php should start with <?php"
 
     # Should not contain invalid PHP patterns
-    assert '<?= ; ?>' not in front_page_content, \
-        "Fallback front-page.php should not contain empty short echo"
+    assert (
+        "<?= ; ?>" not in front_page_content
+    ), "Fallback front-page.php should not contain empty short echo"
 
-    assert '<?php ; ?>' not in front_page_content, \
-        "Fallback front-page.php should not contain empty PHP block"
+    assert (
+        "<?php ; ?>" not in front_page_content
+    ), "Fallback front-page.php should not contain empty PHP block"
 
 
 def test_index_php_has_loop(tmp_path):
@@ -128,11 +134,7 @@ def test_index_php_has_loop(tmp_path):
         "description": "Test theme to verify index.php loop",
         "author": "Test",
         "version": "1.0.0",
-        "features": {
-            "responsive": True,
-            "dark_mode": False,
-            "woocommerce": False
-        }
+        "features": {"responsive": True, "dark_mode": False, "woocommerce": False},
     }
 
     # Generate theme in temp directory with mock LLM
@@ -149,27 +151,31 @@ def test_index_php_has_loop(tmp_path):
         assert index_file.exists(), "index.php must exist"
 
         # Read the file
-        content = index_file.read_text(encoding='utf-8', errors='ignore')
+        content = index_file.read_text(encoding="utf-8", errors="ignore")
 
         # Check for WordPress loop structure
-        assert 'have_posts()' in content, \
-            "index.php must check have_posts()"
+        assert "have_posts()" in content, "index.php must check have_posts()"
 
         # Should have either while loop or alternative content display
-        has_loop_structure = any([
-            'while' in content and 'the_post()' in content,
-            'the_content()' in content,
-            'the_excerpt()' in content,
-        ])
-        assert has_loop_structure, \
-            "index.php must have loop structure (while/the_post or content output)"
+        has_loop_structure = any(
+            [
+                "while" in content and "the_post()" in content,
+                "the_content()" in content,
+                "the_excerpt()" in content,
+            ]
+        )
+        assert (
+            has_loop_structure
+        ), "index.php must have loop structure (while/the_post or content output)"
 
         # Check for get_header and get_footer
-        assert 'get_header()' in content or 'get_header(' in content, \
-            "index.php must call get_header()"
+        assert (
+            "get_header()" in content or "get_header(" in content
+        ), "index.php must call get_header()"
 
-        assert 'get_footer()' in content or 'get_footer(' in content, \
-            "index.php must call get_footer()"
+        assert (
+            "get_footer()" in content or "get_footer(" in content
+        ), "index.php must call get_footer()"
 
     finally:
         # Cleanup
@@ -196,9 +202,12 @@ def test_no_parse_errors_in_front_page():
         results = check_invalid_php_patterns(theme_dir)
 
         # Should have no violations
-        assert results['valid'], \
-            f"Fallback front-page.php contains invalid PHP patterns:\n" + \
-            "\n".join(results['errors'])
+        assert results[
+            "valid"
+        ], f"Fallback front-page.php contains invalid PHP patterns:\n" + "\n".join(
+            results["errors"]
+        )
 
-        assert len(results['violations']) == 0, \
-            f"Found {len(results['violations'])} violation(s) in fallback front-page.php"
+        assert (
+            len(results["violations"]) == 0
+        ), f"Found {len(results['violations'])} violation(s) in fallback front-page.php"

@@ -111,9 +111,7 @@ class TestGitHubIntegration:
 
         # Mock repo endpoint
         mock_repo_response = Mock()
-        mock_repo_response.json.return_value = {
-            "html_url": "https://github.com/testuser/test-repo"
-        }
+        mock_repo_response.json.return_value = {"html_url": "https://github.com/testuser/test-repo"}
         mock_repo_response.raise_for_status = Mock()
 
         mock_get.side_effect = [mock_user_response, mock_repo_response]
@@ -239,8 +237,6 @@ class TestGitHubIntegration:
             }
 
             with pytest.raises(Exception) as exc_info:
-                github_integration.push_to_github(
-                    str(theme_directory), "test-repo", requirements
-                )
+                github_integration.push_to_github(str(theme_directory), "test-repo", requirements)
 
             assert "Push failed" in str(exc_info.value)

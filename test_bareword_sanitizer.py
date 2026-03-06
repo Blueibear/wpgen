@@ -12,6 +12,7 @@ from pathlib import Path
 # Add wpgen to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+
 # Import sanitize_barewords function directly by loading the module
 # This avoids triggering full wpgen initialization
 def load_sanitize_barewords():
@@ -20,29 +21,36 @@ def load_sanitize_barewords():
 
     # Create a minimal mock logger to avoid import issues
     class MockLogger:
-        def info(self, msg): print(f"INFO: {msg}")
-        def debug(self, msg): pass
-        def warning(self, msg): print(f"WARNING: {msg}")
-        def error(self, msg): print(f"ERROR: {msg}")
+        def info(self, msg):
+            print(f"INFO: {msg}")
+
+        def debug(self, msg):
+            pass
+
+        def warning(self, msg):
+            print(f"WARNING: {msg}")
+
+        def error(self, msg):
+            print(f"ERROR: {msg}")
 
     # Read and execute the sanitize_barewords function
     namespace = {
-        're': re,
-        'logger': MockLogger(),
+        "re": re,
+        "logger": MockLogger(),
     }
 
-    with open(php_validation_path, 'r') as f:
+    with open(php_validation_path, "r") as f:
         code = f.read()
 
     # Extract just the sanitize_barewords function
-    func_start = code.find('def sanitize_barewords(')
+    func_start = code.find("def sanitize_barewords(")
     if func_start == -1:
         raise RuntimeError("sanitize_barewords function not found")
 
     # Find the end of the function (next function or class definition)
-    func_end = code.find('\nclass ', func_start)
+    func_end = code.find("\nclass ", func_start)
     if func_end == -1:
-        func_end = code.find('\ndef ', func_start + 100)
+        func_end = code.find("\ndef ", func_start + 100)
     if func_end == -1:
         func_end = len(code)
 
@@ -51,7 +59,8 @@ def load_sanitize_barewords():
     # Execute the function definition
     exec(func_code, namespace)
 
-    return namespace['sanitize_barewords']
+    return namespace["sanitize_barewords"]
+
 
 sanitize_barewords = load_sanitize_barewords()
 
@@ -89,7 +98,7 @@ $config = array(
         print(f"  ✓ {fix}")
 
     # Verify fixes
-    expected_fixes = ['auto', 'center', 'cover', 'full', 'none']
+    expected_fixes = ["auto", "center", "cover", "full", "none"]
     for expected in expected_fixes:
         if f"'{expected}'" in sanitized:
             print(f"  ✅ '{expected}' is now quoted")
@@ -98,13 +107,13 @@ $config = array(
             return False
 
     # Verify true, 100, and WP_DEBUG remain unquoted
-    if 'true' in sanitized and "'true'" not in sanitized:
+    if "true" in sanitized and "'true'" not in sanitized:
         print("  ✅ 'true' remains unquoted (correct)")
     else:
         print("  ❌ 'true' was incorrectly quoted (FAIL)")
         return False
 
-    if 'WP_DEBUG' in sanitized and "'WP_DEBUG'" not in sanitized:
+    if "WP_DEBUG" in sanitized and "'WP_DEBUG'" not in sanitized:
         print("  ✅ 'WP_DEBUG' remains unquoted (correct)")
     else:
         print("  ❌ 'WP_DEBUG' was incorrectly quoted (FAIL)")
@@ -212,7 +221,7 @@ function theme_setup() {
         print("  ❌ 'auto' was NOT quoted (FAIL)")
         return False
 
-    if 'true' in sanitized and "'true'" not in sanitized:
+    if "true" in sanitized and "'true'" not in sanitized:
         print("  ✅ 'true' remains unquoted (correct)")
     else:
         print("  ❌ 'true' handling incorrect (FAIL)")

@@ -15,7 +15,6 @@ DEPRECATED_MODELS = {
     "gpt-4-vision-preview": "gpt-4-turbo",
     "gpt-3.5-turbo-1106": "gpt-3.5-turbo",
     "gpt-3.5-turbo-0125": "gpt-3.5-turbo",
-
     # Anthropic
     "claude-3-opus-20240229": "claude-3-5-sonnet-20241022",  # Suggest newer model
     "claude-3-sonnet-20240229": "claude-3-5-sonnet-20241022",
@@ -25,13 +24,15 @@ DEPRECATED_MODELS = {
 
 # Patterns that indicate a preview/deprecated model
 DEPRECATED_PATTERNS = [
-    (re.compile(r'-preview$', re.IGNORECASE), "This appears to be a preview model"),
-    (re.compile(r'-\d{4}(?:-\d{2}){0,2}$'), "This appears to be a dated snapshot model"),
-    (re.compile(r'turbo-\d{4}$'), "This appears to be an older turbo model"),
+    (re.compile(r"-preview$", re.IGNORECASE), "This appears to be a preview model"),
+    (re.compile(r"-\d{4}(?:-\d{2}){0,2}$"), "This appears to be a dated snapshot model"),
+    (re.compile(r"turbo-\d{4}$"), "This appears to be an older turbo model"),
 ]
 
 
-def check_model_deprecation(model_name: str, provider: str = "unknown") -> tuple[bool, str | None, str | None]:
+def check_model_deprecation(
+    model_name: str, provider: str = "unknown"
+) -> tuple[bool, str | None, str | None]:
     """Check if a model name appears deprecated and suggest replacement.
 
     Args:
@@ -58,9 +59,7 @@ def check_model_deprecation(model_name: str, provider: str = "unknown") -> tuple
         if pattern.search(model_name):
             # Try to suggest a stable equivalent
             suggested = _suggest_stable_model(model_name, provider)
-            warning = (
-                f"Model '{model_name}' may be deprecated. {reason}. "
-            )
+            warning = f"Model '{model_name}' may be deprecated. {reason}. "
             if suggested:
                 warning += f"Consider using '{suggested}' instead."
             else:
@@ -112,4 +111,6 @@ def log_model_deprecation_warning(model_name: str, provider: str = "unknown") ->
         logger.warning(f"⚠️  {warning}")
         if suggested:
             logger.info(f"💡 Suggested model: {suggested}")
-            logger.info(f"   You can override the model using the WPGEN_{provider.upper()}_MODEL environment variable")
+            logger.info(
+                f"   You can override the model using the WPGEN_{provider.upper()}_MODEL environment variable"
+            )

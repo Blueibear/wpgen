@@ -158,17 +158,18 @@ Renderer
 
 Validator
 - Fact: `wpgen/utils/theme_validator.py` validates theme directories and runs PHP syntax checks when PHP is available.
-- Fact: The validator currently defines only:
-  - required files: `style.css`, `index.php`
-  - recommended files: `functions.php`, `header.php`, `footer.php`
-- Fact: This is weaker than renderer enforcement.
-- Inference (Confidence: High, would raise it: a shared validation policy module elsewhere): Validator and renderer are currently misaligned on what constitutes a valid generated theme.
+- Fact: `wpgen/utils/theme_constants.py` is the single source of truth for required and recommended classic-theme files. Both the renderer and the validator import from this module.
+- Fact: Required classic-theme files (shared): `style.css`, `functions.php`, `header.php`, `footer.php`, `index.php`, `front-page.php`, `single.php`, `page.php`, `archive.php`, `search.php`, `404.php`.
+- Fact: Recommended classic-theme files (shared): `sidebar.php`, `comments.php`.
+- Fact: Validator and renderer are aligned on required-file expectations.
+  Evidence: `wpgen/utils/theme_constants.py`, `wpgen/templates/renderer.py`, `wpgen/utils/theme_validator.py`, `tests/test_theme_validator.py::TestRendererValidatorAlignment`
 
 ## Test and Lint
 
 CI enforced commands
 - Fact: Main CI currently runs:
   - `ruff check .`
+  - `black --check .`
   - `pytest -q -m "not integration" --disable-warnings`
   Evidence: `.github/workflows/ci.yml`
 
@@ -196,9 +197,10 @@ Ruff requirements
 
 Black requirements
 - Fact: Black is configured in `pyproject.toml`.
-- Fact: Black is not currently enforced in CI.
-  Evidence: `.github/workflows/ci.yml`
-- Rule: Target state is to enforce Black in dev dependencies and CI.
+- Fact: Black is enforced in CI via `black --check .`.
+- Fact: Black is pinned in `requirements-dev.txt` at `black==24.8.0`.
+  Evidence: `.github/workflows/ci.yml`, `requirements-dev.txt`
+- Rule: All changes must pass `black --check .`.
 
 Scoped commands for changed files
 - Fact:

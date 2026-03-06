@@ -15,9 +15,9 @@ def print_validation_summary_table(results: dict[str, Any], strict: bool = False
         results: Validation results dictionary
         strict: Whether strict mode was enabled
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"{'Validation Summary':<50} {'Status':<10} {'Count':<10}")
-    print("="*80)
+    print("=" * 80)
 
     # Files checked
     files_checked = results.get("files_checked", 0)
@@ -39,7 +39,9 @@ def print_validation_summary_table(results: dict[str, Any], strict: bool = False
     if warning_count > 0:
         color = Fore.RED if strict else Fore.YELLOW
         status = "ERROR" if strict else "WARNING"
-        print(f"{color}{'Files with warnings':<50} {status:<10} {warning_count:<10}{Style.RESET_ALL}")
+        print(
+            f"{color}{'Files with warnings':<50} {status:<10} {warning_count:<10}{Style.RESET_ALL}"
+        )
 
     # Errors
     errors = results.get("errors", [])
@@ -47,7 +49,7 @@ def print_validation_summary_table(results: dict[str, Any], strict: bool = False
     if error_count > 0:
         print(f"{Fore.RED}{'Total errors':<50} {'ERROR':<10} {error_count:<10}{Style.RESET_ALL}")
 
-    print("="*80)
+    print("=" * 80)
 
     # Overall status
     is_valid = results.get("valid", True)
@@ -84,9 +86,9 @@ def print_file_validation_table(file_results: list[dict[str, Any]]) -> None:
     Args:
         file_results: List of file validation result dictionaries
     """
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"{'File':<50} {'Status':<15} {'Issues':<15}")
-    print("="*80)
+    print("=" * 80)
 
     for result in file_results:
         file_name = result.get("file", "unknown")
@@ -109,4 +111,4 @@ def print_file_validation_table(file_results: list[dict[str, Any]]) -> None:
 
         print(f"{file_name:<50} {status:<24} {issues:<15}")
 
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")

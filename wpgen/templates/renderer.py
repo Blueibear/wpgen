@@ -47,6 +47,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ..schema import ThemeSpecification, get_default_theme_spec
 from ..utils.logger import get_logger
+from ..utils.theme_constants import REQUIRED_CLASSIC_THEME_FILES
 
 logger = get_logger(__name__)
 
@@ -102,21 +103,9 @@ CRITICAL_TEMPLATES = {
     "functions.php",
 }
 
-# Required WordPress template files that MUST be present in every theme
-# The generator must NEVER omit these files
-REQUIRED_TEMPLATES = {
-    "header.php",
-    "footer.php",
-    "front-page.php",
-    "index.php",
-    "page.php",
-    "single.php",
-    "archive.php",
-    "search.php",
-    "404.php",
-    "functions.php",
-    "style.css",
-}
+# Required WordPress template files that MUST be present in every theme.
+# Derived from the shared source of truth in theme_constants.py.
+REQUIRED_TEMPLATES = REQUIRED_CLASSIC_THEME_FILES
 
 
 def validate_php_file(file_path: Path) -> bool:
@@ -160,16 +149,16 @@ def sanitize_filename(filename: str) -> str:
     filename = filename.lower()
 
     # Replace spaces and underscores with hyphens
-    filename = re.sub(r'[\s_]+', '-', filename)
+    filename = re.sub(r"[\s_]+", "-", filename)
 
     # Remove any character that isn't alphanumeric, hyphen, or dot
-    filename = re.sub(r'[^a-z0-9\-.]', '', filename)
+    filename = re.sub(r"[^a-z0-9\-.]", "", filename)
 
     # Remove multiple consecutive hyphens
-    filename = re.sub(r'-+', '-', filename)
+    filename = re.sub(r"-+", "-", filename)
 
     # Remove leading/trailing hyphens
-    filename = filename.strip('-')
+    filename = filename.strip("-")
 
     return filename
 
@@ -187,16 +176,16 @@ def sanitize_theme_slug(slug: str) -> str:
     slug = slug.lower()
 
     # Replace spaces and underscores with hyphens
-    slug = re.sub(r'[\s_]+', '-', slug)
+    slug = re.sub(r"[\s_]+", "-", slug)
 
     # Remove any character that isn't alphanumeric or hyphen
-    slug = re.sub(r'[^a-z0-9-]', '', slug)
+    slug = re.sub(r"[^a-z0-9-]", "", slug)
 
     # Remove multiple consecutive hyphens
-    slug = re.sub(r'-+', '-', slug)
+    slug = re.sub(r"-+", "-", slug)
 
     # Remove leading/trailing hyphens
-    slug = slug.strip('-')
+    slug = slug.strip("-")
 
     # Ensure it's not empty
     if not slug:
@@ -345,22 +334,30 @@ class ThemeRenderer:
 
                 # HARD-LOCKED TEMPLATES: Always use fallback, never render from main template
                 if output_file in HARD_LOCKED_TEMPLATES:
-                    logger.info(f"Using hard-locked fallback template for {output_file} (never LLM-generated)")
+                    logger.info(
+                        f"Using hard-locked fallback template for {output_file} (never LLM-generated)"
+                    )
                     try:
                         fallback_template = self.fallback_env.get_template(template_file)
                         content = fallback_template.render(**context)
                         output_path.write_text(content, encoding="utf-8")
 
                         # Validate the hard-locked template
-                        if output_file.endswith('.php'):
+                        if output_file.endswith(".php"):
                             if not validate_php_file(output_path):
-                                logger.error(f"CRITICAL: Hard-locked fallback template {output_file} failed validation")
-                                raise ValueError(f"Hard-locked fallback template {output_file} is invalid")
+                                logger.error(
+                                    f"CRITICAL: Hard-locked fallback template {output_file} failed validation"
+                                )
+                                raise ValueError(
+                                    f"Hard-locked fallback template {output_file} is invalid"
+                                )
 
                         logger.debug(f"Rendered hard-locked: {output_file}")
                         continue
                     except Exception as e:
-                        logger.error(f"CRITICAL: Failed to render hard-locked template {output_file}: {e}")
+                        logger.error(
+                            f"CRITICAL: Failed to render hard-locked template {output_file}: {e}"
+                        )
                         raise ValueError(f"Hard-locked template {output_file} failed: {e}")
 
                 # REGULAR TEMPLATES: Try main template, fall back if validation fails
@@ -371,11 +368,13 @@ class ThemeRenderer:
                 logger.debug(f"Rendered: {output_file}")
 
                 # Validate ALL PHP files (not just critical ones)
-                if output_file.endswith('.php'):
+                if output_file.endswith(".php"):
                     is_valid = validate_php_file(output_path)
 
                     if not is_valid:
-                        logger.error(f"PHP validation failed for {output_file}, using fallback template")
+                        logger.error(
+                            f"PHP validation failed for {output_file}, using fallback template"
+                        )
 
                         # ALWAYS use fallback template, NEVER generate stubs
                         try:
@@ -385,15 +384,25 @@ class ThemeRenderer:
 
                             # Validate fallback - fallbacks MUST be valid
                             if validate_php_file(output_path):
-                                logger.info(f"Successfully used fallback template for {output_file}")
+                                logger.info(
+                                    f"Successfully used fallback template for {output_file}"
+                                )
                             else:
-                                logger.error(f"CRITICAL: Fallback template {output_file} failed validation")
-                                raise ValueError(f"Fallback template {output_file} is invalid - this should never happen")
+                                logger.error(
+                                    f"CRITICAL: Fallback template {output_file} failed validation"
+                                )
+                                raise ValueError(
+                                    f"Fallback template {output_file} is invalid - this should never happen"
+                                )
 
                         except Exception as fallback_error:
                             # If fallback fails, this is a critical error - no stubs allowed
-                            logger.error(f"CRITICAL: Failed to use fallback template for {output_file}: {fallback_error}")
-                            raise ValueError(f"Cannot generate valid {output_file} - fallback failed: {fallback_error}")
+                            logger.error(
+                                f"CRITICAL: Failed to use fallback template for {output_file}: {fallback_error}"
+                            )
+                            raise ValueError(
+                                f"Cannot generate valid {output_file} - fallback failed: {fallback_error}"
+                            )
 
             except Exception as e:
                 logger.error(f"Failed to render {output_file}: {e}")
@@ -467,7 +476,9 @@ class ThemeRenderer:
                     logger.error(error_msg)
                     raise ValueError(error_msg)
 
-        logger.info(f"Verified all {len(REQUIRED_TEMPLATES)} required templates are present and non-stub")
+        logger.info(
+            f"Verified all {len(REQUIRED_TEMPLATES)} required templates are present and non-stub"
+        )
 
     def _generate_additional_files(self, theme_dir: Path, spec: ThemeSpecification) -> None:
         """Generate additional theme files.
@@ -545,10 +556,7 @@ build/
         )
 
     def _generate_screenshot(
-        self,
-        theme_dir: Path,
-        spec: ThemeSpecification,
-        images: list[dict[str, Any]] | None
+        self, theme_dir: Path, spec: ThemeSpecification, images: list[dict[str, Any]] | None
     ) -> None:
         """Generate theme screenshot.
 
@@ -568,7 +576,7 @@ build/
                 from PIL import Image
 
                 img_data = images[0]
-                src = img_data.get('path') if isinstance(img_data, dict) else img_data
+                src = img_data.get("path") if isinstance(img_data, dict) else img_data
 
                 if src and Path(src).exists():
                     with Image.open(src) as im:
@@ -597,11 +605,13 @@ build/
                 if len(value) != 6:
                     return fallback
                 try:
-                    return tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                    return tuple(int(value[i : i + 2], 16) for i in (0, 2, 4))
                 except ValueError:
                     return fallback
 
-            def _blend(color: tuple[int, int, int], other: tuple[int, int, int], ratio: float) -> tuple[int, int, int]:
+            def _blend(
+                color: tuple[int, int, int], other: tuple[int, int, int], ratio: float
+            ) -> tuple[int, int, int]:
                 return tuple(int(color[i] * (1 - ratio) + other[i] * ratio) for i in range(3))
 
             primary = _hex_to_rgb(spec.colors.primary, (26, 26, 46))
@@ -641,7 +651,9 @@ build/
 
                 shadow = Image.new("RGBA", (card_width + 20, card_height + 20), (0, 0, 0, 0))
                 shadow_draw = ImageDraw.Draw(shadow)
-                shadow_draw.rectangle([10, 10, card_width + 10, card_height + 10], fill=shadow_color)
+                shadow_draw.rectangle(
+                    [10, 10, card_width + 10, card_height + 10], fill=shadow_color
+                )
                 shadow = shadow.filter(ImageFilter.GaussianBlur(radius=8))
                 img.paste(shadow, (card_x - 10, card_y - 6), shadow)
 
@@ -674,21 +686,36 @@ build/
             tw = bbox[2] - bbox[0]
             draw.text(((1200 - tw) // 2, 120), title, fill=surface, font=font_title)
 
-            subtitle = f"Powered by {spec.typography.font_headings} & {spec.typography.font_primary}"
+            subtitle = (
+                f"Powered by {spec.typography.font_headings} & {spec.typography.font_primary}"
+            )
             bbox2 = draw.textbbox((0, 0), subtitle, font=font_sub)
             sw = bbox2[2] - bbox2[0]
-            draw.text(((1200 - sw) // 2, 200), subtitle, fill=_blend(surface, text_secondary, 0.1), font=font_sub)
+            draw.text(
+                ((1200 - sw) // 2, 200),
+                subtitle,
+                fill=_blend(surface, text_secondary, 0.1),
+                font=font_sub,
+            )
 
             cta_width = 280
             cta_height = 64
             cta_x = (1200 - cta_width) // 2
             cta_y = 260
-            draw.rectangle([cta_x, cta_y, cta_x + cta_width, cta_y + cta_height], fill=accent, outline=_blend(accent, text_primary, 0.2), width=2)
+            draw.rectangle(
+                [cta_x, cta_y, cta_x + cta_width, cta_y + cta_height],
+                fill=accent,
+                outline=_blend(accent, text_primary, 0.2),
+                width=2,
+            )
 
             cta_text = spec.hero.cta_text or "Explore the Theme"
             bbox_cta = draw.textbbox((0, 0), cta_text, font=font_button)
             draw.text(
-                (cta_x + (cta_width - (bbox_cta[2] - bbox_cta[0])) // 2, cta_y + (cta_height - (bbox_cta[3] - bbox_cta[1])) // 2),
+                (
+                    cta_x + (cta_width - (bbox_cta[2] - bbox_cta[0])) // 2,
+                    cta_y + (cta_height - (bbox_cta[3] - bbox_cta[1])) // 2,
+                ),
                 cta_text,
                 fill=(255, 255, 255),
                 font=font_button,
@@ -699,7 +726,12 @@ build/
             secondary_cta_x = cta_x + cta_width + 24
             secondary_cta_y = cta_y + 5
             draw.rectangle(
-                [secondary_cta_x, secondary_cta_y, secondary_cta_x + secondary_cta_width, secondary_cta_y + secondary_cta_height],
+                [
+                    secondary_cta_x,
+                    secondary_cta_y,
+                    secondary_cta_x + secondary_cta_width,
+                    secondary_cta_y + secondary_cta_height,
+                ],
                 fill=surface,
                 outline=border,
                 width=2,
@@ -709,8 +741,10 @@ build/
             bbox_secondary = draw.textbbox((0, 0), secondary_text, font=font_small)
             draw.text(
                 (
-                    secondary_cta_x + (secondary_cta_width - (bbox_secondary[2] - bbox_secondary[0])) // 2,
-                    secondary_cta_y + (secondary_cta_height - (bbox_secondary[3] - bbox_secondary[1])) // 2,
+                    secondary_cta_x
+                    + (secondary_cta_width - (bbox_secondary[2] - bbox_secondary[0])) // 2,
+                    secondary_cta_y
+                    + (secondary_cta_height - (bbox_secondary[3] - bbox_secondary[1])) // 2,
                 ),
                 secondary_text,
                 fill=text_primary,
@@ -720,7 +754,10 @@ build/
             caption = "Designed palette • Hero • Cards • CTA"
             bbox_caption = draw.textbbox((0, 0), caption, font=font_small)
             draw.text(
-                ((1200 - (bbox_caption[2] - bbox_caption[0])) // 2, card_area_top + card_height + 40),
+                (
+                    (1200 - (bbox_caption[2] - bbox_caption[0])) // 2,
+                    card_area_top + card_height + 40,
+                ),
                 caption,
                 fill=text_secondary,
                 font=font_small,
@@ -738,7 +775,7 @@ build/
 def render_theme(
     spec: ThemeSpecification | dict[str, Any],
     output_dir: str | Path,
-    images: list[dict[str, Any]] | None = None
+    images: list[dict[str, Any]] | None = None,
 ) -> str:
     """Convenience function to render a theme.
 

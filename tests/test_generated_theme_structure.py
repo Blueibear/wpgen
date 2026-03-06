@@ -57,8 +57,13 @@ def test_functions_has_proper_structure():
     assert "add_action( 'wp_enqueue_scripts', 'test_theme_scripts' )" in functions_content
 
     # Check for editor assets function (new requirement)
-    assert "function test_theme_editor_assets()" in functions_content, "Missing editor assets function"
-    assert "add_action( 'enqueue_block_editor_assets', 'test_theme_editor_assets' )" in functions_content
+    assert (
+        "function test_theme_editor_assets()" in functions_content
+    ), "Missing editor assets function"
+    assert (
+        "add_action( 'enqueue_block_editor_assets', 'test_theme_editor_assets' )"
+        in functions_content
+    )
 
     # Check for theme support
     assert "add_theme_support( 'title-tag' )" in functions_content
@@ -71,10 +76,10 @@ def test_header_footer_are_paired():
     footer_content = get_fallback_footer_php("test-theme")
 
     # Header should open main tag
-    assert '<main' in header_content, "Header should open <main> tag"
+    assert "<main" in header_content, "Header should open <main> tag"
 
     # Footer should close main tag
-    assert '</main>' in footer_content, "Footer should close </main> tag"
+    assert "</main>" in footer_content, "Footer should close </main> tag"
 
 
 def test_functions_uses_safe_urls():
@@ -82,16 +87,22 @@ def test_functions_uses_safe_urls():
     functions_content = get_fallback_functions_php("test-theme")
 
     # Check that it uses WordPress helpers
-    assert "get_template_directory_uri()" in functions_content, "Should use get_template_directory_uri()"
+    assert (
+        "get_template_directory_uri()" in functions_content
+    ), "Should use get_template_directory_uri()"
     assert "get_stylesheet_uri()" in functions_content, "Should use get_stylesheet_uri()"
 
     # Check that it doesn't have hardcoded http:// URLs (except in comments)
-    lines = functions_content.split('\n')
-    code_lines = [line for line in lines if not line.strip().startswith('//') and not line.strip().startswith('*')]
-    code_content = '\n'.join(code_lines)
+    lines = functions_content.split("\n")
+    code_lines = [
+        line
+        for line in lines
+        if not line.strip().startswith("//") and not line.strip().startswith("*")
+    ]
+    code_content = "\n".join(code_lines)
 
     # Should not have http:// in actual code (only https:// is acceptable or WordPress helpers)
-    assert 'http://' not in code_content, "Should not have hardcoded http:// URLs in code"
+    assert "http://" not in code_content, "Should not have hardcoded http:// URLs in code"
 
 
 def test_enqueue_separation_documented():
@@ -100,9 +111,11 @@ def test_enqueue_separation_documented():
 
     # Check that editor assets function has documentation about the separation
     assert "enqueue_block_editor_assets" in functions_content, "Should reference editor hook"
-    assert ("Editor scripts" in functions_content or
-            "editor assets" in functions_content or
-            "block editor" in functions_content), "Should document editor assets"
+    assert (
+        "Editor scripts" in functions_content
+        or "editor assets" in functions_content
+        or "block editor" in functions_content
+    ), "Should document editor assets"
 
 
 if __name__ == "__main__":

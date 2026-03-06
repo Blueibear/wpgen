@@ -21,13 +21,13 @@ class DesignProfile:
     def to_dict(self) -> dict[str, Any]:
         """Convert profile to dictionary for template injection"""
         return {
-            'name': self.name,
-            'description': self.description,
-            'colors': self.colors,
-            'fonts': self.fonts,
-            'spacing': self.spacing,
-            'layout': self.layout,
-            'components': self.components,
+            "name": self.name,
+            "description": self.description,
+            "colors": self.colors,
+            "fonts": self.fonts,
+            "spacing": self.spacing,
+            "layout": self.layout,
+            "components": self.components,
         }
 
 
@@ -35,477 +35,475 @@ class DesignProfile:
 
 MODERN_STREETWEAR = DesignProfile(
     name="modern_streetwear",
-    description="Bold, edgy design with strong typography and urban aesthetics"
+    description="Bold, edgy design with strong typography and urban aesthetics",
 )
 MODERN_STREETWEAR.colors = {
-    'primary': '#000000',
-    'secondary': '#FF6B00',
-    'accent': '#00FF87',
-    'background': '#FFFFFF',
-    'surface': '#F5F5F5',
-    'text': '#1A1A1A',
-    'text_muted': '#666666',
-    'border': '#E0E0E0',
-    'hover': '#333333',
-    'success': '#00FF87',
-    'warning': '#FFD600',
-    'error': '#FF1744',
+    "primary": "#000000",
+    "secondary": "#FF6B00",
+    "accent": "#00FF87",
+    "background": "#FFFFFF",
+    "surface": "#F5F5F5",
+    "text": "#1A1A1A",
+    "text_muted": "#666666",
+    "border": "#E0E0E0",
+    "hover": "#333333",
+    "success": "#00FF87",
+    "warning": "#FFD600",
+    "error": "#FF1744",
 }
 MODERN_STREETWEAR.fonts = {
-    'primary': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Bebas Neue', 'Impact', sans-serif",
-    'mono': "'JetBrains Mono', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.25',  # Major third
+    "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Bebas Neue', 'Impact', sans-serif",
+    "mono": "'JetBrains Mono', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.25",  # Major third
 }
 MODERN_STREETWEAR.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '64px',
-    'xxl': '128px',
-    'container_max': '1200px',
-    'content_max': '800px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "64px",
+    "xxl": "128px",
+    "container_max": "1200px",
+    "content_max": "800px",
 }
 MODERN_STREETWEAR.layout = {
-    'density': 'spacious',
-    'header_height': '80px',
-    'hero_height': '600px',
-    'grid_columns': '3',
-    'gap': '32px',
-    'border_radius': '0px',  # Sharp edges
-    'border_width': '2px',
+    "density": "spacious",
+    "header_height": "80px",
+    "hero_height": "600px",
+    "grid_columns": "3",
+    "gap": "32px",
+    "border_radius": "0px",  # Sharp edges
+    "border_width": "2px",
 }
 MODERN_STREETWEAR.components = {
-    'buttons': {
-        'style': 'filled',
-        'size': 'large',
-        'uppercase': True,
-        'weight': 'bold',
-        'hover_effect': 'slide',
+    "buttons": {
+        "style": "filled",
+        "size": "large",
+        "uppercase": True,
+        "weight": "bold",
+        "hover_effect": "slide",
     },
-    'cards': {
-        'shadow': 'none',
-        'border': True,
-        'hover_lift': False,
+    "cards": {
+        "shadow": "none",
+        "border": True,
+        "hover_lift": False,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': True,
-        'weight': 'bold',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": True,
+        "weight": "bold",
     },
 }
 
 
 MINIMALIST = DesignProfile(
     name="minimalist",
-    description="Clean, minimal design with subtle accents and plenty of whitespace"
+    description="Clean, minimal design with subtle accents and plenty of whitespace",
 )
 MINIMALIST.colors = {
-    'primary': '#2D3748',
-    'secondary': '#718096',
-    'accent': '#4299E1',
-    'background': '#FFFFFF',
-    'surface': '#F7FAFC',
-    'text': '#2D3748',
-    'text_muted': '#A0AEC0',
-    'border': '#E2E8F0',
-    'hover': '#4A5568',
-    'success': '#48BB78',
-    'warning': '#ED8936',
-    'error': '#F56565',
+    "primary": "#2D3748",
+    "secondary": "#718096",
+    "accent": "#4299E1",
+    "background": "#FFFFFF",
+    "surface": "#F7FAFC",
+    "text": "#2D3748",
+    "text_muted": "#A0AEC0",
+    "border": "#E2E8F0",
+    "hover": "#4A5568",
+    "success": "#48BB78",
+    "warning": "#ED8936",
+    "error": "#F56565",
 }
 MINIMALIST.fonts = {
-    'primary': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'mono': "'IBM Plex Mono', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.2',  # Minor third
+    "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "mono": "'IBM Plex Mono', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.2",  # Minor third
 }
 MINIMALIST.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '64px',
-    'xxl': '96px',
-    'container_max': '1140px',
-    'content_max': '720px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "64px",
+    "xxl": "96px",
+    "container_max": "1140px",
+    "content_max": "720px",
 }
 MINIMALIST.layout = {
-    'density': 'airy',
-    'header_height': '72px',
-    'hero_height': '500px',
-    'grid_columns': '3',
-    'gap': '24px',
-    'border_radius': '8px',
-    'border_width': '1px',
+    "density": "airy",
+    "header_height": "72px",
+    "hero_height": "500px",
+    "grid_columns": "3",
+    "gap": "24px",
+    "border_radius": "8px",
+    "border_width": "1px",
 }
 MINIMALIST.components = {
-    'buttons': {
-        'style': 'outline',
-        'size': 'medium',
-        'uppercase': False,
-        'weight': 'medium',
-        'hover_effect': 'fade',
+    "buttons": {
+        "style": "outline",
+        "size": "medium",
+        "uppercase": False,
+        "weight": "medium",
+        "hover_effect": "fade",
     },
-    'cards': {
-        'shadow': 'subtle',
-        'border': False,
-        'hover_lift': True,
+    "cards": {
+        "shadow": "subtle",
+        "border": False,
+        "hover_lift": True,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': False,
-        'weight': 'medium',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": False,
+        "weight": "medium",
     },
 }
 
 
 CORPORATE = DesignProfile(
-    name="corporate",
-    description="Professional, trustworthy design for business and enterprise"
+    name="corporate", description="Professional, trustworthy design for business and enterprise"
 )
 CORPORATE.colors = {
-    'primary': '#1E3A8A',
-    'secondary': '#3B82F6',
-    'accent': '#60A5FA',
-    'background': '#FFFFFF',
-    'surface': '#F8FAFC',
-    'text': '#1E293B',
-    'text_muted': '#64748B',
-    'border': '#CBD5E1',
-    'hover': '#1E40AF',
-    'success': '#10B981',
-    'warning': '#F59E0B',
-    'error': '#EF4444',
+    "primary": "#1E3A8A",
+    "secondary": "#3B82F6",
+    "accent": "#60A5FA",
+    "background": "#FFFFFF",
+    "surface": "#F8FAFC",
+    "text": "#1E293B",
+    "text_muted": "#64748B",
+    "border": "#CBD5E1",
+    "hover": "#1E40AF",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
 }
 CORPORATE.fonts = {
-    'primary': "'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Montserrat', 'Helvetica Neue', sans-serif",
-    'mono': "'Roboto Mono', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.25',
+    "primary": "'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Montserrat', 'Helvetica Neue', sans-serif",
+    "mono": "'Roboto Mono', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.25",
 }
 CORPORATE.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '24px',
-    'xl': '48px',
-    'xxl': '72px',
-    'container_max': '1280px',
-    'content_max': '900px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px",
+    "xl": "48px",
+    "xxl": "72px",
+    "container_max": "1280px",
+    "content_max": "900px",
 }
 CORPORATE.layout = {
-    'density': 'comfortable',
-    'header_height': '88px',
-    'hero_height': '480px',
-    'grid_columns': '4',
-    'gap': '24px',
-    'border_radius': '4px',
-    'border_width': '1px',
+    "density": "comfortable",
+    "header_height": "88px",
+    "hero_height": "480px",
+    "grid_columns": "4",
+    "gap": "24px",
+    "border_radius": "4px",
+    "border_width": "1px",
 }
 CORPORATE.components = {
-    'buttons': {
-        'style': 'filled',
-        'size': 'medium',
-        'uppercase': False,
-        'weight': 'semibold',
-        'hover_effect': 'darken',
+    "buttons": {
+        "style": "filled",
+        "size": "medium",
+        "uppercase": False,
+        "weight": "semibold",
+        "hover_effect": "darken",
     },
-    'cards': {
-        'shadow': 'medium',
-        'border': True,
-        'hover_lift': False,
+    "cards": {
+        "shadow": "medium",
+        "border": True,
+        "hover_lift": False,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': False,
-        'weight': 'semibold',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": False,
+        "weight": "semibold",
     },
 }
 
 
 VIBRANT_BOLD = DesignProfile(
     name="vibrant_bold",
-    description="Energetic, colorful design with bold contrasts and dynamic elements"
+    description="Energetic, colorful design with bold contrasts and dynamic elements",
 )
 VIBRANT_BOLD.colors = {
-    'primary': '#8B5CF6',
-    'secondary': '#EC4899',
-    'accent': '#F59E0B',
-    'background': '#FFFFFF',
-    'surface': '#FAF5FF',
-    'text': '#1F2937',
-    'text_muted': '#6B7280',
-    'border': '#E5E7EB',
-    'hover': '#7C3AED',
-    'success': '#10B981',
-    'warning': '#F59E0B',
-    'error': '#EF4444',
+    "primary": "#8B5CF6",
+    "secondary": "#EC4899",
+    "accent": "#F59E0B",
+    "background": "#FFFFFF",
+    "surface": "#FAF5FF",
+    "text": "#1F2937",
+    "text_muted": "#6B7280",
+    "border": "#E5E7EB",
+    "hover": "#7C3AED",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
 }
 VIBRANT_BOLD.fonts = {
-    'primary': "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'mono': "'Fira Code', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.333',  # Perfect fourth
+    "primary": "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "mono": "'Fira Code', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.333",  # Perfect fourth
 }
 VIBRANT_BOLD.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '64px',
-    'xxl': '96px',
-    'container_max': '1200px',
-    'content_max': '800px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "64px",
+    "xxl": "96px",
+    "container_max": "1200px",
+    "content_max": "800px",
 }
 VIBRANT_BOLD.layout = {
-    'density': 'compact',
-    'header_height': '76px',
-    'hero_height': '550px',
-    'grid_columns': '3',
-    'gap': '28px',
-    'border_radius': '12px',
-    'border_width': '2px',
+    "density": "compact",
+    "header_height": "76px",
+    "hero_height": "550px",
+    "grid_columns": "3",
+    "gap": "28px",
+    "border_radius": "12px",
+    "border_width": "2px",
 }
 VIBRANT_BOLD.components = {
-    'buttons': {
-        'style': 'gradient',
-        'size': 'large',
-        'uppercase': False,
-        'weight': 'bold',
-        'hover_effect': 'scale',
+    "buttons": {
+        "style": "gradient",
+        "size": "large",
+        "uppercase": False,
+        "weight": "bold",
+        "hover_effect": "scale",
     },
-    'cards': {
-        'shadow': 'bold',
-        'border': False,
-        'hover_lift': True,
+    "cards": {
+        "shadow": "bold",
+        "border": False,
+        "hover_lift": True,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': False,
-        'weight': 'bold',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": False,
+        "weight": "bold",
     },
 }
 
 
 EARTHY_NATURAL = DesignProfile(
-    name="earthy_natural",
-    description="Warm, organic design inspired by nature with earthy tones"
+    name="earthy_natural", description="Warm, organic design inspired by nature with earthy tones"
 )
 EARTHY_NATURAL.colors = {
-    'primary': '#78350F',
-    'secondary': '#92400E',
-    'accent': '#059669',
-    'background': '#FFFBEB',
-    'surface': '#FEF3C7',
-    'text': '#292524',
-    'text_muted': '#78716C',
-    'border': '#D6D3D1',
-    'hover': '#92400E',
-    'success': '#059669',
-    'warning': '#D97706',
-    'error': '#DC2626',
+    "primary": "#78350F",
+    "secondary": "#92400E",
+    "accent": "#059669",
+    "background": "#FFFBEB",
+    "surface": "#FEF3C7",
+    "text": "#292524",
+    "text_muted": "#78716C",
+    "border": "#D6D3D1",
+    "hover": "#92400E",
+    "success": "#059669",
+    "warning": "#D97706",
+    "error": "#DC2626",
 }
 EARTHY_NATURAL.fonts = {
-    'primary': "'Lora', Georgia, serif",
-    'headings': "'Merriweather', Georgia, serif",
-    'mono': "'Source Code Pro', 'Courier New', monospace",
-    'base_size': '17px',
-    'scale': '1.2',
+    "primary": "'Lora', Georgia, serif",
+    "headings": "'Merriweather', Georgia, serif",
+    "mono": "'Source Code Pro', 'Courier New', monospace",
+    "base_size": "17px",
+    "scale": "1.2",
 }
 EARTHY_NATURAL.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '56px',
-    'xxl': '88px',
-    'container_max': '1100px',
-    'content_max': '750px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "56px",
+    "xxl": "88px",
+    "container_max": "1100px",
+    "content_max": "750px",
 }
 EARTHY_NATURAL.layout = {
-    'density': 'relaxed',
-    'header_height': '80px',
-    'hero_height': '520px',
-    'grid_columns': '3',
-    'gap': '32px',
-    'border_radius': '16px',
-    'border_width': '1px',
+    "density": "relaxed",
+    "header_height": "80px",
+    "hero_height": "520px",
+    "grid_columns": "3",
+    "gap": "32px",
+    "border_radius": "16px",
+    "border_width": "1px",
 }
 EARTHY_NATURAL.components = {
-    'buttons': {
-        'style': 'filled',
-        'size': 'medium',
-        'uppercase': False,
-        'weight': 'medium',
-        'hover_effect': 'fade',
+    "buttons": {
+        "style": "filled",
+        "size": "medium",
+        "uppercase": False,
+        "weight": "medium",
+        "hover_effect": "fade",
     },
-    'cards': {
-        'shadow': 'soft',
-        'border': True,
-        'hover_lift': False,
+    "cards": {
+        "shadow": "soft",
+        "border": True,
+        "hover_lift": False,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': False,
-        'weight': 'medium',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": False,
+        "weight": "medium",
     },
 }
 
 
 BOLD_NEON = DesignProfile(
     name="bold_neon",
-    description="High-energy design with neon accents, dark backgrounds, and electric vibes"
+    description="High-energy design with neon accents, dark backgrounds, and electric vibes",
 )
 BOLD_NEON.colors = {
-    'primary': '#0A0E27',
-    'secondary': '#1A1F3A',
-    'accent': '#00FFF0',
-    'background': '#0D1117',
-    'surface': '#161B22',
-    'text': '#FFFFFF',
-    'text_muted': '#8B949E',
-    'border': '#30363D',
-    'hover': '#00FFF0',
-    'success': '#39FF14',
-    'warning': '#FFD700',
-    'error': '#FF006E',
+    "primary": "#0A0E27",
+    "secondary": "#1A1F3A",
+    "accent": "#00FFF0",
+    "background": "#0D1117",
+    "surface": "#161B22",
+    "text": "#FFFFFF",
+    "text_muted": "#8B949E",
+    "border": "#30363D",
+    "hover": "#00FFF0",
+    "success": "#39FF14",
+    "warning": "#FFD700",
+    "error": "#FF006E",
 }
 BOLD_NEON.fonts = {
-    'primary': "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Orbitron', 'Impact', sans-serif",
-    'mono': "'Share Tech Mono', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.4',  # Augmented fourth
+    "primary": "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Orbitron', 'Impact', sans-serif",
+    "mono": "'Share Tech Mono', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.4",  # Augmented fourth
 }
 BOLD_NEON.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '64px',
-    'xxl': '128px',
-    'container_max': '1400px',
-    'content_max': '900px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "64px",
+    "xxl": "128px",
+    "container_max": "1400px",
+    "content_max": "900px",
 }
 BOLD_NEON.layout = {
-    'density': 'spacious',
-    'header_height': '90px',
-    'hero_height': '700px',
-    'grid_columns': '3',
-    'gap': '40px',
-    'border_radius': '8px',
-    'border_width': '2px',
+    "density": "spacious",
+    "header_height": "90px",
+    "hero_height": "700px",
+    "grid_columns": "3",
+    "gap": "40px",
+    "border_radius": "8px",
+    "border_width": "2px",
 }
 BOLD_NEON.components = {
-    'buttons': {
-        'style': 'neon',
-        'size': 'large',
-        'uppercase': True,
-        'weight': 'bold',
-        'hover_effect': 'glow',
+    "buttons": {
+        "style": "neon",
+        "size": "large",
+        "uppercase": True,
+        "weight": "bold",
+        "hover_effect": "glow",
     },
-    'cards': {
-        'shadow': 'neon-glow',
-        'border': True,
-        'hover_lift': True,
+    "cards": {
+        "shadow": "neon-glow",
+        "border": True,
+        "hover_lift": True,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': True,
-        'weight': 'bold',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": True,
+        "weight": "bold",
     },
 }
 
 
 DARK_MODE = DesignProfile(
     name="dark_mode",
-    description="Sophisticated dark theme with subtle accents and excellent readability"
+    description="Sophisticated dark theme with subtle accents and excellent readability",
 )
 DARK_MODE.colors = {
-    'primary': '#3B82F6',
-    'secondary': '#8B5CF6',
-    'accent': '#06B6D4',
-    'background': '#0F172A',
-    'surface': '#1E293B',
-    'text': '#F1F5F9',
-    'text_muted': '#94A3B8',
-    'border': '#334155',
-    'hover': '#60A5FA',
-    'success': '#10B981',
-    'warning': '#F59E0B',
-    'error': '#EF4444',
+    "primary": "#3B82F6",
+    "secondary": "#8B5CF6",
+    "accent": "#06B6D4",
+    "background": "#0F172A",
+    "surface": "#1E293B",
+    "text": "#F1F5F9",
+    "text_muted": "#94A3B8",
+    "border": "#334155",
+    "hover": "#60A5FA",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
 }
 DARK_MODE.fonts = {
-    'primary': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'headings': "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    'mono': "'JetBrains Mono', 'Courier New', monospace",
-    'base_size': '16px',
-    'scale': '1.25',
+    "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "headings": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "mono": "'JetBrains Mono', 'Courier New', monospace",
+    "base_size": "16px",
+    "scale": "1.25",
 }
 DARK_MODE.spacing = {
-    'unit': '8px',
-    'xs': '4px',
-    'sm': '8px',
-    'md': '16px',
-    'lg': '32px',
-    'xl': '64px',
-    'xxl': '96px',
-    'container_max': '1200px',
-    'content_max': '800px',
+    "unit": "8px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "32px",
+    "xl": "64px",
+    "xxl": "96px",
+    "container_max": "1200px",
+    "content_max": "800px",
 }
 DARK_MODE.layout = {
-    'density': 'comfortable',
-    'header_height': '80px',
-    'hero_height': '600px',
-    'grid_columns': '3',
-    'gap': '32px',
-    'border_radius': '12px',
-    'border_width': '1px',
+    "density": "comfortable",
+    "header_height": "80px",
+    "hero_height": "600px",
+    "grid_columns": "3",
+    "gap": "32px",
+    "border_radius": "12px",
+    "border_width": "1px",
 }
 DARK_MODE.components = {
-    'buttons': {
-        'style': 'filled',
-        'size': 'medium',
-        'uppercase': False,
-        'weight': 'semibold',
-        'hover_effect': 'brighten',
+    "buttons": {
+        "style": "filled",
+        "size": "medium",
+        "uppercase": False,
+        "weight": "semibold",
+        "hover_effect": "brighten",
     },
-    'cards': {
-        'shadow': 'elevated',
-        'border': True,
-        'hover_lift': True,
+    "cards": {
+        "shadow": "elevated",
+        "border": True,
+        "hover_lift": True,
     },
-    'navigation': {
-        'style': 'horizontal',
-        'uppercase': False,
-        'weight': 'medium',
+    "navigation": {
+        "style": "horizontal",
+        "uppercase": False,
+        "weight": "medium",
     },
 }
 
 
 # Profile Registry
 DESIGN_PROFILES = {
-    'modern_streetwear': MODERN_STREETWEAR,
-    'streetwear_modern': MODERN_STREETWEAR,  # Alias for consistency
-    'minimalist': MINIMALIST,
-    'minimal_clean': MINIMALIST,  # Alias
-    'corporate': CORPORATE,
-    'vibrant_bold': VIBRANT_BOLD,
-    'earthy_natural': EARTHY_NATURAL,
-    'bold_neon': BOLD_NEON,
-    'dark_mode': DARK_MODE,
+    "modern_streetwear": MODERN_STREETWEAR,
+    "streetwear_modern": MODERN_STREETWEAR,  # Alias for consistency
+    "minimalist": MINIMALIST,
+    "minimal_clean": MINIMALIST,  # Alias
+    "corporate": CORPORATE,
+    "vibrant_bold": VIBRANT_BOLD,
+    "earthy_natural": EARTHY_NATURAL,
+    "bold_neon": BOLD_NEON,
+    "dark_mode": DARK_MODE,
 }
 
 
@@ -539,7 +537,7 @@ def profile_to_css_variables(profile: DesignProfile) -> str:
     Returns:
         CSS string with custom properties
     """
-    css_vars = [':root {']
+    css_vars = [":root {"]
 
     # Colors
     for key, value in profile.colors.items():
@@ -559,8 +557,8 @@ def profile_to_css_variables(profile: DesignProfile) -> str:
     for key, value in profile.layout.items():
         css_vars.append(f'  --layout-{key.replace("_", "-")}: {value};')
 
-    css_vars.append('}')
-    return '\n'.join(css_vars)
+    css_vars.append("}")
+    return "\n".join(css_vars)
 
 
 def profile_to_prompt_context(profile: DesignProfile) -> str:

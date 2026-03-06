@@ -25,15 +25,15 @@ Content here
 """
 
 print("Testing validation logic...")
-print("="*60)
+print("=" * 60)
 
 # Test header validation
 print("\n1. Testing header validation:")
 checks = [
-    ("site-header", 'site-header' in test_html),
-    ("site-branding", 'site-branding' in test_html),
-    ("the_custom_logo()", 'the_custom_logo()' in test_html),
-    ("main-navigation", 'main-navigation' in test_html),
+    ("site-header", "site-header" in test_html),
+    ("site-branding", "site-branding" in test_html),
+    ("the_custom_logo()", "the_custom_logo()" in test_html),
+    ("main-navigation", "main-navigation" in test_html),
 ]
 
 all_passed = True
@@ -46,8 +46,8 @@ for check_name, result in checks:
 # Test footer validation
 print("\n2. Testing footer validation:")
 checks = [
-    ("site-footer", 'site-footer' in test_html),
-    ("</main>", '</main>' in test_html),
+    ("site-footer", "site-footer" in test_html),
+    ("</main>", "</main>" in test_html),
 ]
 
 for check_name, result in checks:
@@ -73,10 +73,10 @@ test_css = """.site-header {
 
 print("\n3. Testing CSS validation:")
 checks = [
-    (".site-header", '.site-header' in test_css),
-    (".site-branding img", '.site-branding img' in test_css),
-    (".custom-logo-link img", '.custom-logo-link img' in test_css),
-    (".site-footer", '.site-footer' in test_css),
+    (".site-header", ".site-header" in test_css),
+    (".site-branding img", ".site-branding img" in test_css),
+    (".custom-logo-link img", ".custom-logo-link img" in test_css),
+    (".site-footer", ".site-footer" in test_css),
 ]
 
 for check_name, result in checks:
@@ -85,7 +85,7 @@ for check_name, result in checks:
     if not result:
         all_passed = False
 
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 if all_passed:
     print("✅ ALL VALIDATION CHECKS PASSED!")
     print("\nThe validation logic correctly detects:")
@@ -94,4 +94,4 @@ if all_passed:
 else:
     print("❌ SOME CHECKS FAILED!")
 
-print("="*60)
+print("=" * 60)

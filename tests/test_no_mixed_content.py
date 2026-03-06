@@ -17,28 +17,20 @@ def test_scan_mixed_content_utility():
 
         # Create a file with insecure HTTP URL
         insecure_file = theme_dir / "insecure.php"
-        insecure_file.write_text(
-            '<?php\n'
-            'echo "Visit http://example.com";\n'
-            '?>'
-        )
+        insecure_file.write_text("<?php\n" 'echo "Visit http://example.com";\n' "?>")
 
         # Create a file with secure HTTPS URL
         secure_file = theme_dir / "secure.php"
-        secure_file.write_text(
-            '<?php\n'
-            'echo "Visit https://example.com";\n'
-            '?>'
-        )
+        secure_file.write_text("<?php\n" 'echo "Visit https://example.com";\n' "?>")
 
         # Scan for mixed content
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should find the insecure URL
-        assert not results['valid'], "Should detect insecure HTTP URL"
-        assert len(results['http_urls']) == 1, "Should find exactly one HTTP URL"
-        assert results['http_urls'][0]['file'] == 'insecure.php'
-        assert 'http://example.com' in results['http_urls'][0]['url']
+        assert not results["valid"], "Should detect insecure HTTP URL"
+        assert len(results["http_urls"]) == 1, "Should find exactly one HTTP URL"
+        assert results["http_urls"][0]["file"] == "insecure.php"
+        assert "http://example.com" in results["http_urls"][0]["url"]
 
 
 def test_scan_allows_localhost():
@@ -49,18 +41,14 @@ def test_scan_allows_localhost():
 
         # Create a file with localhost URL (allowed for development)
         localhost_file = theme_dir / "dev.php"
-        localhost_file.write_text(
-            '<?php\n'
-            'echo "Dev server: http://localhost:3000";\n'
-            '?>'
-        )
+        localhost_file.write_text("<?php\n" 'echo "Dev server: http://localhost:3000";\n' "?>")
 
         # Scan for mixed content
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should NOT flag localhost URLs
-        assert results['valid'], "Should allow localhost URLs"
-        assert len(results['http_urls']) == 0, "Localhost should not be flagged"
+        assert results["valid"], "Should allow localhost URLs"
+        assert len(results["http_urls"]) == 0, "Localhost should not be flagged"
 
 
 def test_scan_allows_standard_schemas():
@@ -72,20 +60,20 @@ def test_scan_allows_standard_schemas():
         # Create header with standard schemas
         header_file = theme_dir / "header.php"
         header_file.write_text(
-            '<!DOCTYPE html>\n'
-            '<html>\n'
-            '<head>\n'
+            "<!DOCTYPE html>\n"
+            "<html>\n"
+            "<head>\n"
             '  <link rel="profile" href="http://gmpg.org/xfn/11">\n'
-            '</head>\n'
-            '</html>'
+            "</head>\n"
+            "</html>"
         )
 
         # Scan for mixed content
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should NOT flag standard schemas
-        assert results['valid'], "Should allow standard HTTP schemas"
-        assert len(results['http_urls']) == 0, "Standard schemas should not be flagged"
+        assert results["valid"], "Should allow standard HTTP schemas"
+        assert len(results["http_urls"]) == 0, "Standard schemas should not be flagged"
 
 
 def test_fallback_templates_have_no_mixed_content():
@@ -102,12 +90,12 @@ def test_fallback_templates_have_no_mixed_content():
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should pass (no insecure HTTP URLs)
-        if not results['valid']:
+        if not results["valid"]:
             print("\nFound mixed-content issues:")
-            for item in results['http_urls']:
+            for item in results["http_urls"]:
                 print(f"  {item['file']}:{item['line']} → {item['url']}")
 
-        assert results['valid'], "Fallback templates should not have mixed-content issues"
+        assert results["valid"], "Fallback templates should not have mixed-content issues"
 
 
 def test_mixed_content_scanner_checks_multiple_extensions():
@@ -118,10 +106,10 @@ def test_mixed_content_scanner_checks_multiple_extensions():
 
         # Create files with different extensions, all with HTTP URLs
         test_files = {
-            'test.php': '<?php echo "http://insecure.com"; ?>',
-            'test.js': 'const url = "http://insecure.com";',
-            'test.css': '/* background: url(http://insecure.com/bg.png); */',
-            'test.json': '{"url": "http://insecure.com"}',
+            "test.php": '<?php echo "http://insecure.com"; ?>',
+            "test.js": 'const url = "http://insecure.com";',
+            "test.css": "/* background: url(http://insecure.com/bg.png); */",
+            "test.json": '{"url": "http://insecure.com"}',
         }
 
         for filename, content in test_files.items():
@@ -131,9 +119,11 @@ def test_mixed_content_scanner_checks_multiple_extensions():
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should find HTTP URLs in all file types
-        assert not results['valid'], "Should detect HTTP URLs in multiple file types"
+        assert not results["valid"], "Should detect HTTP URLs in multiple file types"
         # We should find at least 3 (CSS comment might be skipped depending on regex)
-        assert len(results['http_urls']) >= 3, f"Should find HTTP URLs in multiple files, found {len(results['http_urls'])}"
+        assert (
+            len(results["http_urls"]) >= 3
+        ), f"Should find HTTP URLs in multiple files, found {len(results['http_urls'])}"
 
 
 def test_scan_provides_helpful_error_messages():
@@ -149,12 +139,12 @@ def test_scan_provides_helpful_error_messages():
         results = scan_mixed_content(theme_dir, enforce_https=True)
 
         # Should provide helpful error messages
-        assert len(results['errors']) > 0, "Should provide error messages"
-        error_text = '\n'.join(results['errors'])
+        assert len(results["errors"]) > 0, "Should provide error messages"
+        error_text = "\n".join(results["errors"])
 
         # Check for helpful guidance
-        assert 'http://' in error_text.lower() or 'insecure' in error_text.lower()
-        assert 'bad.php' in error_text, "Should mention the problematic file"
+        assert "http://" in error_text.lower() or "insecure" in error_text.lower()
+        assert "bad.php" in error_text, "Should mention the problematic file"
 
 
 if __name__ == "__main__":

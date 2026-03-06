@@ -25,7 +25,7 @@ def check_php_available() -> bool:
     Returns:
         True if php is available, False otherwise
     """
-    return shutil.which('php') is not None
+    return shutil.which("php") is not None
 
 
 def lint_php_file(file_path: Path) -> tuple[bool, str]:
@@ -39,10 +39,7 @@ def lint_php_file(file_path: Path) -> tuple[bool, str]:
     """
     try:
         result = subprocess.run(
-            ['php', '-l', str(file_path)],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["php", "-l", str(file_path)], capture_output=True, text=True, timeout=10
         )
 
         # php -l returns 0 for valid syntax, non-zero for errors
@@ -72,36 +69,28 @@ def lint_theme_directory(theme_dir: Path) -> dict:
             'errors': list of dicts with {'file': str, 'output': str}
         }
     """
-    results = {
-        'total_files': 0,
-        'passed': 0,
-        'failed': 0,
-        'errors': []
-    }
+    results = {"total_files": 0, "passed": 0, "failed": 0, "errors": []}
 
     # Find all PHP files recursively
-    php_files = list(theme_dir.rglob('*.php'))
-    results['total_files'] = len(php_files)
+    php_files = list(theme_dir.rglob("*.php"))
+    results["total_files"] = len(php_files)
 
     print(f"Found {len(php_files)} PHP file(s) to lint")
     print()
 
     for php_file in php_files:
         relative_path = php_file.relative_to(theme_dir)
-        print(f"Linting {relative_path}...", end=' ')
+        print(f"Linting {relative_path}...", end=" ")
 
         success, output = lint_php_file(php_file)
 
         if success:
             print("✓ OK")
-            results['passed'] += 1
+            results["passed"] += 1
         else:
             print("✗ FAILED")
-            results['failed'] += 1
-            results['errors'].append({
-                'file': str(relative_path),
-                'output': output
-            })
+            results["failed"] += 1
+            results["errors"].append({"file": str(relative_path), "output": output})
 
     return results
 
@@ -142,11 +131,11 @@ def main():
     print(f"SUMMARY: {results['passed']}/{results['total_files']} files passed")
     print()
 
-    if results['failed'] > 0:
+    if results["failed"] > 0:
         print(f"✗ {results['failed']} file(s) FAILED lint check:")
         print()
 
-        for error in results['errors']:
+        for error in results["errors"]:
             print(f"  File: {error['file']}")
             print(f"  {error['output']}")
             print()
@@ -157,5 +146,5 @@ def main():
         sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

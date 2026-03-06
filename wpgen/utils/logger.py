@@ -16,6 +16,7 @@ from pythonjsonlogger import jsonlogger
 try:
     from colorama import Fore, Style
     from colorama import init as colorama_init
+
     COLORAMA_AVAILABLE = True
 except ImportError:  # pragma: no cover
     # Create dummy color classes if colorama is not available
@@ -30,6 +31,7 @@ except ImportError:  # pragma: no cover
     def colorama_init(*args, **kwargs):
         """Dummy colorama init when colorama is not available."""
         pass
+
 
 # Colorama initialization flag
 _colorama_initialized = False
@@ -48,18 +50,18 @@ def _ensure_colorama_initialized():
 # while avoiding false positives on normal text
 SENSITIVE_PATTERNS = [
     # Key-value pairs with common secret key names (case insensitive)
-    (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
-    (re.compile(r'(secret["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r'(api[_-]?key["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r"\1***"),
+    (re.compile(r'(token["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r"\1***"),
+    (re.compile(r'(password["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r"\1***"),
+    (re.compile(r'(secret["\']?\s*[:=]\s*["\']?)([^"\'}\s&]+)', re.IGNORECASE), r"\1***"),
     # Authorization header with Bearer token (flexible whitespace)
-    (re.compile(r'(Authorization:\s*Bear\s*er\s+)([^\s&]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r"(Authorization:\s*Bear\s*er\s+)([^\s&]+)", re.IGNORECASE), r"\1***"),
     # GitHub-like tokens (gh*_ prefix with alphanumeric, flexible length)
-    (re.compile(r'\bgh[a-z]_[a-zA-Z0-9]{20,}\b'), r'***'),
+    (re.compile(r"\bgh[a-z]_[a-zA-Z0-9]{20,}\b"), r"***"),
     # OpenAI-like keys (s*- prefix with alphanumeric, flexible length)
-    (re.compile(r'\bs[a-z]-[a-zA-Z0-9]{20,}\b'), r'***'),
+    (re.compile(r"\bs[a-z]-[a-zA-Z0-9]{20,}\b"), r"***"),
     # URL query parameters with secret-like keys
-    (re.compile(r'([?&](?:token|api[_-]?key|password|secret)=)([^&\s]+)', re.IGNORECASE), r'\1***'),
+    (re.compile(r"([?&](?:token|api[_-]?key|password|secret)=)([^&\s]+)", re.IGNORECASE), r"\1***"),
 ]
 
 

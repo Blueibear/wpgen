@@ -165,6 +165,7 @@ Requirements:
 
             # Clean up markdown and explanatory text
             from ..utils.code_validator import clean_generated_code
+
             code = clean_generated_code(code, file_type)
 
             return code
@@ -230,7 +231,9 @@ Requirements:
                 response = response_obj.choices[0].message.content
             except Exception as json_mode_error:
                 # Fall back to regular generation if JSON mode not supported
-                logger.debug(f"JSON mode not supported, using regular generation: {json_mode_error}")
+                logger.debug(
+                    f"JSON mode not supported, using regular generation: {json_mode_error}"
+                )
                 response = self.generate(analysis_prompt, system_prompt)
 
             # Extract JSON from response (handle if wrapped in markdown)
@@ -502,9 +505,9 @@ Return ONLY valid JSON, no other text."""
 
         # Remove common comment patterns before parsing
         # Remove single-line comments
-        text_no_comments = re.sub(r'//.*?$', '', text, flags=re.MULTILINE)
+        text_no_comments = re.sub(r"//.*?$", "", text, flags=re.MULTILINE)
         # Remove multi-line comments
-        text_no_comments = re.sub(r'/\*.*?\*/', '', text_no_comments, flags=re.DOTALL)
+        text_no_comments = re.sub(r"/\*.*?\*/", "", text_no_comments, flags=re.DOTALL)
 
         # Try parsing without comments
         try:
@@ -548,7 +551,7 @@ Return ONLY valid JSON, no other text."""
                     escape_next = False
                     continue
 
-                if char == '\\':
+                if char == "\\":
                     escape_next = True
                     continue
 
@@ -567,8 +570,8 @@ Return ONLY valid JSON, no other text."""
                             try:
                                 candidate = text[start : i + 1]
                                 # Remove comments from candidate
-                                candidate = re.sub(r'//.*?$', '', candidate, flags=re.MULTILINE)
-                                candidate = re.sub(r'/\*.*?\*/', '', candidate, flags=re.DOTALL)
+                                candidate = re.sub(r"//.*?$", "", candidate, flags=re.MULTILINE)
+                                candidate = re.sub(r"/\*.*?\*/", "", candidate, flags=re.DOTALL)
                                 return json.loads(candidate)
                             except json.JSONDecodeError:
                                 # Try to find next JSON object

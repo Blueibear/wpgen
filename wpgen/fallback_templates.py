@@ -20,7 +20,7 @@ def get_rich_fallback_front_page(theme_name: str) -> str:
     Returns:
         Complete front-page.php code
     """
-    theme_slug = theme_name.replace('-', '_')
+    theme_slug = theme_name.replace("-", "_")
 
     return f"""<?php
 /**

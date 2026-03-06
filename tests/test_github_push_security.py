@@ -147,14 +147,13 @@ def test_no_token_in_git_remote(tmp_path):
         github = GitHubIntegration(token, {"auto_create": False})
 
         # Mock API calls
-        with patch("requests.post") as mock_post, \
-             patch("requests.get") as mock_get:
+        with patch("requests.post") as mock_post, patch("requests.get") as mock_get:
             mock_get.return_value.json.return_value = {"login": "testuser"}
             mock_get.return_value.raise_for_status = Mock()
 
             mock_post.return_value.json.return_value = {
                 "html_url": "https://github.com/testuser/test-repo",
-                "clone_url": "https://github.com/testuser/test-repo.git"
+                "clone_url": "https://github.com/testuser/test-repo.git",
             }
             mock_post.return_value.raise_for_status = Mock()
 
@@ -177,9 +176,7 @@ def test_no_token_in_git_remote(tmp_path):
             # The actual push might be skipped in test, but we verify remote URL
             try:
                 github.push_to_github(
-                    str(theme_dir),
-                    "test-repo",
-                    {"theme_name": "test", "description": "Test theme"}
+                    str(theme_dir), "test-repo", {"theme_name": "test", "description": "Test theme"}
                 )
             except Exception:
                 # Might fail due to mocking, but we checked the remote URL above

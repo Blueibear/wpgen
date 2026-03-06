@@ -23,11 +23,9 @@ def test_load_valid_config(tmp_path):
             "openai": {
                 "model": "gpt-4-turbo",
                 "max_tokens": 4096,
-            }
+            },
         },
-        "output": {
-            "output_dir": "output"
-        }
+        "output": {"output_dir": "output"},
     }
 
     with open(config_file, "w") as f:
@@ -92,14 +90,7 @@ def test_env_override_provider(monkeypatch, tmp_path):
 def test_env_override_openai_model(monkeypatch, tmp_path):
     """Test environment variable overrides OpenAI model."""
     config_file = tmp_path / "config.yaml"
-    config_data = {
-        "llm": {
-            "provider": "openai",
-            "openai": {
-                "model": "gpt-4-turbo"
-            }
-        }
-    }
+    config_data = {"llm": {"provider": "openai", "openai": {"model": "gpt-4-turbo"}}}
 
     with open(config_file, "w") as f:
         yaml.dump(config_data, f)
@@ -114,12 +105,7 @@ def test_env_override_anthropic_model(monkeypatch, tmp_path):
     """Test environment variable overrides Anthropic model."""
     config_file = tmp_path / "config.yaml"
     config_data = {
-        "llm": {
-            "provider": "anthropic",
-            "anthropic": {
-                "model": "claude-3-5-sonnet-20241022"
-            }
-        }
+        "llm": {"provider": "anthropic", "anthropic": {"model": "claude-3-5-sonnet-20241022"}}
     }
 
     with open(config_file, "w") as f:
@@ -146,11 +132,13 @@ def test_invalid_theme_type():
 def test_wordpress_api_credentials_validation():
     """Test WordPress API credentials validation."""
     with pytest.raises(ValueError, match="credentials are missing"):
-        WPGenConfig(wordpress_api={
-            "enabled": True,
-            "site_url": "https://example.com",
-            # Missing username and password
-        })
+        WPGenConfig(
+            wordpress_api={
+                "enabled": True,
+                "site_url": "https://example.com",
+                # Missing username and password
+            }
+        )
 
 
 def test_redacted_config_summary():
@@ -158,14 +146,9 @@ def test_redacted_config_summary():
     config = WPGenConfig(
         llm={
             "provider": "openai",
-            "openai": {
-                "model": "gpt-4-turbo",
-                "api_key": "sk-secret123456789"
-            }
+            "openai": {"model": "gpt-4-turbo", "api_key": "sk-secret123456789"},
         },
-        github={
-            "token": "ghp_secrettoken123"
-        }
+        github={"token": "ghp_secrettoken123"},
     )
 
     summary = get_redacted_config_summary(config)

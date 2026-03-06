@@ -202,9 +202,7 @@ class FileHandler:
 
         file_size = path.stat().st_size
         if file_size > self.max_image_size:
-            logger.warning(
-                f"Image file too large: {file_size} bytes (max {self.max_image_size})"
-            )
+            logger.warning(f"Image file too large: {file_size} bytes (max {self.max_image_size})")
             return None
 
         try:
@@ -278,9 +276,7 @@ class FileHandler:
 
         file_size = path.stat().st_size
         if file_size > self.max_text_size:
-            logger.warning(
-                f"Text file too large: {file_size} bytes (max {self.max_text_size})"
-            )
+            logger.warning(f"Text file too large: {file_size} bytes (max {self.max_text_size})")
             return None
 
         try:
@@ -416,8 +412,16 @@ class FileHandler:
             import zipfile
 
             # Directories and patterns to exclude
-            exclude_dirs = {'.git', '.github', 'node_modules', 'vendor', '__pycache__', '.vscode', '.idea'}
-            exclude_patterns = {'*.pyc', '.DS_Store', 'Thumbs.db'}
+            exclude_dirs = {
+                ".git",
+                ".github",
+                "node_modules",
+                "vendor",
+                "__pycache__",
+                ".vscode",
+                ".idea",
+            }
+            exclude_patterns = {"*.pyc", ".DS_Store", "Thumbs.db"}
 
             excluded_count = 0
 
@@ -429,7 +433,7 @@ class FileHandler:
                         continue
 
                     # Skip hidden files/directories (starting with .)
-                    if any(part.startswith('.') for part in file_path.parts[len(dir_path.parts):]):
+                    if any(part.startswith(".") for part in file_path.parts[len(dir_path.parts) :]):
                         excluded_count += 1
                         continue
 
@@ -443,7 +447,9 @@ class FileHandler:
                         zipf.write(file_path, arcname)
 
             if excluded_count > 0:
-                logger.info(f"Excluded {excluded_count} files/directories from ZIP (.git, .github, node_modules, hidden files)")
+                logger.info(
+                    f"Excluded {excluded_count} files/directories from ZIP (.git, .github, node_modules, hidden files)"
+                )
 
             logger.info(f"Created ZIP archive: {zip_path}")
             return str(zip_path)

@@ -3,6 +3,7 @@ import os
 import importlib
 import sys
 
+
 def test_provider_resolution_debug():
     # What does CI think the env is
     env = os.getenv("WPGEN_PROVIDER", "<unset>")

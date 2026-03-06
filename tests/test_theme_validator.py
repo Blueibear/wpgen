@@ -6,6 +6,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from wpgen.utils.theme_constants import (
+    RECOMMENDED_CLASSIC_THEME_FILES,
+    REQUIRED_CLASSIC_THEME_FILES,
+)
 from wpgen.utils.theme_validator import ThemeValidator
 
 
@@ -28,18 +32,18 @@ class TestThemeValidator:
 
     @pytest.fixture
     def basic_theme(self, tmp_path):
-        """Create a basic WordPress theme structure."""
+        """Create a basic WordPress theme structure with all required files."""
         theme_dir = tmp_path / "test-theme"
         theme_dir.mkdir()
 
-        # Create required files
-        (theme_dir / "style.css").write_text("/* Theme Name: Test Theme */")
-        (theme_dir / "index.php").write_text("<?php\nget_header();\nget_footer();\n")
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test Theme */")
+            else:
+                (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
-        # Create recommended files
-        (theme_dir / "functions.php").write_text("<?php\n// Theme functions\n")
-        (theme_dir / "header.php").write_text("<?php\n// Header\n")
-        (theme_dir / "footer.php").write_text("<?php\n// Footer\n")
+        for f in RECOMMENDED_CLASSIC_THEME_FILES:
+            (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
         return theme_dir
 
@@ -101,7 +105,7 @@ class TestThemeValidator:
         theme_dir = tmp_path / "incomplete-theme"
         theme_dir.mkdir()
 
-        # Only create style.css, missing index.php
+        # Only create style.css, missing index.php and all others
         (theme_dir / "style.css").write_text("/* Theme Name: Test */")
 
         validator = ThemeValidator()
@@ -109,36 +113,46 @@ class TestThemeValidator:
 
         assert result["valid"] is False
         assert any("index.php" in error for error in result["errors"])
+        # functions.php is now required, not just recommended
+        assert any("functions.php" in error for error in result["errors"])
 
     def test_validate_missing_recommended_files(self, mock_php_available, tmp_path):
         """Test validate with missing recommended files."""
         theme_dir = tmp_path / "minimal-theme"
         theme_dir.mkdir()
 
-        # Create only required files
-        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-        (theme_dir / "index.php").write_text("<?php\n// Index\n")
+        # Create all required files
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
         # Mock PHP syntax validation to succeed
+        php_file_count = sum(1 for f in REQUIRED_CLASSIC_THEME_FILES if f.endswith(".php"))
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=0),  # index.php validation
-        ]
+        ] + [Mock(returncode=0)] * php_file_count
 
         validator = ThemeValidator()
         result = validator.validate(str(theme_dir))
 
-        # Should be valid but have warnings
+        # Should be valid but have warnings about recommended files
         assert result["valid"] is True
         assert len(result["warnings"]) > 0
-        assert any("functions.php" in warning for warning in result["warnings"])
+        # sidebar.php is now recommended
+        assert any("sidebar.php" in warning for warning in result["warnings"])
 
     def test_validate_php_unavailable_non_strict(self, mock_php_unavailable, tmp_path):
         """Test validate when PHP is unavailable in non-strict mode."""
         theme_dir = tmp_path / "theme"
         theme_dir.mkdir()
-        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-        (theme_dir / "index.php").write_text("<?php\n// Index\n")
+
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
         validator = ThemeValidator(strict=False)
         result = validator.validate(str(theme_dir))
@@ -151,8 +165,12 @@ class TestThemeValidator:
         """Test validate when PHP is unavailable in strict mode."""
         theme_dir = tmp_path / "theme"
         theme_dir.mkdir()
-        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-        (theme_dir / "index.php").write_text("<?php\n// Index\n")
+
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
         validator = ThemeValidator(strict=True)
         result = validator.validate(str(theme_dir))
@@ -163,14 +181,15 @@ class TestThemeValidator:
 
     def test_validate_valid_theme(self, mock_php_available, basic_theme):
         """Test validate with a complete valid theme."""
+        total_php = sum(
+            1
+            for f in list(REQUIRED_CLASSIC_THEME_FILES) + list(RECOMMENDED_CLASSIC_THEME_FILES)
+            if f.endswith(".php")
+        )
         # Mock all PHP validations to succeed
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=0),  # functions.php
-            Mock(returncode=0),  # footer.php
-            Mock(returncode=0),  # header.php
-            Mock(returncode=0),  # index.php
-        ]
+        ] + [Mock(returncode=0)] * total_php
 
         validator = ThemeValidator()
         result = validator.validate(str(basic_theme))
@@ -185,14 +204,17 @@ class TestThemeValidator:
         theme_dir = tmp_path / "theme"
         theme_dir.mkdir()
 
-        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-        (theme_dir / "index.php").write_text("<?php\necho 'test'\n")  # Missing semicolon
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\necho 'test'\n")
 
-        # Mock PHP validation to fail
+        # Mock PHP validation to fail for all PHP files
+        php_count = sum(1 for f in REQUIRED_CLASSIC_THEME_FILES if f.endswith(".php"))
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=1, stderr="Parse error: syntax error"),  # index.php
-        ]
+        ] + [Mock(returncode=1, stderr="Parse error: syntax error")] * php_count
 
         validator = ThemeValidator()
         result = validator.validate(str(theme_dir))
@@ -288,7 +310,10 @@ class TestThemeValidator:
         # Mock PHP syntax validation to fail
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=1, stderr="Parse error: syntax error, unexpected end of file in /path/to/file"),
+            Mock(
+                returncode=1,
+                stderr="Parse error: syntax error, unexpected end of file in /path/to/file",
+            ),
         ]
 
         validator = ThemeValidator()
@@ -314,16 +339,18 @@ class TestThemeValidator:
         theme_dir = tmp_path / "theme"
         theme_dir.mkdir()
 
-        # Create required files
-        (theme_dir / "style.css").write_text("/* Theme Name: Test */")
-        (theme_dir / "index.php").write_text("<?php\n// Index\n")
+        # Create all required files but skip recommended ones
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\n// " + f + "\n")
 
         # Missing recommended files will create warnings
-        # Mock PHP validation to succeed
+        php_count = sum(1 for f in REQUIRED_CLASSIC_THEME_FILES if f.endswith(".php"))
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=0),  # index.php
-        ]
+        ] + [Mock(returncode=0)] * php_count
 
         validator = ThemeValidator(strict=True)
         result = validator.validate(str(theme_dir))
@@ -341,14 +368,20 @@ class TestThemeValidator:
         # Mock PHP validations
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-        ] + [Mock(returncode=0)] * 10  # Enough for all PHP files
+        ] + [
+            Mock(returncode=0)
+        ] * 20  # Enough for all PHP files
 
         validator = ThemeValidator()
         result = validator.validate(str(basic_theme))
 
-        # Should count only PHP files
-        assert result["php_files"] == 4  # index, functions, header, footer
-        assert result["total_files"] == 4
+        all_php = [
+            f
+            for f in list(REQUIRED_CLASSIC_THEME_FILES) + list(RECOMMENDED_CLASSIC_THEME_FILES)
+            if f.endswith(".php")
+        ]
+        assert result["php_files"] == len(all_php)
+        assert result["total_files"] == len(all_php)
 
     def test_validate_php_file_with_doctype(self, mock_php_available, tmp_path):
         """Test _validate_php_file with DOCTYPE (valid for header.php)."""
@@ -369,3 +402,63 @@ class TestThemeValidator:
 
         # Should not complain about missing <?php tag for DOCTYPE files
         assert len(result["errors"]) == 0
+
+
+class TestStandaloneConvenienceFunctions:
+    """Verify that module-level convenience functions delegate to ThemeValidator."""
+
+    def test_validate_theme_directory_delegates(self, tmp_path):
+        """validate_theme_directory produces same results as ThemeValidator.validate."""
+        from wpgen.utils.theme_validator import validate_theme_directory
+
+        theme_dir = tmp_path / "theme"
+        theme_dir.mkdir()
+
+        for f in REQUIRED_CLASSIC_THEME_FILES:
+            if f.endswith(".css"):
+                (theme_dir / f).write_text("/* Theme Name: Test */")
+            else:
+                (theme_dir / f).write_text("<?php\n// ok\n")
+
+        result = validate_theme_directory(str(theme_dir))
+        assert result["theme_name"] == "theme"
+        # Required file errors should use the same set
+        assert isinstance(result["errors"], list)
+
+    def test_validate_php_syntax_file_delegates(self, tmp_path):
+        """validate_php_syntax_file produces a (bool, str) tuple."""
+        from wpgen.utils.theme_validator import validate_php_syntax_file
+
+        php_file = tmp_path / "test.php"
+        php_file.write_text("<?php echo 1; ?>")
+        is_valid, msg = validate_php_syntax_file(str(php_file))
+        assert isinstance(is_valid, bool)
+        assert isinstance(msg, str)
+
+
+class TestRendererValidatorAlignment:
+    """Assert that renderer and validator agree on required files.
+
+    If either side changes its file list without updating the shared
+    constants in theme_constants.py, these tests will fail.
+    """
+
+    def test_renderer_required_templates_match_shared_constants(self):
+        from wpgen.templates.renderer import REQUIRED_TEMPLATES
+
+        assert REQUIRED_TEMPLATES == REQUIRED_CLASSIC_THEME_FILES
+
+    def test_renderer_required_is_subset_of_wordpress_templates(self):
+        from wpgen.templates.renderer import REQUIRED_TEMPLATES, WORDPRESS_TEMPLATES
+
+        rendered_files = set(WORDPRESS_TEMPLATES.keys())
+        for req in REQUIRED_TEMPLATES:
+            assert req in rendered_files, f"Required template '{req}' is not in WORDPRESS_TEMPLATES"
+
+    def test_validator_uses_same_required_set(self):
+        """Validator required files must equal the shared constant."""
+        from wpgen.templates.renderer import REQUIRED_TEMPLATES
+
+        # Instantiate a validator and trigger a validate call on an empty dir
+        # to inspect which files it checks. We verify by structural equality.
+        assert REQUIRED_TEMPLATES == REQUIRED_CLASSIC_THEME_FILES

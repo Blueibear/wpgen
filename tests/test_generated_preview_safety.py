@@ -187,9 +187,9 @@ def test_no_mixed_content_urls(sample_theme_dir):
     results = scan_mixed_content(sample_theme_dir, enforce_https=True)
 
     # Should find the HTTP URL
-    assert not results['valid'], "Should detect HTTP URL"
-    assert len(results['http_urls']) > 0, "Should find HTTP URLs"
-    assert 'http://example.com' in str(results['http_urls']), "Should identify the specific URL"
+    assert not results["valid"], "Should detect HTTP URL"
+    assert len(results["http_urls"]) > 0, "Should find HTTP URLs"
+    assert "http://example.com" in str(results["http_urls"]), "Should identify the specific URL"
 
 
 def test_no_forbidden_debug_directives(sample_theme_dir):
@@ -203,11 +203,11 @@ def test_no_forbidden_debug_directives(sample_theme_dir):
 
     results = check_forbidden_config_directives(sample_theme_dir)
 
-    assert not results['valid'], "Should detect forbidden WP_DEBUG directive"
-    assert len(results['violations']) > 0, "Should find violations"
+    assert not results["valid"], "Should detect forbidden WP_DEBUG directive"
+    assert len(results["violations"]) > 0, "Should find violations"
     # Check that WP_DEBUG is mentioned somewhere in the errors
-    all_errors = ' '.join(results['errors'])
-    assert "WP_DEBUG" in all_errors or len(results['violations']) > 0, "Should detect WP_DEBUG"
+    all_errors = " ".join(results["errors"])
+    assert "WP_DEBUG" in all_errors or len(results["violations"]) > 0, "Should detect WP_DEBUG"
 
 
 def test_no_invalid_php_patterns(sample_theme_dir):
@@ -227,8 +227,8 @@ def test_no_invalid_php_patterns(sample_theme_dir):
 
     results = check_invalid_php_patterns(sample_theme_dir)
 
-    assert not results['valid'], "Should detect invalid PHP patterns"
-    assert len(results['violations']) > 0, "Should find violations"
+    assert not results["valid"], "Should detect invalid PHP patterns"
+    assert len(results["violations"]) > 0, "Should find violations"
 
 
 def test_block_categories_valid(sample_theme_dir):
@@ -243,7 +243,7 @@ def test_block_categories_valid(sample_theme_dir):
     good_block_json = {
         "name": "wpgen/good-block",
         "title": "Good Block",
-        "category": "widgets"  # Valid category
+        "category": "widgets",  # Valid category
     }
     (good_block_dir / "block.json").write_text(json.dumps(good_block_json), encoding="utf-8")
 
@@ -253,7 +253,7 @@ def test_block_categories_valid(sample_theme_dir):
     bad_block_json = {
         "name": "wpgen/bad-block",
         "title": "Bad Block",
-        "category": "design_layout"  # Invalid category
+        "category": "design_layout",  # Invalid category
     }
     (bad_block_dir / "block.json").write_text(json.dumps(bad_block_json), encoding="utf-8")
 
@@ -262,16 +262,17 @@ def test_block_categories_valid(sample_theme_dir):
 
     results = check_block_categories(sample_theme_dir)
 
-    assert not results['valid'], "Should detect invalid block category"
-    assert len(results['violations']) > 0, "Should find violations"
-    assert "design_layout" in results['errors'][0], "Error should mention the invalid category"
+    assert not results["valid"], "Should detect invalid block category"
+    assert len(results["violations"]) > 0, "Should find violations"
+    assert "design_layout" in results["errors"][0], "Error should mention the invalid category"
 
 
 def test_comprehensive_theme_scan(sample_theme_dir):
     """Test the comprehensive scan_generated_theme function."""
     # Create a clean theme structure
     header = sample_theme_dir / "header.php"
-    header.write_text("""<!doctype html>
+    header.write_text(
+        """<!doctype html>
 <html <?php language_attributes(); ?>>
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
@@ -279,16 +280,22 @@ def test_comprehensive_theme_scan(sample_theme_dir):
 </head>
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     footer = sample_theme_dir / "footer.php"
-    footer.write_text("""<?php wp_footer(); ?>
+    footer.write_text(
+        """<?php wp_footer(); ?>
 </body>
 </html>
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     index = sample_theme_dir / "index.php"
-    index.write_text("""<?php get_header(); ?>
+    index.write_text(
+        """<?php get_header(); ?>
 <main>
     <?php if ( have_posts() ) : while ( have_posts() ) : the_post(); ?>
         <article><?php the_content(); ?></article>
@@ -297,7 +304,9 @@ def test_comprehensive_theme_scan(sample_theme_dir):
     <?php endif; ?>
 </main>
 <?php get_footer(); ?>
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     # Run comprehensive scan
     from wpgen.utils.code_validator import scan_generated_theme
@@ -305,15 +314,17 @@ def test_comprehensive_theme_scan(sample_theme_dir):
     results = scan_generated_theme(sample_theme_dir, strict=True)
 
     # Should pass all checks (no forbidden patterns, no HTTP URLs, etc.)
-    assert results['valid'], f"Theme should pass all checks. Errors: {results.get('all_errors', [])}"
-    assert results['config_check']['valid'], "Should pass config check"
-    assert results['php_check']['valid'], "Should pass PHP pattern check"
-    assert results['block_check']['valid'], "Should pass block category check"
+    assert results[
+        "valid"
+    ], f"Theme should pass all checks. Errors: {results.get('all_errors', [])}"
+    assert results["config_check"]["valid"], "Should pass config check"
+    assert results["php_check"]["valid"], "Should pass PHP pattern check"
+    assert results["block_check"]["valid"], "Should pass block category check"
 
 
 def test_hooks_present_in_all_templates(sample_theme_dir):
     """Test that get_header() and get_footer() are in main templates."""
-    templates = ['index.php', 'front-page.php', 'single.php', 'page.php']
+    templates = ["index.php", "front-page.php", "single.php", "page.php"]
 
     for template_name in templates:
         template_file = sample_theme_dir / template_name
@@ -347,9 +358,10 @@ def test_no_empty_php_blocks(sample_theme_dir):
         test_file.write_text(f"<?php\necho 'test';\n{pattern}", encoding="utf-8")
 
         from wpgen.utils.code_validator import check_invalid_php_patterns
+
         results = check_invalid_php_patterns(sample_theme_dir)
 
-        assert not results['valid'], f"Should detect invalid pattern: {pattern}"
+        assert not results["valid"], f"Should detect invalid pattern: {pattern}"
 
 
 def test_functions_php_no_debug_config(sample_theme_dir):
@@ -368,9 +380,10 @@ def test_functions_php_no_debug_config(sample_theme_dir):
         functions_file.write_text(f"<?php\n{pattern}", encoding="utf-8")
 
         from wpgen.utils.code_validator import check_forbidden_config_directives
+
         results = check_forbidden_config_directives(sample_theme_dir)
 
-        assert not results['valid'], f"Should detect forbidden pattern: {pattern}"
+        assert not results["valid"], f"Should detect forbidden pattern: {pattern}"
 
 
 if __name__ == "__main__":

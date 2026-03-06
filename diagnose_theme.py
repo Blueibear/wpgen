@@ -12,7 +12,7 @@ from pathlib import Path
 USE_EMOJI = True
 if sys.platform == "win32":
     try:
-        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stdout.reconfigure(encoding="utf-8")
     except (AttributeError, Exception):
         # If UTF-8 reconfiguration fails, disable emojis
         USE_EMOJI = False
@@ -23,16 +23,16 @@ def safe_print(text: str = ""):
     if not USE_EMOJI:
         # Remove emojis for Windows terminals that don't support UTF-8
         emoji_map = {
-            '📁': '[FILES]',
-            '📋': '[REQUIRED]',
-            '📝': '[RECOMMENDED]',
-            '🎨': '[STYLE]',
-            '🔍': '[CHECKING]',
-            '📄': '[FILE]',
-            '💡': '[TIP]',
-            '✅': '[OK]',
-            '❌': '[ERROR]',
-            '⚠️': '[WARNING]',
+            "📁": "[FILES]",
+            "📋": "[REQUIRED]",
+            "📝": "[RECOMMENDED]",
+            "🎨": "[STYLE]",
+            "🔍": "[CHECKING]",
+            "📄": "[FILE]",
+            "💡": "[TIP]",
+            "✅": "[OK]",
+            "❌": "[ERROR]",
+            "⚠️": "[WARNING]",
         }
         for emoji, replacement in emoji_map.items():
             text = text.replace(emoji, replacement)
@@ -40,7 +40,7 @@ def safe_print(text: str = ""):
         print(text)
     except UnicodeEncodeError:
         # Last resort: encode as ASCII, ignore errors
-        print(text.encode('ascii', 'ignore').decode('ascii'))
+        print(text.encode("ascii", "ignore").decode("ascii"))
 
 
 def diagnose_theme(theme_path: str):
@@ -106,7 +106,7 @@ def diagnose_theme(theme_path: str):
     style_css = theme_dir / "style.css"
     if style_css.exists():
         safe_print("🎨 style.css Header:")
-        with open(style_css, 'r', encoding='utf-8') as f:
+        with open(style_css, "r", encoding="utf-8") as f:
             content = f.read(500)
             if "Theme Name:" in content:
                 safe_print("   ✅ Has WordPress theme header")
@@ -123,7 +123,7 @@ def diagnose_theme(theme_path: str):
     for php_file in php_files:
         rel_path = php_file.relative_to(theme_dir)
         try:
-            with open(php_file, 'r', encoding='utf-8') as f:
+            with open(php_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Check for common issues
@@ -139,7 +139,9 @@ def diagnose_theme(theme_path: str):
 
             # Check for closing PHP tags in functions.php (bad practice)
             if php_file.name == "functions.php" and "?>" in content:
-                issues_found.append(f"{rel_path}: functions.php contains closing ?> tag (not recommended)")
+                issues_found.append(
+                    f"{rel_path}: functions.php contains closing ?> tag (not recommended)"
+                )
 
             # Check for wp_head() in header
             if php_file.name == "header.php":
@@ -174,7 +176,7 @@ def diagnose_theme(theme_path: str):
     if functions_php.exists():
         safe_print("📄 functions.php (first 50 lines):")
         safe_print("-" * 70)
-        with open(functions_php, 'r', encoding='utf-8') as f:
+        with open(functions_php, "r", encoding="utf-8") as f:
             lines = f.readlines()[:50]
             for i, line in enumerate(lines, 1):
                 safe_print(f"{i:3d} | {line.rstrip()}")

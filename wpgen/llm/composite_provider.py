@@ -56,7 +56,9 @@ class CompositeLLMProvider(BaseLLMProvider):
         self.vision_model = vision_model
         self.timeout = timeout
 
-        logger.info(f"Initialized CompositeLLMProvider: brains={brains_model}, vision={vision_model or 'disabled'}")
+        logger.info(
+            f"Initialized CompositeLLMProvider: brains={brains_model}, vision={vision_model or 'disabled'}"
+        )
 
     def _route_client(self, images: list[dict[str, Any | None]] = None):
         """Determine which client and model to use based on images.
@@ -174,12 +176,14 @@ Requirements:
 
                 # Add all images
                 for image in images:
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
-                        },
-                    })
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                            },
+                        }
+                    )
 
                 response = client.chat.completions.create(
                     model=model,
@@ -200,6 +204,7 @@ Requirements:
 
             # Clean up markdown and explanatory text
             from ..utils.code_validator import clean_generated_code
+
             code = clean_generated_code(code, file_type)
 
             return code
@@ -256,6 +261,7 @@ Requirements:
 
             # Extract JSON from response
             import json
+
             try:
                 result = self._extract_json(result_text)
             except (json.JSONDecodeError, ValueError):
@@ -317,12 +323,14 @@ Requirements:
             content.append({"type": "text", "text": text_content})
 
             for image in images:
-                content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
-                    },
-                })
+                content.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{image.get('mime_type', 'image/jpeg')};base64,{image['data']}"
+                        },
+                    }
+                )
 
         text_content += """
 Return a JSON object with these fields:
@@ -360,6 +368,7 @@ Return ONLY valid JSON, no other text."""
 
             # Extract JSON
             import json
+
             try:
                 result = self._extract_json(result_text)
             except (json.JSONDecodeError, ValueError):
@@ -370,7 +379,9 @@ Return ONLY valid JSON, no other text."""
             if "theme_display_name" not in result and "theme_name" in result:
                 result["theme_display_name"] = result["theme_name"].replace("-", " ").title()
 
-            logger.info(f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}")
+            logger.info(
+                f"Successfully analyzed multi-modal prompt: {result.get('theme_name', 'unknown')}"
+            )
             return result
 
         except Exception as e:

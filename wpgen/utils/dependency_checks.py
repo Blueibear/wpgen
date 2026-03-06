@@ -22,12 +22,7 @@ def check_php_available(php_path: str = "php") -> tuple[bool, Optional[str]]:
         Tuple of (is_available, version_string)
     """
     try:
-        result = subprocess.run(
-            [php_path, "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        result = subprocess.run([php_path, "--version"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             version = result.stdout.splitlines()[0] if result.stdout else "unknown"
             logger.debug(f"PHP is available: {version}")

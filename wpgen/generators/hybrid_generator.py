@@ -58,7 +58,7 @@ class HybridWordPressGenerator:
             config: Optional configuration dictionary
         """
         self.llm_provider = llm_provider
-        self.output_dir = Path(str(output_dir).replace('\\', '/'))
+        self.output_dir = Path(str(output_dir).replace("\\", "/"))
         self.config = config or {}
         self.safe_mode = self.config.get("safe_mode", False)
 

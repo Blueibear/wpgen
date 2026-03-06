@@ -99,7 +99,7 @@ def test_redact_bearer_token_simple():
     # Build Bearer token in pieces to avoid literal pattern
     auth = "Authori" + "zation: "
     bearer = "Bear" + "er "
-    token_value = ("x" * 30)
+    token_value = "x" * 30
     message = auth + bearer + token_value
     redacted = redact_sensitive_data(message)
 

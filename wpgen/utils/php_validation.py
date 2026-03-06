@@ -27,85 +27,164 @@ logger = get_logger(__name__)
 # WordPress function whitelist - only allow real WordPress functions
 WORDPRESS_CORE_FUNCTIONS = {
     # Template tags
-    'wp_head', 'wp_footer', 'body_class', 'post_class', 'get_header', 'get_footer',
-    'get_sidebar', 'get_template_part', 'bloginfo', 'get_bloginfo', 'wp_title',
-    'the_title', 'the_content', 'the_excerpt', 'the_permalink', 'the_post_thumbnail',
-    'the_ID', 'the_author', 'the_date', 'get_the_date', 'the_time', 'get_the_time',
-    'the_category', 'the_tags', 'the_archive_title', 'the_archive_description',
-    'get_the_author', 'get_the_category', 'get_the_tags', 'get_the_title',
-
+    "wp_head",
+    "wp_footer",
+    "body_class",
+    "post_class",
+    "get_header",
+    "get_footer",
+    "get_sidebar",
+    "get_template_part",
+    "bloginfo",
+    "get_bloginfo",
+    "wp_title",
+    "the_title",
+    "the_content",
+    "the_excerpt",
+    "the_permalink",
+    "the_post_thumbnail",
+    "the_ID",
+    "the_author",
+    "the_date",
+    "get_the_date",
+    "the_time",
+    "get_the_time",
+    "the_category",
+    "the_tags",
+    "the_archive_title",
+    "the_archive_description",
+    "get_the_author",
+    "get_the_category",
+    "get_the_tags",
+    "get_the_title",
     # Loop functions
-    'have_posts', 'the_post', 'rewind_posts', 'wp_reset_postdata', 'wp_reset_query',
-
+    "have_posts",
+    "the_post",
+    "rewind_posts",
+    "wp_reset_postdata",
+    "wp_reset_query",
     # Conditional tags
-    'is_home', 'is_front_page', 'is_single', 'is_page', 'is_archive', 'is_category',
-    'is_tag', 'is_404', 'is_search', 'is_singular', 'is_post_type_archive',
-    'is_active_sidebar', 'has_post_thumbnail', 'comments_open', 'get_comments_number',
-
+    "is_home",
+    "is_front_page",
+    "is_single",
+    "is_page",
+    "is_archive",
+    "is_category",
+    "is_tag",
+    "is_404",
+    "is_search",
+    "is_singular",
+    "is_post_type_archive",
+    "is_active_sidebar",
+    "has_post_thumbnail",
+    "comments_open",
+    "get_comments_number",
     # Navigation
-    'wp_nav_menu', 'the_posts_navigation', 'the_posts_pagination', 'get_search_form',
-    'paginate_links', 'next_post_link', 'previous_post_link',
-
+    "wp_nav_menu",
+    "the_posts_navigation",
+    "the_posts_pagination",
+    "get_search_form",
+    "paginate_links",
+    "next_post_link",
+    "previous_post_link",
     # Comments
-    'comments_template', 'comment_form', 'wp_list_comments',
-
+    "comments_template",
+    "comment_form",
+    "wp_list_comments",
     # Widgets
-    'dynamic_sidebar', 'register_sidebar', 'is_active_sidebar',
-
+    "dynamic_sidebar",
+    "register_sidebar",
+    "is_active_sidebar",
     # Custom logo
-    'the_custom_logo', 'get_custom_logo', 'has_custom_logo',
-
+    "the_custom_logo",
+    "get_custom_logo",
+    "has_custom_logo",
     # Theme support
-    'add_theme_support', 'register_nav_menus',
-
+    "add_theme_support",
+    "register_nav_menus",
     # Enqueue scripts/styles
-    'wp_enqueue_style', 'wp_enqueue_script', 'get_stylesheet_uri',
-    'get_template_directory_uri', 'get_template_directory', 'get_stylesheet_directory',
-    'get_stylesheet_directory_uri',
-
+    "wp_enqueue_style",
+    "wp_enqueue_script",
+    "get_stylesheet_uri",
+    "get_template_directory_uri",
+    "get_template_directory",
+    "get_stylesheet_directory",
+    "get_stylesheet_directory_uri",
     # Security/escaping
-    'esc_html', 'esc_attr', 'esc_url', 'esc_js', 'esc_html__', 'esc_attr__',
-    'esc_html_e', 'esc_attr_e', 'wp_kses_post', 'sanitize_text_field',
-
+    "esc_html",
+    "esc_attr",
+    "esc_url",
+    "esc_js",
+    "esc_html__",
+    "esc_attr__",
+    "esc_html_e",
+    "esc_attr_e",
+    "wp_kses_post",
+    "sanitize_text_field",
     # Translation
-    '__', '_e', '_x', '_ex', '_n', '_nx',
-
+    "__",
+    "_e",
+    "_x",
+    "_ex",
+    "_n",
+    "_nx",
     # WooCommerce (if enabled)
-    'woocommerce_content', 'woocommerce_breadcrumb', 'woocommerce_output_content_wrapper',
-    'woocommerce_output_content_wrapper_end', 'is_woocommerce', 'is_shop', 'is_product',
-    'is_cart', 'is_checkout', 'is_account_page',
+    "woocommerce_content",
+    "woocommerce_breadcrumb",
+    "woocommerce_output_content_wrapper",
+    "woocommerce_output_content_wrapper_end",
+    "is_woocommerce",
+    "is_shop",
+    "is_product",
+    "is_cart",
+    "is_checkout",
+    "is_account_page",
     # WooCommerce product functions (safe, real functions)
-    'wc_get_product', 'wc_get_products', 'woocommerce_get_product_thumbnail',
-    'woocommerce_template_loop_add_to_cart', 'woocommerce_template_single_title',
-    'woocommerce_template_single_price', 'woocommerce_template_single_excerpt',
-    'woocommerce_template_single_add_to_cart', 'woocommerce_template_single_meta',
-    'woocommerce_template_single_sharing',
+    "wc_get_product",
+    "wc_get_products",
+    "woocommerce_get_product_thumbnail",
+    "woocommerce_template_loop_add_to_cart",
+    "woocommerce_template_single_title",
+    "woocommerce_template_single_price",
+    "woocommerce_template_single_excerpt",
+    "woocommerce_template_single_add_to_cart",
+    "woocommerce_template_single_meta",
+    "woocommerce_template_single_sharing",
     # WooCommerce hooks and actions
-    'wc_get_loop_prop', 'wc_set_loop_prop', 'wc_print_notices',
+    "wc_get_loop_prop",
+    "wc_set_loop_prop",
+    "wc_print_notices",
     # Yoast SEO (common plugin)
-    'yoast_breadcrumb', 'wpseo_breadcrumb',
-
+    "yoast_breadcrumb",
+    "wpseo_breadcrumb",
     # Other common functions
-    'wp_get_theme', 'get_option', 'get_theme_mod', 'wp_parse_args',
-    'absint', 'intval', 'floatval', 'boolval', 'wp_body_open',
+    "wp_get_theme",
+    "get_option",
+    "get_theme_mod",
+    "wp_parse_args",
+    "absint",
+    "intval",
+    "floatval",
+    "boolval",
+    "wp_body_open",
 }
 
 
 # Hallucinated functions to detect and remove
 HALLUCINATED_FUNCTIONS = {
-    'post_loop',  # Not a real WordPress function
-    'render_post',  # Not standard
-    'display_post',  # Not standard
-    'show_content',  # Not standard
+    "post_loop",  # Not a real WordPress function
+    "render_post",  # Not standard
+    "display_post",  # Not standard
+    "show_content",  # Not standard
     # Hallucinated WooCommerce functions (commonly generated by LLMs but don't exist)
-    'is_on_sale',  # Doesn't exist - should use $product->is_on_sale()
-    'get_price_html',  # Doesn't exist - should use $product->get_price_html()
-    'add_to_cart_url',  # Doesn't exist - should use $product->add_to_cart_url()
-    'get_product_price',  # Doesn't exist
-    'display_product',  # Not standard
-    'render_product',  # Not standard
-    'show_product',  # Not standard
-    'woocommerce_product_loop',  # Doesn't exist
+    "is_on_sale",  # Doesn't exist - should use $product->is_on_sale()
+    "get_price_html",  # Doesn't exist - should use $product->get_price_html()
+    "add_to_cart_url",  # Doesn't exist - should use $product->add_to_cart_url()
+    "get_product_price",  # Doesn't exist
+    "display_product",  # Not standard
+    "render_product",  # Not standard
+    "show_product",  # Not standard
+    "woocommerce_product_loop",  # Doesn't exist
 }
 
 
@@ -130,40 +209,40 @@ def strip_invisible_unicode(code: str) -> tuple[str, int]:
 
     # List of problematic Unicode characters to remove
     invisible_chars = [
-        '\u200b',  # Zero-width space
-        '\u200c',  # Zero-width non-joiner
-        '\u200d',  # Zero-width joiner
-        '\ufeff',  # Zero-width no-break space (BOM)
-        '\u2060',  # Word joiner
-        '\u180e',  # Mongolian vowel separator
-        '\u061c',  # Arabic letter mark
-        '\u202a',  # Left-to-right embedding
-        '\u202b',  # Right-to-left embedding
-        '\u202c',  # Pop directional formatting
-        '\u202d',  # Left-to-right override
-        '\u202e',  # Right-to-left override
-        '\u2061',  # Function application
-        '\u2062',  # Invisible times
-        '\u2063',  # Invisible separator
-        '\u2064',  # Invisible plus
+        "\u200b",  # Zero-width space
+        "\u200c",  # Zero-width non-joiner
+        "\u200d",  # Zero-width joiner
+        "\ufeff",  # Zero-width no-break space (BOM)
+        "\u2060",  # Word joiner
+        "\u180e",  # Mongolian vowel separator
+        "\u061c",  # Arabic letter mark
+        "\u202a",  # Left-to-right embedding
+        "\u202b",  # Right-to-left embedding
+        "\u202c",  # Pop directional formatting
+        "\u202d",  # Left-to-right override
+        "\u202e",  # Right-to-left override
+        "\u2061",  # Function application
+        "\u2062",  # Invisible times
+        "\u2063",  # Invisible separator
+        "\u2064",  # Invisible plus
     ]
 
     # Remove all invisible characters
     for char in invisible_chars:
-        code = code.replace(char, '')
+        code = code.replace(char, "")
 
     # Remove other control characters except newline, tab, and carriage return
     # which are valid in source code
     cleaned = []
     for char in code:
         # Keep printable characters, newlines, tabs, carriage returns
-        if char in ['\n', '\r', '\t'] or unicodedata.category(char)[0] != 'C':
+        if char in ["\n", "\r", "\t"] or unicodedata.category(char)[0] != "C":
             cleaned.append(char)
         else:
             # Skip other control characters
             pass
 
-    code = ''.join(cleaned)
+    code = "".join(cleaned)
 
     chars_removed = original_length - len(code)
 
@@ -183,38 +262,42 @@ def detect_stray_backslashes(code: str) -> tuple[bool, list[str]]:
         Tuple of (has_issues, list_of_issues_found)
     """
     issues = []
-    lines = code.split('\n')
+    lines = code.split("\n")
 
     # Valid escape sequences in PHP
-    valid_escapes = {r'\\', r'\"', r"\'", r'\n', r'\r', r'\t', r'\$', r'\0'}
+    valid_escapes = {r"\\", r"\"", r"\'", r"\n", r"\r", r"\t", r"\$", r"\0"}
 
     for i, line in enumerate(lines, 1):
         # Skip lines that are comments
         stripped = line.strip()
-        if stripped.startswith('//') or stripped.startswith('#') or stripped.startswith('*'):
+        if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("*"):
             continue
 
         # Find all backslashes not in strings
         # Look for backslashes outside of quoted strings
         in_single_quote = False
         in_double_quote = False
-        prev_char = ''
+        prev_char = ""
 
         for j, char in enumerate(line):
-            if char == "'" and prev_char != '\\':
+            if char == "'" and prev_char != "\\":
                 in_single_quote = not in_single_quote
-            elif char == '"' and prev_char != '\\':
+            elif char == '"' and prev_char != "\\":
                 in_double_quote = not in_double_quote
-            elif char == '\\' and not in_single_quote and not in_double_quote:
+            elif char == "\\" and not in_single_quote and not in_double_quote:
                 # Backslash outside of strings - check if it's valid (namespace)
                 # Look ahead to see if it's part of a namespace
-                lookahead = line[j:j+20] if j+20 < len(line) else line[j:]
+                lookahead = line[j : j + 20] if j + 20 < len(line) else line[j:]
 
                 # Valid uses: namespace separator, or at end of line (line continuation)
-                if not (lookahead.startswith('\\\\') or  # Escaped backslash
-                        re.match(r'\\[A-Za-z_]', lookahead) or  # Namespace
-                        lookahead.strip() == '\\'):  # Line continuation
-                    issues.append(f"Line {i}, col {j+1}: Stray backslash found outside of string context")
+                if not (
+                    lookahead.startswith("\\\\")  # Escaped backslash
+                    or re.match(r"\\[A-Za-z_]", lookahead)  # Namespace
+                    or lookahead.strip() == "\\"
+                ):  # Line continuation
+                    issues.append(
+                        f"Line {i}, col {j+1}: Stray backslash found outside of string context"
+                    )
 
             prev_char = char
 
@@ -246,17 +329,17 @@ def remove_stray_backslashes(code: str) -> tuple[str, int]:
 
     # Replace obvious stray backslashes (e.g., "\ " or "\<" or "\>")
     # These are common LLM generation errors
-    code = re.sub(r'\\ +', ' ', code)  # Backslash followed by space
-    code = re.sub(r'\\<', '<', code)  # Backslash before HTML tag
-    code = re.sub(r'\\>', '>', code)  # Backslash after HTML tag
-    code = re.sub(r'\\,', ',', code)  # Backslash before comma
-    code = re.sub(r'\\;', ';', code)  # Backslash before semicolon
-    code = re.sub(r'\\\(', '(', code)  # Backslash before paren
-    code = re.sub(r'\\\)', ')', code)  # Backslash after paren
-    code = re.sub(r'\\\{', '{', code)  # Backslash before brace
-    code = re.sub(r'\\\}', '}', code)  # Backslash after brace
-    code = re.sub(r'\\\[', '[', code)  # Backslash before bracket
-    code = re.sub(r'\\\]', ']', code)  # Backslash after bracket
+    code = re.sub(r"\\ +", " ", code)  # Backslash followed by space
+    code = re.sub(r"\\<", "<", code)  # Backslash before HTML tag
+    code = re.sub(r"\\>", ">", code)  # Backslash after HTML tag
+    code = re.sub(r"\\,", ",", code)  # Backslash before comma
+    code = re.sub(r"\\;", ";", code)  # Backslash before semicolon
+    code = re.sub(r"\\\(", "(", code)  # Backslash before paren
+    code = re.sub(r"\\\)", ")", code)  # Backslash after paren
+    code = re.sub(r"\\\{", "{", code)  # Backslash before brace
+    code = re.sub(r"\\\}", "}", code)  # Backslash after brace
+    code = re.sub(r"\\\[", "[", code)  # Backslash before bracket
+    code = re.sub(r"\\\]", "]", code)  # Backslash after bracket
 
     # Count removals
     removed = len(original) - len(code)
@@ -276,7 +359,7 @@ def detect_mixed_html_in_php_blocks(php_code: str) -> tuple[bool, list[str]]:
     issues = []
 
     # Extract PHP blocks (between <?php and ?>)
-    php_pattern = r'<\?php(.*?)(?:\?>|$)'
+    php_pattern = r"<\?php(.*?)(?:\?>|$)"
     matches = re.finditer(php_pattern, php_code, re.DOTALL)
 
     for match in matches:
@@ -285,19 +368,24 @@ def detect_mixed_html_in_php_blocks(php_code: str) -> tuple[bool, list[str]]:
 
         # Check for HTML tags inside PHP blocks (outside of strings)
         # Remove strings first to avoid false positives
-        block_no_strings = re.sub(r"'[^']*'", '', block)
-        block_no_strings = re.sub(r'"[^"]*"', '', block_no_strings)
+        block_no_strings = re.sub(r"'[^']*'", "", block)
+        block_no_strings = re.sub(r'"[^"]*"', "", block_no_strings)
 
         # Look for HTML tags
-        html_tags = re.findall(r'<(?:div|span|p|a|h[1-6]|section|article|header|footer|nav|main|aside)[^>]*>',
-                               block_no_strings, re.IGNORECASE)
+        html_tags = re.findall(
+            r"<(?:div|span|p|a|h[1-6]|section|article|header|footer|nav|main|aside)[^>]*>",
+            block_no_strings,
+            re.IGNORECASE,
+        )
         if html_tags:
-            issues.append(f"HTML tags found inside PHP block at position {block_start}: {', '.join(html_tags[:3])}")
+            issues.append(
+                f"HTML tags found inside PHP block at position {block_start}: {', '.join(html_tags[:3])}"
+            )
 
         # Look for CSS properties (common error: CSS mixed with PHP)
         css_patterns = [
-            r'(?:^|\s)(color|background|margin|padding|font-size|width|height)\s*:\s*[^;]+;',
-            r'\{[^}]*(?:color|background|margin|padding):\s*[^}]*\}',
+            r"(?:^|\s)(color|background|margin|padding|font-size|width|height)\s*:\s*[^;]+;",
+            r"\{[^}]*(?:color|background|margin|padding):\s*[^}]*\}",
         ]
         for pattern in css_patterns:
             if re.search(pattern, block_no_strings, re.IGNORECASE):
@@ -305,10 +393,16 @@ def detect_mixed_html_in_php_blocks(php_code: str) -> tuple[bool, list[str]]:
                 break
 
         # Check for unclosed HTML tags that would break PHP
-        open_tags = len(re.findall(r'<(?!/)(?:div|span|p|article|section)', block_no_strings, re.IGNORECASE))
-        close_tags = len(re.findall(r'</(?:div|span|p|article|section)>', block_no_strings, re.IGNORECASE))
+        open_tags = len(
+            re.findall(r"<(?!/)(?:div|span|p|article|section)", block_no_strings, re.IGNORECASE)
+        )
+        close_tags = len(
+            re.findall(r"</(?:div|span|p|article|section)>", block_no_strings, re.IGNORECASE)
+        )
         if open_tags != close_tags:
-            issues.append(f"Unmatched HTML tags inside PHP block at position {block_start} ({open_tags} open, {close_tags} close)")
+            issues.append(
+                f"Unmatched HTML tags inside PHP block at position {block_start} ({open_tags} open, {close_tags} close)"
+            )
 
     has_issues = len(issues) > 0
     return has_issues, issues
@@ -326,43 +420,47 @@ def verify_required_template_tags(php_code: str, file_type: str) -> tuple[bool, 
     """
     missing_tags = []
 
-    if file_type == 'header':
+    if file_type == "header":
         # Header must have wp_head()
-        if 'wp_head()' not in php_code:
-            missing_tags.append('wp_head() is required in header.php')
+        if "wp_head()" not in php_code:
+            missing_tags.append("wp_head() is required in header.php")
 
         # Should have DOCTYPE
-        if '<!DOCTYPE' not in php_code:
-            missing_tags.append('<!DOCTYPE html> declaration is required in header.php')
+        if "<!DOCTYPE" not in php_code:
+            missing_tags.append("<!DOCTYPE html> declaration is required in header.php")
 
         # Should have <html> tag
-        if '<html' not in php_code:
-            missing_tags.append('<html> tag is required in header.php')
+        if "<html" not in php_code:
+            missing_tags.append("<html> tag is required in header.php")
 
         # Should have charset meta
-        if 'charset' not in php_code and 'meta' not in php_code:
-            missing_tags.append('<meta charset> is required in header.php')
+        if "charset" not in php_code and "meta" not in php_code:
+            missing_tags.append("<meta charset> is required in header.php")
 
         # Should have viewport meta
-        if 'viewport' not in php_code:
+        if "viewport" not in php_code:
             missing_tags.append('<meta name="viewport"> is recommended in header.php')
 
-    elif file_type == 'footer':
+    elif file_type == "footer":
         # Footer must have wp_footer()
-        if 'wp_footer()' not in php_code:
-            missing_tags.append('wp_footer() is REQUIRED in footer.php - theme will break without it')
+        if "wp_footer()" not in php_code:
+            missing_tags.append(
+                "wp_footer() is REQUIRED in footer.php - theme will break without it"
+            )
 
         # Should close body and html
-        if '</body>' not in php_code:
-            missing_tags.append('</body> closing tag is required in footer.php')
+        if "</body>" not in php_code:
+            missing_tags.append("</body> closing tag is required in footer.php")
 
-        if '</html>' not in php_code:
-            missing_tags.append('</html> closing tag is required in footer.php')
+        if "</html>" not in php_code:
+            missing_tags.append("</html> closing tag is required in footer.php")
 
-    elif file_type == 'functions':
+    elif file_type == "functions":
         # Functions.php should have at least one hook
-        if 'add_action' not in php_code and 'add_filter' not in php_code:
-            missing_tags.append('functions.php should contain at least one add_action() or add_filter() hook')
+        if "add_action" not in php_code and "add_filter" not in php_code:
+            missing_tags.append(
+                "functions.php should contain at least one add_action() or add_filter() hook"
+            )
 
     is_valid = len(missing_tags) == 0
 
@@ -382,43 +480,43 @@ def auto_add_required_tags(php_code: str, file_type: str) -> tuple[str, list[str
     additions = []
     fixed_code = php_code
 
-    if file_type == 'header':
+    if file_type == "header":
         # Add wp_head() before </head> if missing
-        if 'wp_head()' not in fixed_code:
-            if '</head>' in fixed_code.lower():
+        if "wp_head()" not in fixed_code:
+            if "</head>" in fixed_code.lower():
                 fixed_code = re.sub(
-                    r'(</head>)',
-                    r'<?php wp_head(); ?>\n\1',
+                    r"(</head>)",
+                    r"<?php wp_head(); ?>\n\1",
                     fixed_code,
                     count=1,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
-                additions.append('Added missing wp_head() before </head>')
-                logger.info('Auto-added wp_head() to header.php')
+                additions.append("Added missing wp_head() before </head>")
+                logger.info("Auto-added wp_head() to header.php")
             else:
                 # No </head> found, append to end
-                fixed_code += '\n<?php wp_head(); ?>\n'
-                additions.append('Added missing wp_head() at end of header')
-                logger.warning('Added wp_head() at end of header.php (no </head> tag found)')
+                fixed_code += "\n<?php wp_head(); ?>\n"
+                additions.append("Added missing wp_head() at end of header")
+                logger.warning("Added wp_head() at end of header.php (no </head> tag found)")
 
-    elif file_type == 'footer':
+    elif file_type == "footer":
         # Add wp_footer() before </body> if missing
-        if 'wp_footer()' not in fixed_code:
-            if '</body>' in fixed_code.lower():
+        if "wp_footer()" not in fixed_code:
+            if "</body>" in fixed_code.lower():
                 fixed_code = re.sub(
-                    r'(</body>)',
-                    r'<?php wp_footer(); ?>\n\1',
+                    r"(</body>)",
+                    r"<?php wp_footer(); ?>\n\1",
                     fixed_code,
                     count=1,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
-                additions.append('Added CRITICAL missing wp_footer() before </body>')
-                logger.info('Auto-added wp_footer() to footer.php')
+                additions.append("Added CRITICAL missing wp_footer() before </body>")
+                logger.info("Auto-added wp_footer() to footer.php")
             else:
                 # No </body> found, add both
-                fixed_code += '\n<?php wp_footer(); ?>\n</body>\n</html>\n'
-                additions.append('Added missing wp_footer() and closing tags')
-                logger.warning('Added wp_footer() and closing tags to footer.php')
+                fixed_code += "\n<?php wp_footer(); ?>\n</body>\n</html>\n"
+                additions.append("Added missing wp_footer() and closing tags")
+                logger.warning("Added wp_footer() and closing tags to footer.php")
 
     return fixed_code, additions
 
@@ -449,27 +547,49 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
 
     # Valid PHP keywords that should NOT be quoted
     valid_keywords = {
-        'true', 'false', 'null', 'TRUE', 'FALSE', 'NULL',
-        '__FILE__', '__LINE__', '__DIR__', '__FUNCTION__', '__CLASS__',
-        '__METHOD__', '__NAMESPACE__', '__TRAIT__',
-        'self', 'parent', 'static',
+        "true",
+        "false",
+        "null",
+        "TRUE",
+        "FALSE",
+        "NULL",
+        "__FILE__",
+        "__LINE__",
+        "__DIR__",
+        "__FUNCTION__",
+        "__CLASS__",
+        "__METHOD__",
+        "__NAMESPACE__",
+        "__TRAIT__",
+        "self",
+        "parent",
+        "static",
     }
 
     # Valid WordPress constants that should NOT be quoted
     valid_constants = {
-        'ABSPATH', 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY',
-        'WP_CONTENT_DIR', 'WP_CONTENT_URL', 'WP_PLUGIN_DIR', 'WP_PLUGIN_URL',
-        'WPINC', 'WP_LANG_DIR', 'WP_MEMORY_LIMIT', 'WP_MAX_MEMORY_LIMIT',
+        "ABSPATH",
+        "WP_DEBUG",
+        "WP_DEBUG_LOG",
+        "WP_DEBUG_DISPLAY",
+        "WP_CONTENT_DIR",
+        "WP_CONTENT_URL",
+        "WP_PLUGIN_DIR",
+        "WP_PLUGIN_URL",
+        "WPINC",
+        "WP_LANG_DIR",
+        "WP_MEMORY_LIMIT",
+        "WP_MAX_MEMORY_LIMIT",
     }
 
     # Pattern to find array assignments: 'key' => value, or "key" => value,
     # Captures the key, arrow, and value
-    array_pattern = r'''
+    array_pattern = r"""
         (['"])([^'"]+)\1           # Quoted key: 'key' or "key"
         \s*=>\s*                   # Arrow with optional whitespace
         ([a-zA-Z_][a-zA-Z0-9_-]*)  # Bareword value (identifier-like)
         \s*([,\)])                 # Followed by comma or closing paren
-    '''
+    """
 
     def should_quote_value(value: str) -> bool:
         """Check if a value should be quoted."""
@@ -482,12 +602,12 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
             return False
 
         # Don't quote if it looks like a number
-        if value.isdigit() or re.match(r'^\d+\.\d+$', value):
+        if value.isdigit() or re.match(r"^\d+\.\d+$", value):
             return False
 
         # Don't quote if it's a WordPress function call pattern
         # (though this pattern shouldn't match function calls)
-        if '(' in value or ')' in value:
+        if "(" in value or ")" in value:
             return False
 
         # Everything else should be quoted
@@ -496,8 +616,8 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
     # Find and fix barewords in array assignments
     def fix_bareword(match):
         quote_char = match.group(1)  # Single or double quote from key
-        key = match.group(2)         # The key name
-        value = match.group(3)       # The bareword value
+        key = match.group(2)  # The key name
+        value = match.group(3)  # The bareword value
         terminator = match.group(4)  # Comma or closing paren
 
         if should_quote_value(value):
@@ -509,20 +629,15 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
             return match.group(0)
 
     # Apply the fix
-    sanitized = re.sub(
-        array_pattern,
-        fix_bareword,
-        sanitized,
-        flags=re.VERBOSE | re.MULTILINE
-    )
+    sanitized = re.sub(array_pattern, fix_bareword, sanitized, flags=re.VERBOSE | re.MULTILINE)
 
     # Also check for function arguments with barewords
     # Pattern: function_name( bareword ) or function_name( 'key', bareword )
-    func_arg_pattern = r'''
+    func_arg_pattern = r"""
         (\w+)\s*\(               # Function name and opening paren
         ([^)]*?)                 # Capture everything inside parens
         \)                       # Closing paren
-    '''
+    """
 
     def fix_function_args(match):
         func_name = match.group(1)
@@ -532,25 +647,27 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
             return match.group(0)
 
         # Split arguments by comma
-        args = [arg.strip() for arg in args_str.split(',')]
+        args = [arg.strip() for arg in args_str.split(",")]
         fixed_args = []
         local_fixes = []
 
         for arg in args:
             # Skip if already quoted or is a number or looks like an expression
-            if (arg.startswith(("'", '"')) or
-                arg.isdigit() or
-                arg in valid_keywords or
-                arg in valid_constants or
-                '(' in arg or
-                '$' in arg or
-                '::' in arg or
-                '->' in arg):
+            if (
+                arg.startswith(("'", '"'))
+                or arg.isdigit()
+                or arg in valid_keywords
+                or arg in valid_constants
+                or "(" in arg
+                or "$" in arg
+                or "::" in arg
+                or "->" in arg
+            ):
                 fixed_args.append(arg)
             else:
                 # Check if it's a bareword that needs quoting
                 # Look for standalone identifiers that aren't function calls
-                bareword_match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_-]*)$', arg)
+                bareword_match = re.match(r"^([a-zA-Z_][a-zA-Z0-9_-]*)$", arg)
                 if bareword_match and should_quote_value(arg):
                     fixed_args.append(f"'{arg}'")
                     local_fixes.append(f"Quoted bareword '{arg}' in {func_name}()")
@@ -564,10 +681,7 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
             return match.group(0)
 
     sanitized = re.sub(
-        func_arg_pattern,
-        fix_function_args,
-        sanitized,
-        flags=re.VERBOSE | re.MULTILINE
+        func_arg_pattern, fix_function_args, sanitized, flags=re.VERBOSE | re.MULTILINE
     )
 
     if fixes:
@@ -580,6 +694,7 @@ def sanitize_barewords(php_code: str, filename: str = "file.php") -> tuple[str, 
 
 class PHPValidationError(Exception):
     """Exception raised when PHP validation fails."""
+
     pass
 
 
@@ -603,10 +718,7 @@ class PHPValidator:
         """
         try:
             result = subprocess.run(
-                [self.php_path, "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                [self.php_path, "--version"], capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 logger.debug(f"PHP is available: {result.stdout.splitlines()[0]}")
@@ -616,7 +728,9 @@ class PHPValidator:
             logger.warning(f"PHP CLI not available at '{self.php_path}'")
             return False
 
-    def validate_php_syntax(self, php_code: str, filename: str = "generated.php") -> tuple[bool, str | None]:
+    def validate_php_syntax(
+        self, php_code: str, filename: str = "generated.php"
+    ) -> tuple[bool, str | None]:
         """Validate PHP syntax using PHP CLI if available.
 
         This method handles both pure PHP files and mixed PHP + HTML templates:
@@ -644,7 +758,9 @@ class PHPValidator:
         # Must be done after all concatenation, immediately before writing temp file
         php_code, backslash_count = remove_stray_backslashes(php_code)
         if backslash_count > 0:
-            logger.debug(f"Sanitized {backslash_count} stray backslash(es) before linting {filename}")
+            logger.debug(
+                f"Sanitized {backslash_count} stray backslash(es) before linting {filename}"
+            )
 
         # Temporary logging to verify sanitization
         logger.debug("Sanitized php_code preview: %s", php_code[:200])
@@ -652,15 +768,12 @@ class PHPValidator:
         # Use PHP -l for syntax checking
         # This works correctly with mixed PHP + HTML templates
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
                 f.write(php_code)
                 temp_path = f.name
 
             result = subprocess.run(
-                [self.php_path, "-l", temp_path],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [self.php_path, "-l", temp_path], capture_output=True, text=True, timeout=10
             )
 
             Path(temp_path).unlink()
@@ -690,7 +803,7 @@ class PHPValidator:
         errors = []
 
         # Check for proper PHP tags
-        if not ('<?php' in php_code or '<?=' in php_code or '<!DOCTYPE' in php_code):
+        if not ("<?php" in php_code or "<?=" in php_code or "<!DOCTYPE" in php_code):
             errors.append(f"{filename}: Missing PHP opening tag (<?php)")
 
         # Check for brace matching
@@ -714,7 +827,9 @@ class PHPValidator:
         logger.debug(f"✓ Python-based validation passed: {filename}")
         return True, None
 
-    def check_brace_matching(self, php_code: str, filename: str = "file.php") -> tuple[bool, str | None]:
+    def check_brace_matching(
+        self, php_code: str, filename: str = "file.php"
+    ) -> tuple[bool, str | None]:
         """Check if braces {} are balanced inside PHP blocks.
 
         Args:
@@ -729,8 +844,8 @@ class PHPValidator:
 
         for i, block in enumerate(php_blocks):
             # Count braces
-            open_count = block.count('{')
-            close_count = block.count('}')
+            open_count = block.count("{")
+            close_count = block.count("}")
 
             if open_count != close_count:
                 return False, (
@@ -752,17 +867,17 @@ class PHPValidator:
         """
         # For template files with HTML, we don't need closing tags
         # Just check that opening tags are valid
-        if '<!DOCTYPE' in php_code or '<html' in php_code:
+        if "<!DOCTYPE" in php_code or "<html" in php_code:
             # This is an HTML template file, just check for valid opening tags
-            php_opens = re.findall(r'<\?(?:php|=)', php_code)
+            php_opens = re.findall(r"<\?(?:php|=)", php_code)
             if not php_opens:
                 # Pure HTML file (like header.php might be), that's ok
                 return True, None
             return True, None
 
         # For pure PHP files, check tag matching
-        php_opens = len(re.findall(r'<\?php', php_code))
-        php_closes = php_code.count('?>')
+        php_opens = len(re.findall(r"<\?php", php_code))
+        php_closes = php_code.count("?>")
 
         # It's ok to have more opens than closes (modern PHP doesn't require closing tags)
         if php_opens < php_closes:
@@ -784,11 +899,11 @@ class PHPValidator:
         fixed_code = php_code
 
         # Count PHP tags
-        php_opens = len(re.findall(r'<\?php', php_code))
-        php_closes = php_code.count('?>')
+        php_opens = len(re.findall(r"<\?php", php_code))
+        php_closes = php_code.count("?>")
 
         # For template files with HTML, this is expected
-        if '<!DOCTYPE' in php_code or '<html' in php_code:
+        if "<!DOCTYPE" in php_code or "<html" in php_code:
             # Template file - it's OK to have unmatched tags
             return fixed_code, fixes
 
@@ -796,7 +911,7 @@ class PHPValidator:
         if php_opens > php_closes:
             # More opens than closes - add closing tags at the end
             missing = php_opens - php_closes
-            fixed_code = fixed_code.rstrip() + ('\n?>' * missing)
+            fixed_code = fixed_code.rstrip() + ("\n?>" * missing)
             fixes.append(f"Added {missing} missing ?> closing tag(s)")
             logger.info(f"Auto-fixed: Added {missing} closing PHP tag(s) in {filename}")
 
@@ -806,15 +921,17 @@ class PHPValidator:
             # Remove ?> from the end
             for _ in range(extra):
                 # Find and remove the last occurrence of ?>
-                last_close_idx = fixed_code.rfind('?>')
+                last_close_idx = fixed_code.rfind("?>")
                 if last_close_idx != -1:
-                    fixed_code = fixed_code[:last_close_idx] + fixed_code[last_close_idx+2:]
+                    fixed_code = fixed_code[:last_close_idx] + fixed_code[last_close_idx + 2 :]
             fixes.append(f"Removed {extra} extra ?> closing tag(s)")
             logger.info(f"Auto-fixed: Removed {extra} extra PHP closing tag(s) in {filename}")
 
         return fixed_code, fixes
 
-    def check_stray_braces(self, php_code: str, filename: str = "file.php") -> tuple[bool, str | None]:
+    def check_stray_braces(
+        self, php_code: str, filename: str = "file.php"
+    ) -> tuple[bool, str | None]:
         """Check for stray closing braces outside PHP blocks.
 
         Args:
@@ -827,10 +944,10 @@ class PHPValidator:
         # Remove PHP blocks
         without_php = php_code
         for block in self._extract_php_blocks(php_code):
-            without_php = without_php.replace(block, '', 1)
+            without_php = without_php.replace(block, "", 1)
 
         # Check for braces in remaining HTML
-        if '}' in without_php:
+        if "}" in without_php:
             return False, f"{filename}: Found stray closing brace '}}' outside PHP block"
 
         return True, None
@@ -847,12 +964,12 @@ class PHPValidator:
         blocks = []
 
         # Find all <?php ... ?> blocks
-        pattern = r'<\?php(.*?)(?:\?>|$)'
+        pattern = r"<\?php(.*?)(?:\?>|$)"
         matches = re.findall(pattern, php_code, re.DOTALL)
         blocks.extend(matches)
 
         # Find all <?= ... ?> blocks
-        pattern = r'<\?=(.*?)(?:\?>|$)'
+        pattern = r"<\?=(.*?)(?:\?>|$)"
         matches = re.findall(pattern, php_code, re.DOTALL)
         blocks.extend(matches)
 
@@ -871,18 +988,18 @@ class PHPValidator:
         fixes = []
 
         # Extract PHP blocks and fix each one
-        php_blocks = re.finditer(r'(<\?php.*?)(?=<\?php|$)', php_code, re.DOTALL)
+        php_blocks = re.finditer(r"(<\?php.*?)(?=<\?php|$)", php_code, re.DOTALL)
 
         fixed_code = php_code
         for match in php_blocks:
             block = match.group(1)
-            open_count = block.count('{')
-            close_count = block.count('}')
+            open_count = block.count("{")
+            close_count = block.count("}")
 
             if open_count > close_count:
                 # Add missing closing braces
                 missing = open_count - close_count
-                fixed_block = block + ('\n}' * missing)
+                fixed_block = block + ("\n}" * missing)
                 fixed_code = fixed_code.replace(block, fixed_block, 1)
                 fixes.append(f"Added {missing} missing closing brace(s) in {filename}")
                 logger.info(f"Auto-fixed: Added {missing} closing brace(s) in {filename}")
@@ -893,14 +1010,16 @@ class PHPValidator:
                 # Remove from the end
                 fixed_block = block
                 for _ in range(extra):
-                    fixed_block = fixed_block.rsplit('}', 1)[0]
+                    fixed_block = fixed_block.rsplit("}", 1)[0]
                 fixed_code = fixed_code.replace(block, fixed_block, 1)
                 fixes.append(f"Removed {extra} extra closing brace(s) in {filename}")
                 logger.info(f"Auto-fixed: Removed {extra} closing brace(s) in {filename}")
 
         return fixed_code, fixes
 
-    def check_required_structure(self, php_code: str, file_type: str, filename: str = "file.php") -> tuple[bool, list[str]]:
+    def check_required_structure(
+        self, php_code: str, file_type: str, filename: str = "file.php"
+    ) -> tuple[bool, list[str]]:
         """Check if PHP file has required WordPress structures.
 
         Args:
@@ -913,41 +1032,41 @@ class PHPValidator:
         """
         missing = []
 
-        if file_type == 'header':
+        if file_type == "header":
             required = [
-                ('<!DOCTYPE html>', 'DOCTYPE declaration'),
-                ('<html', 'html tag'),
-                ('<head>', 'head tag'),
-                ('wp_head()', 'wp_head() hook'),
-                ('<body', 'body tag'),
-                ('site-header', '.site-header class or id'),
+                ("<!DOCTYPE html>", "DOCTYPE declaration"),
+                ("<html", "html tag"),
+                ("<head>", "head tag"),
+                ("wp_head()", "wp_head() hook"),
+                ("<body", "body tag"),
+                ("site-header", ".site-header class or id"),
             ]
 
             for item, description in required:
                 if item not in php_code:
                     missing.append(f"{filename}: Missing {description}")
 
-        elif file_type == 'footer':
+        elif file_type == "footer":
             required = [
-                ('</main>', 'closing main tag (or similar content wrapper)'),
-                ('<footer', 'footer tag'),
-                ('wp_footer()', 'wp_footer() hook'),
-                ('</body>', 'closing body tag'),
-                ('</html>', 'closing html tag'),
+                ("</main>", "closing main tag (or similar content wrapper)"),
+                ("<footer", "footer tag"),
+                ("wp_footer()", "wp_footer() hook"),
+                ("</body>", "closing body tag"),
+                ("</html>", "closing html tag"),
             ]
 
             for item, description in required:
                 if item not in php_code:
                     missing.append(f"{filename}: Missing {description}")
 
-        elif file_type == 'functions':
+        elif file_type == "functions":
             required = [
-                ('<?php', 'PHP opening tag'),
-                ('add_action', 'add_action() or add_filter() hooks'),
+                ("<?php", "PHP opening tag"),
+                ("add_action", "add_action() or add_filter() hooks"),
             ]
 
             # Check for at least one add_action or add_filter
-            if 'add_action' not in php_code and 'add_filter' not in php_code:
+            if "add_action" not in php_code and "add_filter" not in php_code:
                 missing.append(f"{filename}: No WordPress hooks (add_action/add_filter)")
 
         if missing:
@@ -955,7 +1074,9 @@ class PHPValidator:
 
         return True, []
 
-    def validate_wordpress_functions(self, php_code: str, filename: str = "file.php") -> tuple[list[str], list[str]]:
+    def validate_wordpress_functions(
+        self, php_code: str, filename: str = "file.php"
+    ) -> tuple[list[str], list[str]]:
         """Check for hallucinated or invalid WordPress functions.
 
         Args:
@@ -969,7 +1090,7 @@ class PHPValidator:
         warnings = []
 
         # Find all function calls
-        function_pattern = r'([a-z_][a-z0-9_]*)\s*\('
+        function_pattern = r"([a-z_][a-z0-9_]*)\s*\("
         functions = re.findall(function_pattern, php_code, re.IGNORECASE)
 
         for func in set(functions):
@@ -979,13 +1100,15 @@ class PHPValidator:
                 logger.error(f"Found hallucinated function: {func}() in {filename}")
 
             # Check if it looks like a WordPress function but isn't in our whitelist
-            elif func.startswith(('wp_', 'get_', 'the_', 'is_', 'has_', 'add_', 'register_')):
+            elif func.startswith(("wp_", "get_", "the_", "is_", "has_", "add_", "register_")):
                 if func not in WORDPRESS_CORE_FUNCTIONS:
                     warnings.append(f"Unknown WordPress-like function: {func}() in {filename}")
 
         return hallucinated, warnings
 
-    def remove_hallucinated_functions(self, php_code: str, filename: str = "file.php") -> tuple[str, list[str]]:
+    def remove_hallucinated_functions(
+        self, php_code: str, filename: str = "file.php"
+    ) -> tuple[str, list[str]]:
         """Remove hallucinated functions from PHP code.
 
         Args:
@@ -999,9 +1122,9 @@ class PHPValidator:
         cleaned_code = php_code
 
         for func in HALLUCINATED_FUNCTIONS:
-            pattern = rf'{func}\s*\([^)]*\)\s*;?'
+            pattern = rf"{func}\s*\([^)]*\)\s*;?"
             if re.search(pattern, cleaned_code):
-                cleaned_code = re.sub(pattern, '// Removed hallucinated function', cleaned_code)
+                cleaned_code = re.sub(pattern, "// Removed hallucinated function", cleaned_code)
                 removals.append(f"Removed {func}() from {filename}")
                 logger.warning(f"Removed hallucinated function {func}() from {filename}")
 
@@ -1009,10 +1132,7 @@ class PHPValidator:
 
 
 def validate_and_fix_php(
-    php_code: str,
-    file_type: str = 'template',
-    filename: str = 'file.php',
-    auto_fix: bool = True
+    php_code: str, file_type: str = "template", filename: str = "file.php", auto_fix: bool = True
 ) -> tuple[str, bool, list[str]]:
     """Comprehensive PHP validation and auto-fixing with Unicode cleaning and bareword sanitization.
 
@@ -1104,7 +1224,7 @@ def validate_and_fix_php(
             issues.append(tag_error)
 
     # 4. Add required WordPress template tags if missing
-    if auto_fix and file_type in ['header', 'footer']:
+    if auto_fix and file_type in ["header", "footer"]:
         fixed_code, tag_additions = auto_add_required_tags(fixed_code, file_type)
         issues.extend(tag_additions)
 
@@ -1115,8 +1235,10 @@ def validate_and_fix_php(
         return fixed_code, False, issues
 
     # 6. Check required structures
-    if file_type in ['header', 'footer', 'functions']:
-        struct_valid, struct_missing = validator.check_required_structure(fixed_code, file_type, filename)
+    if file_type in ["header", "footer", "functions"]:
+        struct_valid, struct_missing = validator.check_required_structure(
+            fixed_code, file_type, filename
+        )
         if not struct_valid:
             # In auto_fix mode, we already added missing tags, so just warn
             if auto_fix:
@@ -1149,8 +1271,7 @@ def validate_and_fix_php(
 
     # If we get here, validation passed
     is_valid = len(issues) == 0 or all(
-        any(keyword in i for keyword in ['Removed', 'Added', 'Stripped', 'Fixed'])
-        for i in issues
+        any(keyword in i for keyword in ["Removed", "Added", "Stripped", "Fixed"]) for i in issues
     )
 
     if is_valid:
@@ -1182,12 +1303,12 @@ def sanitize_php_code(text: str) -> str:
     text = text.replace('\\"', '"')
 
     # Remove invisible unicode (keep only printable + whitespace)
-    text = ''.join(ch for ch in text if ch.isprintable() or ch in ['\n', '\r', '\t', ' '])
+    text = "".join(ch for ch in text if ch.isprintable() or ch in ["\n", "\r", "\t", " "])
 
     return text
 
 
-def clean_llm_output(code: str, file_type: str = 'php') -> str:
+def clean_llm_output(code: str, file_type: str = "php") -> str:
     """Clean LLM output to extract only raw code and remove invisible Unicode.
 
     This function:
@@ -1212,30 +1333,30 @@ def clean_llm_output(code: str, file_type: str = 'php') -> str:
     code = code.strip()
 
     # Remove code fence markers with language
-    code = re.sub(r'^```(?:php|css|javascript|js|html)?\s*\n', '', code, flags=re.MULTILINE)
-    code = re.sub(r'\n```\s*$', '', code)
+    code = re.sub(r"^```(?:php|css|javascript|js|html)?\s*\n", "", code, flags=re.MULTILINE)
+    code = re.sub(r"\n```\s*$", "", code)
 
     # Remove remaining code fences
-    code = code.replace('```', '')
+    code = code.replace("```", "")
 
     # STEP 3: For PHP files, ensure proper opening
-    if file_type == 'php':
+    if file_type == "php":
         # Remove explanatory text before code
-        if '<?php' in code:
-            php_start = code.find('<?php')
+        if "<?php" in code:
+            php_start = code.find("<?php")
             code = code[php_start:]
-        elif '<!DOCTYPE' in code:
-            doctype_start = code.find('<!DOCTYPE')
+        elif "<!DOCTYPE" in code:
+            doctype_start = code.find("<!DOCTYPE")
             code = code[doctype_start:]
 
     # STEP 4: Remove common AI explanatory phrases
     explanatory_patterns = [
-        r'^(?:Here\'s|Here is|This is|Below is|I\'ve created|I have created).*?:\s*\n+',
-        r'^(?:Sure|Certainly|Of course)[,!].*?\n+',
-        r'^(?:This code|This file|This template).*?\n+',
+        r"^(?:Here\'s|Here is|This is|Below is|I\'ve created|I have created).*?:\s*\n+",
+        r"^(?:Sure|Certainly|Of course)[,!].*?\n+",
+        r"^(?:This code|This file|This template).*?\n+",
     ]
 
     for pattern in explanatory_patterns:
-        code = re.sub(pattern, '', code, flags=re.IGNORECASE)
+        code = re.sub(pattern, "", code, flags=re.IGNORECASE)
 
     return code.strip()

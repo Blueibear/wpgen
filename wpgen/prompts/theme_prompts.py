@@ -199,29 +199,37 @@ def get_theme_spec_prompt(
 
     # Add image analysis if available
     if image_analysis:
-        prompt_parts.extend([
-            "DESIGN REFERENCE ANALYSIS:",
-            image_analysis,
-            "",
-        ])
+        prompt_parts.extend(
+            [
+                "DESIGN REFERENCE ANALYSIS:",
+                image_analysis,
+                "",
+            ]
+        )
 
     # Add design profile if available
     if design_profile:
-        prompt_parts.extend([
-            "DESIGN SYSTEM TO FOLLOW:",
-            f"- Profile: {design_profile.get('name', 'custom')}",
-            f"- Description: {design_profile.get('description', '')}",
-        ])
+        prompt_parts.extend(
+            [
+                "DESIGN SYSTEM TO FOLLOW:",
+                f"- Profile: {design_profile.get('name', 'custom')}",
+                f"- Description: {design_profile.get('description', '')}",
+            ]
+        )
 
-        if 'colors' in design_profile:
-            colors = design_profile['colors']
-            prompt_parts.append(f"- Colors: Primary={colors.get('primary', '#1a1a2e')}, "
-                              f"Accent={colors.get('accent', '#e94560')}")
+        if "colors" in design_profile:
+            colors = design_profile["colors"]
+            prompt_parts.append(
+                f"- Colors: Primary={colors.get('primary', '#1a1a2e')}, "
+                f"Accent={colors.get('accent', '#e94560')}"
+            )
 
-        if 'fonts' in design_profile:
-            fonts = design_profile['fonts']
-            prompt_parts.append(f"- Fonts: Primary={fonts.get('primary', 'Inter')}, "
-                              f"Headings={fonts.get('headings', 'Inter')}")
+        if "fonts" in design_profile:
+            fonts = design_profile["fonts"]
+            prompt_parts.append(
+                f"- Fonts: Primary={fonts.get('primary', 'Inter')}, "
+                f"Headings={fonts.get('headings', 'Inter')}"
+            )
 
         prompt_parts.append("")
 
@@ -233,11 +241,13 @@ def get_theme_spec_prompt(
         feature_notes.append("- Dark mode toggle is REQUIRED (set dark_mode to true)")
 
     if feature_notes:
-        prompt_parts.extend([
-            "REQUIRED FEATURES:",
-            *feature_notes,
-            "",
-        ])
+        prompt_parts.extend(
+            [
+                "REQUIRED FEATURES:",
+                *feature_notes,
+                "",
+            ]
+        )
 
     guidance_blocks: list[str] = []
 
@@ -261,18 +271,19 @@ def get_theme_spec_prompt(
         prompt_parts.append("")
 
     # Add schema
-    prompt_parts.extend([
-        SCHEMA_DESCRIPTION,
-        "",
-        "Now generate the JSON theme specification. Output ONLY the JSON, nothing else.",
-    ])
+    prompt_parts.extend(
+        [
+            SCHEMA_DESCRIPTION,
+            "",
+            "Now generate the JSON theme specification. Output ONLY the JSON, nothing else.",
+        ]
+    )
 
     return "\n".join(prompt_parts)
 
 
 def parse_llm_json_response(
-    response: str,
-    fallback_to_defaults: bool = True
+    response: str, fallback_to_defaults: bool = True
 ) -> tuple[bool, ThemeSpecification | None, list[str]]:
     """Parse LLM response and extract JSON theme specification.
 
@@ -355,24 +366,24 @@ def _clean_json_response(response: str) -> str | None:
 
     # Remove markdown code fences
     # Handle ```json ... ``` or ``` ... ```
-    code_fence_pattern = r'```(?:json)?\s*\n?(.*?)\n?```'
+    code_fence_pattern = r"```(?:json)?\s*\n?(.*?)\n?```"
     match = re.search(code_fence_pattern, text, re.DOTALL)
     if match:
         text = match.group(1).strip()
 
     # Try to find JSON object
     # Look for { ... } pattern
-    json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+    json_pattern = r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}"
     matches = list(re.finditer(json_pattern, text, re.DOTALL))
 
     if matches:
         # Find the largest match (most complete JSON)
         largest = max(matches, key=lambda m: len(m.group(0)))
         text = largest.group(0)
-    elif '{' in text and '}' in text:
+    elif "{" in text and "}" in text:
         # Extract from first { to last }
-        start = text.find('{')
-        end = text.rfind('}') + 1
+        start = text.find("{")
+        end = text.rfind("}") + 1
         if start < end:
             text = text[start:end]
     else:
@@ -396,8 +407,8 @@ def _try_fix_json(json_str: str) -> str | None:
     fixed = json_str
 
     # Fix trailing commas
-    fixed = re.sub(r',\s*}', '}', fixed)
-    fixed = re.sub(r',\s*]', ']', fixed)
+    fixed = re.sub(r",\s*}", "}", fixed)
+    fixed = re.sub(r",\s*]", "]", fixed)
 
     # Fix single quotes to double quotes (but be careful with content)
     # Only replace quotes around keys
@@ -405,12 +416,12 @@ def _try_fix_json(json_str: str) -> str | None:
 
     # Fix missing quotes around string values
     # This is risky so we do it conservatively
-    fixed = re.sub(r':\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*([,}\]])', r': "\1"\2', fixed)
+    fixed = re.sub(r":\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*([,}\]])", r': "\1"\2', fixed)
 
     # Fix boolean values
-    fixed = re.sub(r'\bTrue\b', 'true', fixed)
-    fixed = re.sub(r'\bFalse\b', 'false', fixed)
-    fixed = re.sub(r'\bNone\b', 'null', fixed)
+    fixed = re.sub(r"\bTrue\b", "true", fixed)
+    fixed = re.sub(r"\bFalse\b", "false", fixed)
+    fixed = re.sub(r"\bNone\b", "null", fixed)
 
     return fixed
 

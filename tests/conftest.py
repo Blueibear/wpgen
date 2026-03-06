@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 REQUIRED_PROVIDER = "mock"
 
+
 @pytest.fixture(autouse=True, scope="session")
 def _force_mock_provider():
     # Force deterministic, offline testing

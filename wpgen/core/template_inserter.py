@@ -22,11 +22,7 @@ class SafeTemplateInserter:
         """Initialize template inserter."""
         pass
 
-    def insert_css_into_style(
-        self,
-        header: str,
-        llm_generated_css: str
-    ) -> str:
+    def insert_css_into_style(self, header: str, llm_generated_css: str) -> str:
         """Insert LLM-generated CSS into style.css with header.
 
         Args:
@@ -37,25 +33,22 @@ class SafeTemplateInserter:
             Complete style.css content
         """
         # Sanitize CSS
-        sanitized_css, fixes = sanitize_file_complete(llm_generated_css, 'css')
+        sanitized_css, fixes = sanitize_file_complete(llm_generated_css, "css")
 
         if fixes:
             logger.info(f"Sanitized CSS with {sum(len(f) for f in fixes.values())} fixes")
 
         # Ensure header ends with newline
-        if not header.endswith('\n'):
-            header += '\n'
+        if not header.endswith("\n"):
+            header += "\n"
 
         # Combine header and CSS
-        complete_style = header + '\n' + sanitized_css
+        complete_style = header + "\n" + sanitized_css
 
         return complete_style
 
     def insert_custom_functions(
-        self,
-        base_functions_php: str,
-        llm_generated_functions: str,
-        theme_slug: str
+        self, base_functions_php: str, llm_generated_functions: str, theme_slug: str
     ) -> str:
         """Insert LLM-generated custom functions into functions.php base.
 
@@ -71,18 +64,16 @@ class SafeTemplateInserter:
             Complete functions.php content
         """
         # Sanitize LLM functions
-        sanitized, fixes = sanitize_file_complete(llm_generated_functions, 'php')
+        sanitized, fixes = sanitize_file_complete(llm_generated_functions, "php")
 
         if fixes:
-            logger.info(f"Sanitized custom functions with {sum(len(f) for f in fixes.values())} fixes")
+            logger.info(
+                f"Sanitized custom functions with {sum(len(f) for f in fixes.values())} fixes"
+            )
 
         # Extract only the additional function definitions
         # Skip duplicate theme setup if present
-        cleaned_additions = self._extract_safe_additions(
-            sanitized,
-            base_functions_php,
-            theme_slug
-        )
+        cleaned_additions = self._extract_safe_additions(sanitized, base_functions_php, theme_slug)
 
         if not cleaned_additions:
             # No safe additions found, return base only
@@ -90,19 +81,14 @@ class SafeTemplateInserter:
             return base_functions_php
 
         # Append to base
-        if not base_functions_php.rstrip().endswith('\n'):
-            base_functions_php += '\n'
+        if not base_functions_php.rstrip().endswith("\n"):
+            base_functions_php += "\n"
 
-        complete_functions = base_functions_php + '\n' + cleaned_additions
+        complete_functions = base_functions_php + "\n" + cleaned_additions
 
         return complete_functions
 
-    def _extract_safe_additions(
-        self,
-        llm_output: str,
-        base_code: str,
-        theme_slug: str
-    ) -> str:
+    def _extract_safe_additions(self, llm_output: str, base_code: str, theme_slug: str) -> str:
         """Extract safe function additions from LLM output.
 
         This removes duplicates of what's already in base and extracts
@@ -119,21 +105,21 @@ class SafeTemplateInserter:
         additions = []
 
         # Split LLM output into lines
-        lines = llm_output.split('\n')
+        lines = llm_output.split("\n")
 
         in_function = False
         current_function = []
 
         for line in lines:
             # Detect function start
-            if 'function ' in line and '{' in line:
+            if "function " in line and "{" in line:
                 in_function = True
                 current_function = [line]
             elif in_function:
                 current_function.append(line)
                 # Detect function end
-                if '}' in line:
-                    func_code = '\n'.join(current_function)
+                if "}" in line:
+                    func_code = "\n".join(current_function)
                     # Check if this function already exists in base
                     func_name = self._extract_function_name(func_code)
                     if func_name and func_name not in base_code:
@@ -142,7 +128,7 @@ class SafeTemplateInserter:
                     in_function = False
                     current_function = []
 
-        return '\n\n'.join(additions)
+        return "\n\n".join(additions)
 
     def _extract_function_name(self, func_code: str) -> Optional[str]:
         """Extract function name from function definition.
@@ -154,15 +140,14 @@ class SafeTemplateInserter:
             Function name or None
         """
         import re
-        match = re.search(r'function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', func_code)
+
+        match = re.search(r"function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", func_code)
         if match:
             return match.group(1)
         return None
 
     def wrap_content_in_template(
-        self,
-        content_html: str,
-        wrapper_class: str = 'content-wrapper'
+        self, content_html: str, wrapper_class: str = "content-wrapper"
     ) -> str:
         """Wrap HTML content in a proper container.
 
@@ -173,15 +158,12 @@ class SafeTemplateInserter:
         Returns:
             Wrapped HTML
         """
-        return f'''<div class="{wrapper_class}">
+        return f"""<div class="{wrapper_class}">
     {content_html}
-</div>'''
+</div>"""
 
     def merge_template_sections(
-        self,
-        sections: Dict[str, str],
-        template_structure: str,
-        markers: Dict[str, str]
+        self, sections: Dict[str, str], template_structure: str, markers: Dict[str, str]
     ) -> str:
         """Merge multiple LLM-generated sections into a template structure.
 
@@ -214,10 +196,7 @@ class SafeTemplateInserter:
 
 
 def insert_llm_content_safe(
-    template_type: str,
-    base_template: str,
-    llm_content: str,
-    context: Dict[str, Any]
+    template_type: str, base_template: str, llm_content: str, context: Dict[str, Any]
 ) -> str:
     """Safely insert LLM content into a base template.
 
@@ -233,14 +212,14 @@ def insert_llm_content_safe(
         Complete template with safe content insertion
     """
     inserter = SafeTemplateInserter()
-    theme_slug = context.get('theme_slug', 'wpgen-theme')
+    theme_slug = context.get("theme_slug", "wpgen-theme")
 
-    if template_type == 'style':
+    if template_type == "style":
         # Insert CSS into style.css
-        header = context.get('style_header', '')
+        header = context.get("style_header", "")
         return inserter.insert_css_into_style(header, llm_content)
 
-    elif template_type == 'functions':
+    elif template_type == "functions":
         # Insert custom functions into functions.php
         return inserter.insert_custom_functions(base_template, llm_content, theme_slug)
 

@@ -27,7 +27,7 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete header.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Header Template
  *
@@ -92,7 +92,7 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
             ?>
         </nav>
     </header>
-'''
+"""
 
 
 def get_safe_footer(theme_name: str, theme_slug: str) -> str:
@@ -105,7 +105,7 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete footer.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Footer Template
  *
@@ -167,7 +167,7 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
 
 </body>
 </html>
-'''
+"""
 
 
 def get_safe_index(theme_name: str, theme_slug: str) -> str:
@@ -180,7 +180,7 @@ def get_safe_index(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete index.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Main Index Template
  *
@@ -239,7 +239,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_single(theme_name: str, theme_slug: str) -> str:
@@ -252,7 +252,7 @@ def get_safe_single(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete single.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Single Post Template
  *
@@ -290,7 +290,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_page(theme_name: str, theme_slug: str) -> str:
@@ -303,7 +303,7 @@ def get_safe_page(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete page.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Page Template
  *
@@ -350,7 +350,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_functions(theme_name: str, theme_slug: str, woocommerce: bool = False) -> str:
@@ -373,7 +373,7 @@ def get_safe_functions(theme_name: str, theme_slug: str, woocommerce: bool = Fal
     add_theme_support( 'wc-product-gallery-lightbox' );
     add_theme_support( 'wc-product-gallery-slider' );"""
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Theme Functions
  *
@@ -513,7 +513,7 @@ function {theme_slug}_scripts() {{
     }}
 }}
 add_action( 'wp_enqueue_scripts', '{theme_slug}_scripts' );
-'''
+"""
 
 
 def get_safe_content_template(theme_slug: str) -> str:
@@ -525,7 +525,7 @@ def get_safe_content_template(theme_slug: str) -> str:
     Returns:
         Complete content.php template
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying posts
  *
@@ -583,7 +583,7 @@ def get_safe_content_template(theme_slug: str) -> str:
         </footer>
     <?php endif; ?>
 </article>
-'''
+"""
 
 
 def get_safe_content_none_template(theme_slug: str) -> str:
@@ -595,7 +595,7 @@ def get_safe_content_none_template(theme_slug: str) -> str:
     Returns:
         Complete content-none.php template
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying a message when no content is found
  *
@@ -640,7 +640,7 @@ def get_safe_content_none_template(theme_slug: str) -> str:
         <?php endif; ?>
     </div>
 </section>
-'''
+"""
 
 
 def get_all_safe_templates(theme_name: str, theme_slug: str, woocommerce: bool = False) -> dict:
@@ -655,12 +655,12 @@ def get_all_safe_templates(theme_name: str, theme_slug: str, woocommerce: bool =
         Dictionary mapping filenames to template content
     """
     return {
-        'header.php': get_safe_header(theme_name, theme_slug),
-        'footer.php': get_safe_footer(theme_name, theme_slug),
-        'index.php': get_safe_index(theme_name, theme_slug),
-        'single.php': get_safe_single(theme_name, theme_slug),
-        'page.php': get_safe_page(theme_name, theme_slug),
-        'functions.php': get_safe_functions(theme_name, theme_slug, woocommerce),
-        'template-parts/content.php': get_safe_content_template(theme_slug),
-        'template-parts/content-none.php': get_safe_content_none_template(theme_slug),
+        "header.php": get_safe_header(theme_name, theme_slug),
+        "footer.php": get_safe_footer(theme_name, theme_slug),
+        "index.php": get_safe_index(theme_name, theme_slug),
+        "single.php": get_safe_single(theme_name, theme_slug),
+        "page.php": get_safe_page(theme_name, theme_slug),
+        "functions.php": get_safe_functions(theme_name, theme_slug, woocommerce),
+        "template-parts/content.php": get_safe_content_template(theme_slug),
+        "template-parts/content-none.php": get_safe_content_none_template(theme_slug),
     }

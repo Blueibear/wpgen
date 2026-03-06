@@ -69,8 +69,8 @@ def get_header_prompt(theme_name: str, theme_slug: str, requirements: Dict[str, 
     Returns:
         Complete prompt for header.php generation
     """
-    sticky = "sticky" if requirements.get('sticky_header', False) else ""
-    show_search = requirements.get('show_search', True)
+    sticky = "sticky" if requirements.get("sticky_header", False) else ""
+    show_search = requirements.get("show_search", True)
 
     return f"""Generate header.php for WordPress theme "{theme_name}".
 
@@ -122,7 +122,7 @@ def get_footer_prompt(theme_name: str, theme_slug: str, requirements: Dict[str, 
     Returns:
         Complete prompt for footer.php generation
     """
-    footer_columns = requirements.get('footer_columns', 3)
+    footer_columns = requirements.get("footer_columns", 3)
 
     return f"""Generate footer.php for WordPress theme "{theme_name}".
 
@@ -169,7 +169,7 @@ def get_functions_prompt(theme_name: str, theme_slug: str, requirements: Dict[st
     Returns:
         Complete prompt for functions.php generation
     """
-    woocommerce = requirements.get('woocommerce_support', False)
+    woocommerce = requirements.get("woocommerce_support", False)
 
     return f"""Generate functions.php for WordPress theme "{theme_name}".
 
@@ -254,11 +254,7 @@ FORBIDDEN:
 Output ONLY the code."""
 
 
-def get_template_part_prompt(
-    part_name: str,
-    theme_slug: str,
-    requirements: Dict[str, Any]
-) -> str:
+def get_template_part_prompt(part_name: str, theme_slug: str, requirements: Dict[str, Any]) -> str:
     """Get prompt for generating template part (content.php, content-none.php, etc).
 
     Args:
@@ -269,7 +265,7 @@ def get_template_part_prompt(
     Returns:
         Complete prompt for template part generation
     """
-    if part_name == 'content-none':
+    if part_name == "content-none":
         return f"""Generate template-parts/content-none.php for when no content is found.
 
 STRUCTURE:
@@ -331,8 +327,8 @@ def get_style_css_prompt(theme_name: str, requirements: Dict[str, Any]) -> str:
     Returns:
         Complete prompt for CSS generation
     """
-    primary_color = requirements.get('primary_color', '#2563eb')
-    font_family = requirements.get('font_family', 'system-ui, -apple-system, sans-serif')
+    primary_color = requirements.get("primary_color", "#2563eb")
+    font_family = requirements.get("font_family", "system-ui, -apple-system, sans-serif")
 
     return f"""Generate CSS styles for WordPress theme "{theme_name}".
 
@@ -380,19 +376,16 @@ Output ONLY CSS rules (no comments, no explanations)."""
 
 # Mapping of template types to prompt generators
 PROMPT_GENERATORS = {
-    'header': get_header_prompt,
-    'footer': get_footer_prompt,
-    'functions': get_functions_prompt,
-    'index': get_index_prompt,
-    'style': get_style_css_prompt,
+    "header": get_header_prompt,
+    "footer": get_footer_prompt,
+    "functions": get_functions_prompt,
+    "index": get_index_prompt,
+    "style": get_style_css_prompt,
 }
 
 
 def get_prompt_for_template(
-    template_type: str,
-    theme_name: str,
-    theme_slug: str,
-    requirements: Dict[str, Any]
+    template_type: str, theme_name: str, theme_slug: str, requirements: Dict[str, Any]
 ) -> str:
     """Get appropriate prompt for a template type.
 

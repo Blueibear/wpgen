@@ -14,6 +14,7 @@ import re
 
 class ColorScheme(BaseModel):
     """Color scheme specification."""
+
     primary: str = Field(default="#1a1a2e", description="Primary brand color")
     secondary: str = Field(default="#16213e", description="Secondary color")
     accent: str = Field(default="#e94560", description="Accent/highlight color")
@@ -27,7 +28,7 @@ class ColorScheme(BaseModel):
     warning: str = Field(default="#f59e0b", description="Warning state color")
     error: str = Field(default="#ef4444", description="Error state color")
 
-    @field_validator('*', mode='before')
+    @field_validator("*", mode="before")
     @classmethod
     def validate_color(cls, v: str) -> str:
         """Validate and normalize color values."""
@@ -36,9 +37,9 @@ class ColorScheme(BaseModel):
         # Remove any whitespace
         v = str(v).strip()
         # Validate hex color format
-        if not re.match(r'^#[0-9a-fA-F]{6}$', v):
+        if not re.match(r"^#[0-9a-fA-F]{6}$", v):
             # Try to extract hex from string
-            match = re.search(r'#[0-9a-fA-F]{6}', v)
+            match = re.search(r"#[0-9a-fA-F]{6}", v)
             if match:
                 return match.group(0)
             return "#000000"
@@ -47,6 +48,7 @@ class ColorScheme(BaseModel):
 
 class Typography(BaseModel):
     """Typography specification."""
+
     font_primary: str = Field(default="Inter", description="Primary font family")
     font_headings: str = Field(default="Inter", description="Headings font family")
     font_mono: str = Field(default="JetBrains Mono", description="Monospace font")
@@ -58,17 +60,21 @@ class Typography(BaseModel):
 
 class LayoutConfig(BaseModel):
     """Layout configuration."""
+
     container_width: str = Field(default="1280px", description="Max container width")
     content_width: str = Field(default="720px", description="Content area width")
     sidebar_width: str = Field(default="300px", description="Sidebar width")
     header_height: str = Field(default="80px", description="Header height")
     header_style: str = Field(default="sticky", description="Header style: sticky, fixed, static")
-    sidebar_position: str = Field(default="right", description="Sidebar position: left, right, none")
+    sidebar_position: str = Field(
+        default="right", description="Sidebar position: left, right, none"
+    )
     footer_columns: int = Field(default=4, ge=1, le=6, description="Number of footer columns")
 
 
 class HeroSection(BaseModel):
     """Hero section specification."""
+
     enabled: bool = Field(default=True, description="Enable hero section")
     style: str = Field(default="image", description="Hero style: image, gradient, video, minimal")
     title: str = Field(default="Welcome to Our Site", description="Hero title")
@@ -77,13 +83,16 @@ class HeroSection(BaseModel):
     cta_url: str = Field(default="#", description="Call to action URL")
     secondary_cta_text: str = Field(default="", description="Secondary CTA text")
     secondary_cta_url: str = Field(default="", description="Secondary CTA URL")
-    overlay_opacity: float = Field(default=0.5, ge=0, le=1, description="Background overlay opacity")
+    overlay_opacity: float = Field(
+        default=0.5, ge=0, le=1, description="Background overlay opacity"
+    )
     min_height: str = Field(default="600px", description="Minimum hero height")
     text_alignment: str = Field(default="center", description="Text alignment: left, center, right")
 
 
 class NavigationItem(BaseModel):
     """Navigation menu item."""
+
     label: str = Field(..., description="Menu item label")
     url: str = Field(default="#", description="Menu item URL")
     children: list["NavigationItem"] = Field(default_factory=list, description="Submenu items")
@@ -91,14 +100,20 @@ class NavigationItem(BaseModel):
 
 class NavigationConfig(BaseModel):
     """Navigation configuration."""
-    primary_menu: list[NavigationItem] = Field(default_factory=list, description="Primary menu items")
+
+    primary_menu: list[NavigationItem] = Field(
+        default_factory=list, description="Primary menu items"
+    )
     footer_menu: list[NavigationItem] = Field(default_factory=list, description="Footer menu items")
-    mobile_menu_style: str = Field(default="slide", description="Mobile menu: slide, dropdown, fullscreen")
+    mobile_menu_style: str = Field(
+        default="slide", description="Mobile menu: slide, dropdown, fullscreen"
+    )
     show_search: bool = Field(default=True, description="Show search in header")
 
 
 class WidgetArea(BaseModel):
     """Widget area specification."""
+
     id: str = Field(..., description="Widget area ID")
     name: str = Field(..., description="Widget area display name")
     description: str = Field(default="", description="Widget area description")
@@ -106,14 +121,19 @@ class WidgetArea(BaseModel):
 
 class Section(BaseModel):
     """Content section specification."""
-    type: str = Field(..., description="Section type: hero, features, products, posts, cta, testimonials, contact")
+
+    type: str = Field(
+        ..., description="Section type: hero, features, products, posts, cta, testimonials, contact"
+    )
     title: str = Field(default="", description="Section title")
     subtitle: str = Field(default="", description="Section subtitle")
     content: str = Field(default="", description="Section content/description")
     layout: str = Field(default="grid", description="Layout: grid, list, carousel, masonry")
     columns: int = Field(default=3, ge=1, le=6, description="Number of columns")
     items_count: int = Field(default=6, description="Number of items to display")
-    background: str = Field(default="default", description="Background: default, light, dark, primary, image")
+    background: str = Field(
+        default="default", description="Background: default, light, dark, primary, image"
+    )
     padding: str = Field(default="large", description="Section padding: small, medium, large")
     cta_text: str = Field(default="", description="Section CTA text")
     cta_url: str = Field(default="", description="Section CTA URL")
@@ -121,6 +141,7 @@ class Section(BaseModel):
 
 class PageConfig(BaseModel):
     """Page template configuration."""
+
     sections: list[Section] = Field(default_factory=list, description="Page sections")
     show_sidebar: bool = Field(default=False, description="Show sidebar on this page")
     show_title: bool = Field(default=True, description="Show page title")
@@ -129,6 +150,7 @@ class PageConfig(BaseModel):
 
 class WooCommerceConfig(BaseModel):
     """WooCommerce configuration."""
+
     enabled: bool = Field(default=False, description="Enable WooCommerce support")
     products_per_page: int = Field(default=12, description="Products per page")
     products_columns: int = Field(default=4, description="Product grid columns")
@@ -139,23 +161,29 @@ class WooCommerceConfig(BaseModel):
 
 class GutenbergBlock(BaseModel):
     """Custom Gutenberg block specification."""
+
     name: str = Field(..., description="Block name (e.g., 'hero-banner')")
     title: str = Field(..., description="Block display title")
     description: str = Field(default="", description="Block description")
-    category: str = Field(default="design", description="Block category: text, media, design, widgets, theme, embed")
+    category: str = Field(
+        default="design", description="Block category: text, media, design, widgets, theme, embed"
+    )
     icon: str = Field(default="block-default", description="Block icon")
     supports_align: bool = Field(default=True, description="Support alignment options")
 
 
 class FeaturesConfig(BaseModel):
     """Theme features configuration."""
+
     woocommerce: WooCommerceConfig = Field(default_factory=WooCommerceConfig)
     dark_mode: bool = Field(default=False, description="Enable dark mode toggle")
     preloader: bool = Field(default=False, description="Enable page preloader")
     back_to_top: bool = Field(default=True, description="Enable back to top button")
     smooth_scroll: bool = Field(default=True, description="Enable smooth scrolling")
     lazy_load_images: bool = Field(default=True, description="Enable lazy loading for images")
-    custom_blocks: list[GutenbergBlock] = Field(default_factory=list, description="Custom Gutenberg blocks")
+    custom_blocks: list[GutenbergBlock] = Field(
+        default_factory=list, description="Custom Gutenberg blocks"
+    )
     social_links: list[str] = Field(default_factory=list, description="Social media platforms")
 
 
@@ -185,16 +213,22 @@ class ThemeSpecification(BaseModel):
     navigation: NavigationConfig = Field(default_factory=NavigationConfig)
 
     # Page templates
-    pages: dict[str, PageConfig] = Field(default_factory=dict, description="Page template configurations")
+    pages: dict[str, PageConfig] = Field(
+        default_factory=dict, description="Page template configurations"
+    )
 
     # Widget areas
-    widget_areas: list[WidgetArea] = Field(default_factory=lambda: [
-        WidgetArea(id="sidebar-1", name="Primary Sidebar", description="Main sidebar widget area"),
-        WidgetArea(id="footer-1", name="Footer 1", description="First footer widget area"),
-        WidgetArea(id="footer-2", name="Footer 2", description="Second footer widget area"),
-        WidgetArea(id="footer-3", name="Footer 3", description="Third footer widget area"),
-        WidgetArea(id="footer-4", name="Footer 4", description="Fourth footer widget area"),
-    ])
+    widget_areas: list[WidgetArea] = Field(
+        default_factory=lambda: [
+            WidgetArea(
+                id="sidebar-1", name="Primary Sidebar", description="Main sidebar widget area"
+            ),
+            WidgetArea(id="footer-1", name="Footer 1", description="First footer widget area"),
+            WidgetArea(id="footer-2", name="Footer 2", description="Second footer widget area"),
+            WidgetArea(id="footer-3", name="Footer 3", description="Third footer widget area"),
+            WidgetArea(id="footer-4", name="Footer 4", description="Fourth footer widget area"),
+        ]
+    )
 
     # Features
     features: FeaturesConfig = Field(default_factory=FeaturesConfig)
@@ -203,12 +237,19 @@ class ThemeSpecification(BaseModel):
     post_types: list[str] = Field(default_factory=list, description="Custom post types to register")
 
     # Tags for WordPress.org
-    tags: list[str] = Field(default_factory=lambda: [
-        "custom-colors", "custom-logo", "custom-menu", "featured-images",
-        "footer-widgets", "full-width-template", "theme-options"
-    ])
+    tags: list[str] = Field(
+        default_factory=lambda: [
+            "custom-colors",
+            "custom-logo",
+            "custom-menu",
+            "featured-images",
+            "footer-widgets",
+            "full-width-template",
+            "theme-options",
+        ]
+    )
 
-    @field_validator('theme_name', mode='before')
+    @field_validator("theme_name", mode="before")
     @classmethod
     def normalize_theme_name(cls, v: str) -> str:
         """Normalize theme name to valid slug."""
@@ -216,17 +257,17 @@ class ThemeSpecification(BaseModel):
             return "wpgen-theme"
         # Convert to lowercase, replace spaces and underscores with hyphens
         v = str(v).lower().strip()
-        v = re.sub(r'[^a-z0-9-]+', '-', v)
-        v = re.sub(r'-+', '-', v).strip('-')
+        v = re.sub(r"[^a-z0-9-]+", "-", v)
+        v = re.sub(r"-+", "-", v).strip("-")
         return v or "wpgen-theme"
 
-    @field_validator('theme_display_name', mode='before')
+    @field_validator("theme_display_name", mode="before")
     @classmethod
     def ensure_display_name(cls, v: str, info) -> str:
         """Ensure display name exists."""
         if not v:
-            theme_name = info.data.get('theme_name', 'WPGen Theme')
-            return theme_name.replace('-', ' ').title()
+            theme_name = info.data.get("theme_name", "WPGen Theme")
+            return theme_name.replace("-", " ").title()
         return str(v).strip()
 
 
@@ -248,7 +289,7 @@ def get_default_theme_spec() -> ThemeSpecification:
             "archive": PageConfig(show_sidebar=True),
             "single": PageConfig(show_sidebar=True),
             "page": PageConfig(show_sidebar=False),
-        }
+        },
     )
 
 
@@ -276,10 +317,10 @@ def validate_theme_spec(data: dict) -> tuple[bool, list[str], ThemeSpecification
         # Try to create with defaults for missing fields
         try:
             # Fill in minimum required fields
-            if 'theme_name' not in data:
-                data['theme_name'] = 'wpgen-theme'
-            if 'theme_display_name' not in data:
-                data['theme_display_name'] = 'WPGen Theme'
+            if "theme_name" not in data:
+                data["theme_name"] = "wpgen-theme"
+            if "theme_display_name" not in data:
+                data["theme_display_name"] = "WPGen Theme"
 
             spec = ThemeSpecification(**data)
             errors.append("Used default values for missing fields")

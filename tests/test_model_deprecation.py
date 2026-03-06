@@ -83,17 +83,21 @@ def test_none_model_name():
 def test_log_deprecation_warning(caplog):
     """Test logging of deprecation warnings."""
     import logging
+
     caplog.set_level(logging.WARNING)
 
     log_model_deprecation_warning("gpt-4-turbo-preview", "openai")
 
-    assert any("deprecated" in record.message.lower() or "preview" in record.message.lower()
-               for record in caplog.records)
+    assert any(
+        "deprecated" in record.message.lower() or "preview" in record.message.lower()
+        for record in caplog.records
+    )
 
 
 def test_log_no_warning_for_stable(caplog):
     """Test no warning logged for stable models."""
     import logging
+
     caplog.set_level(logging.WARNING)
 
     log_model_deprecation_warning("gpt-4-turbo", "openai")

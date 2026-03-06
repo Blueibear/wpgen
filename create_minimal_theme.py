@@ -135,7 +135,8 @@ add_action( 'wp_enqueue_scripts', 'wpgen_minimal_scripts' );
     # Create screenshot
     try:
         from PIL import Image, ImageDraw, ImageFont
-        img = Image.new('RGB', (1200, 900), color='#f8f9fa')
+
+        img = Image.new("RGB", (1200, 900), color="#f8f9fa")
         d = ImageDraw.Draw(img)
 
         # Draw simple text
@@ -149,7 +150,7 @@ add_action( 'wp_enqueue_scripts', 'wpgen_minimal_scripts' );
         w = bbox[2] - bbox[0]
         h = bbox[3] - bbox[1]
 
-        d.text(((1200-w)/2, (900-h)/2), text, fill='#333333', font=font)
+        d.text(((1200 - w) / 2, (900 - h) / 2), text, fill="#333333", font=font)
         img.save(str(theme_dir / "screenshot.png"))
     except Exception as e:
         print(f"Could not create screenshot: {e}")

@@ -20,7 +20,8 @@ def assert_no_output(capsys, context: str = ""):
 
 def test_import_wpgen_no_side_effects(capsys):
     import wpgen
-    assert hasattr(wpgen, '__version__')
+
+    assert hasattr(wpgen, "__version__")
     assert_no_output(capsys, "wpgen")
 
 
@@ -42,7 +43,7 @@ def test_import_theme_validator_no_side_effects(capsys):
 def test_import_main_no_side_effects(capsys):
     old_argv = sys.argv
     try:
-        sys.argv = ['wpgen']
+        sys.argv = ["wpgen"]
         importlib.import_module("wpgen.main")
         assert_no_output(capsys, "main")
     finally:
