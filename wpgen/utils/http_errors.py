@@ -1,14 +1,10 @@
 """HTTP error handling utilities with detailed error messages."""
 
-
 import requests
 
 
 def format_http_error(
-    exception: requests.exceptions.HTTPError,
-    method: str,
-    endpoint: str,
-    max_body_length: int = 200
+    exception: requests.exceptions.HTTPError, method: str, endpoint: str, max_body_length: int = 200
 ) -> str:
     """Format HTTP error with status, method, endpoint, and truncated body.
 
@@ -37,10 +33,7 @@ def format_http_error(
 
 
 def handle_http_error(
-    exception: Exception,
-    method: str,
-    endpoint: str,
-    operation: str = "Request"
+    exception: Exception, method: str, endpoint: str, operation: str = "Request"
 ) -> Exception:
     """Handle HTTP errors and return a well-formatted exception.
 

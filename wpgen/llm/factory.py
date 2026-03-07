@@ -41,8 +41,7 @@ def get_provider_class(name: str) -> Type[BaseLLMProvider]:
     except KeyError as e:
         supported = ", ".join(sorted(_PROVIDER_MAP.keys()))
         raise ValueError(
-            f"Unsupported LLM provider: {name!r}. "
-            f"Allowed providers: {supported}"
+            f"Unsupported LLM provider: {name!r}. " f"Allowed providers: {supported}"
         ) from e
 
 

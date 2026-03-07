@@ -12,10 +12,9 @@ from typing import Any
 
 from .logger import get_logger
 from .php_validation import (
-    validate_and_fix_php,
     clean_llm_output,
-    PHPValidator,
     remove_stray_backslashes,
+    validate_and_fix_php,
 )
 
 logger = get_logger(__name__)
@@ -36,34 +35,34 @@ def sanitize_text_domain(theme_name: str) -> str:
         Valid text domain string
     """
     if not theme_name:
-        return 'wpgen-theme'
+        return "wpgen-theme"
 
     # Convert to lowercase and replace invalid characters
     domain = theme_name.lower()
-    domain = re.sub(r'[^a-z0-9-]+', '-', domain)
-    domain = re.sub(r'-+', '-', domain)  # Remove duplicate hyphens
-    domain = domain.strip('-')  # Remove leading/trailing hyphens
+    domain = re.sub(r"[^a-z0-9-]+", "-", domain)
+    domain = re.sub(r"-+", "-", domain)  # Remove duplicate hyphens
+    domain = domain.strip("-")  # Remove leading/trailing hyphens
 
-    return domain if domain else 'wpgen-theme'
+    return domain if domain else "wpgen-theme"
 
 
 # Plugin compatibility layer configuration
 # Dictionary of known plugin constants and functions that themes should define as fallbacks
 PLUGIN_COMPATIBILITY_CONSTANTS = {
-    'RESPONSIVE_THEME_DIR': {
-        'value': 'get_template_directory()',
-        'description': 'Responsive theme directory path (for Responsive Add-Ons plugin)',
+    "RESPONSIVE_THEME_DIR": {
+        "value": "get_template_directory()",
+        "description": "Responsive theme directory path (for Responsive Add-Ons plugin)",
     },
-    'RESPONSIVE_THEME_URL': {
-        'value': 'get_template_directory_uri()',
-        'description': 'Responsive theme URL (for Responsive Add-Ons plugin)',
+    "RESPONSIVE_THEME_URL": {
+        "value": "get_template_directory_uri()",
+        "description": "Responsive theme URL (for Responsive Add-Ons plugin)",
     },
 }
 
 PLUGIN_COMPATIBILITY_FUNCTIONS = {
-    'responsive_theme_dir': {
-        'return': 'get_template_directory()',
-        'description': 'Returns theme directory (for Responsive Add-Ons plugin)',
+    "responsive_theme_dir": {
+        "return": "get_template_directory()",
+        "description": "Returns theme directory (for Responsive Add-Ons plugin)",
     },
 }
 
@@ -121,7 +120,7 @@ def generate_plugin_compatibility_layer(theme_name: str) -> tuple[str, list[str]
         code_lines.append(f"// Injected compatibility layer: {', '.join(injected_items)}")
         code_lines.append("")
 
-    compatibility_code = '\n'.join(code_lines)
+    compatibility_code = "\n".join(code_lines)
 
     logger.info(f"Generated plugin compatibility layer with {len(injected_items)} items")
     return compatibility_code, injected_items
@@ -149,10 +148,7 @@ class CodeValidator:
         """
         try:
             result = subprocess.run(
-                [self.php_path, "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                [self.php_path, "--version"], capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 logger.debug(f"PHP is available: {result.stdout.splitlines()[0]}")
@@ -192,16 +188,13 @@ class CodeValidator:
 
         # Create temporary file with PHP code
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
                 f.write(php_code)
                 temp_path = f.name
 
             # Run php -l to check syntax
             result = subprocess.run(
-                [self.php_path, "-l", temp_path],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [self.php_path, "-l", temp_path], capture_output=True, text=True, timeout=10
             )
 
             # Clean up temp file
@@ -240,9 +233,9 @@ class CodeValidator:
             "warnings": [],
         }
 
-        if file_path.suffix == '.php':
+        if file_path.suffix == ".php":
             try:
-                php_code = file_path.read_text(encoding='utf-8')
+                php_code = file_path.read_text(encoding="utf-8")
                 is_valid, message, is_warning = self.validate_php_syntax(php_code)
 
                 if not is_valid:
@@ -325,12 +318,7 @@ def validate_php_syntax(php_code: str) -> tuple[bool, str | None]:
     """
     # Check if PHP is available
     try:
-        result = subprocess.run(
-            ["php", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        result = subprocess.run(["php", "--version"], capture_output=True, text=True, timeout=5)
         if result.returncode != 0:
             logger.warning("PHP command not available, skipping syntax validation")
             return True, None
@@ -346,16 +334,13 @@ def validate_php_syntax(php_code: str) -> tuple[bool, str | None]:
 
     # Create temporary file with PHP code
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
             f.write(php_code)
             temp_path = f.name
 
         # Run php -l to check syntax
         result = subprocess.run(
-            ["php", "-l", temp_path],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["php", "-l", temp_path], capture_output=True, text=True, timeout=10
         )
 
         # Clean up temp file
@@ -388,19 +373,21 @@ def remove_nonexistent_requires(php_code: str, theme_dir: Path | None = None) ->
         # Can't validate without theme directory
         return php_code
 
-    lines = php_code.split('\n')
+    lines = php_code.split("\n")
     modified_lines = []
     changes_made = False
 
     for line in lines:
         # Check for require/include statements
-        if re.search(r'\b(require|include|require_once|include_once)\s*\(?\s*get_template_directory', line):
+        if re.search(
+            r"\b(require|include|require_once|include_once)\s*\(?\s*get_template_directory", line
+        ):
             # Extract the file path
             match = re.search(r"['\"]([^'\"]+\.php)['\"]", line)
             if match:
                 file_path = match.group(1)
                 # Remove leading slash if present
-                file_path = file_path.lstrip('/')
+                file_path = file_path.lstrip("/")
                 full_path = theme_dir / file_path
 
                 if not full_path.exists():
@@ -415,7 +402,7 @@ def remove_nonexistent_requires(php_code: str, theme_dir: Path | None = None) ->
     if changes_made:
         logger.info("Removed require/include statements for non-existent files")
 
-    return '\n'.join(modified_lines)
+    return "\n".join(modified_lines)
 
 
 def clean_generated_code(code: str, file_type: str) -> str:
@@ -444,18 +431,18 @@ def clean_generated_code(code: str, file_type: str) -> str:
         logger.info(f"Removed {backslashes_removed} stray backslash(es) from generated code")
 
     # STEP 3: Additional PHP-specific validation and cleaning
-    if file_type == 'php':
+    if file_type == "php":
         # 3a: Check for Python-like placeholders that weren't evaluated
         # Use regex to catch {theme_name}, {theme_name.replace...}, {requirements...}
-        if re.search(r'\{theme_name[\.\}]|\{requirements', code):
+        if re.search(r"\{theme_name[\.\}]|\{requirements", code):
             logger.error("CRITICAL: Found unevaluated Python expression in generated PHP code!")
             logger.error(f"Code snippet: {code[:200]}")
             raise ValueError("Generated code contains unevaluated Python expressions")
 
         # 3b: Check for markdown remnants
-        if '```' in code:
+        if "```" in code:
             logger.warning("Found markdown code fences in PHP, removing")
-            code = code.replace('```php', '').replace('```', '')
+            code = code.replace("```php", "").replace("```", "")
 
         # 3c: Fix HTML-inside-PHP blocks (common LLM error)
         code = fix_html_inside_php_blocks(code)
@@ -491,7 +478,7 @@ def fix_html_inside_php_blocks(code: str) -> str:
     """
     # Pattern: <?php followed by HTML tag without proper PHP code between
     # This catches: <?php <div>, <?php <span class="x">, etc.
-    pattern = r'<\?php\s*(<[a-zA-Z][^>]*>)\s*\?>'
+    pattern = r"<\?php\s*(<[a-zA-Z][^>]*>)\s*\?>"
 
     def replace_html_in_php(match):
         html_tag = match.group(1)
@@ -502,16 +489,16 @@ def fix_html_inside_php_blocks(code: str) -> str:
 
     # Also fix cases where HTML is at the start of a PHP block
     # Pattern: <?php <div>some content
-    pattern2 = r'<\?php\s+(<[a-zA-Z][^>]*>)([^<]*)'
+    pattern2 = r"<\?php\s+(<[a-zA-Z][^>]*>)([^<]*)"
 
     def replace_html_at_start(match):
         html_tag = match.group(1)
         rest = match.group(2)
         # If rest contains PHP code (has $ or function calls), keep PHP block
-        if '$' in rest or '(' in rest:
-            return f'{html_tag}\n<?php {rest}'
+        if "$" in rest or "(" in rest:
+            return f"{html_tag}\n<?php {rest}"
         else:
-            return f'{html_tag}{rest}'
+            return f"{html_tag}{rest}"
 
     fixed_code = re.sub(pattern2, replace_html_at_start, fixed_code)
 
@@ -530,15 +517,16 @@ def remove_html_comments_in_php(code: str) -> str:
     Returns:
         Code with HTML comments removed from PHP blocks
     """
+
     # Find PHP blocks and remove HTML comments from them
     def clean_php_block(match):
         block = match.group(0)
         # Remove HTML comments from inside PHP blocks
-        cleaned = re.sub(r'<!--.*?-->', '', block, flags=re.DOTALL)
+        cleaned = re.sub(r"<!--.*?-->", "", block, flags=re.DOTALL)
         return cleaned
 
     # Process each PHP block
-    cleaned_code = re.sub(r'<\?php.*?\?>', clean_php_block, code, flags=re.DOTALL)
+    cleaned_code = re.sub(r"<\?php.*?\?>", clean_php_block, code, flags=re.DOTALL)
 
     if cleaned_code != code:
         logger.info("Removed HTML comments from inside PHP blocks")
@@ -567,8 +555,8 @@ def fix_malformed_heredocs(code: str) -> str:
     for match in matches:
         identifier = match.group(2)
         # Check if closing identifier exists
-        closing_pattern = rf'^\s*{identifier}\s*;?\s*$'
-        after_heredoc = code[match.end():]
+        closing_pattern = rf"^\s*{identifier}\s*;?\s*$"
+        after_heredoc = code[match.end() :]
 
         if not re.search(closing_pattern, after_heredoc, re.MULTILINE):
             # Heredoc is not closed - convert to regular string
@@ -576,11 +564,11 @@ def fix_malformed_heredocs(code: str) -> str:
             # Find the heredoc content and convert to a quoted string
             start = match.start()
             # Find next PHP tag or end of file
-            next_php = code.find('?>', match.end())
+            next_php = code.find("?>", match.end())
             if next_php == -1:
                 next_php = len(code)
 
-            heredoc_content = code[match.end():next_php]
+            heredoc_content = code[match.end() : next_php]
             # Escape and convert to a regular string
             escaped_content = heredoc_content.replace("'", "\\'").strip()
             code = code[:start] + f"'{escaped_content}'" + code[next_php:]
@@ -603,21 +591,19 @@ def normalize_php_tags(code: str) -> str:
         Normalized code
     """
     # Fix space in opening tag: <? php -> <?php
-    code = re.sub(r'<\?\s+php', '<?php', code, flags=re.IGNORECASE)
+    code = re.sub(r"<\?\s+php", "<?php", code, flags=re.IGNORECASE)
 
     # Normalize case: <?PHP -> <?php
-    code = re.sub(r'<\?PHP', '<?php', code)
+    code = re.sub(r"<\?PHP", "<?php", code)
 
     # Fix orphan closing tags at the start of file
-    code = re.sub(r'^\s*\?>\s*', '', code)
+    code = re.sub(r"^\s*\?>\s*", "", code)
 
     return code
 
 
 def normalize_php_output(
-    php_code: str,
-    filename: str,
-    theme_name: str = "wpgen-theme"
+    php_code: str, filename: str, theme_name: str = "wpgen-theme"
 ) -> tuple[str, list[str]]:
     """Centralized PHP normalization pipeline for all generated PHP files.
 
@@ -646,7 +632,7 @@ def normalize_php_output(
 
     # STEP 1: Clean LLM output (markdown, explanatory text, invisible Unicode)
     try:
-        php_code = clean_generated_code(php_code, 'php')
+        php_code = clean_generated_code(php_code, "php")
     except ValueError as e:
         # Python expression found - this is a critical error
         repairs.append(f"CRITICAL: {str(e)}")
@@ -660,7 +646,14 @@ def normalize_php_output(
     repairs.extend(placeholder_repairs)
 
     # STEP 3: Validate structural requirements for templates
-    if filename in ['index.php', 'front-page.php', 'single.php', 'page.php', 'archive.php', 'search.php']:
+    if filename in [
+        "index.php",
+        "front-page.php",
+        "single.php",
+        "page.php",
+        "archive.php",
+        "search.php",
+    ]:
         php_code, structural_repairs = ensure_template_structure(php_code, filename, theme_name)
         repairs.extend(structural_repairs)
 
@@ -675,7 +668,7 @@ def normalize_php_output(
         # Revalidate
         syntax_valid, syntax_error = validate_php_syntax(php_code)
         if not syntax_valid:
-            repairs.append(f"Could not fix PHP syntax, using minimal fallback")
+            repairs.append("Could not fix PHP syntax, using minimal fallback")
             php_code = get_minimal_fallback(filename, theme_name)
 
     return php_code, repairs
@@ -698,10 +691,10 @@ def validate_and_fix_placeholders(php_code: str, theme_name: str) -> tuple[str, 
     """
     repairs = []
     original_code = php_code
-    theme_slug = theme_name.replace('-', '_')
+    theme_slug = theme_name.replace("-", "_")
 
     # Pattern 1: Literal {theme_name} placeholder (should have been f-string substituted)
-    if '{theme_name}' in php_code:
+    if "{theme_name}" in php_code:
         # In esc_html_e context, this is the text domain
         php_code = php_code.replace("'{theme_name}'", f"'{theme_name}'")
         # In other contexts, replace directly
@@ -709,18 +702,18 @@ def validate_and_fix_placeholders(php_code: str, theme_name: str) -> tuple[str, 
         repairs.append(f"Replaced {{theme_name}} placeholders with '{theme_name}'")
 
     # Pattern 2: __THEME_NAME__ style placeholders
-    if '__THEME_NAME__' in php_code:
-        php_code = php_code.replace('__THEME_NAME__', theme_name)
+    if "__THEME_NAME__" in php_code:
+        php_code = php_code.replace("__THEME_NAME__", theme_name)
         repairs.append(f"Replaced __THEME_NAME__ with '{theme_name}'")
 
     # Pattern 3: __THEME_SLUG__ style placeholders (for function names)
-    if '__THEME_SLUG__' in php_code:
-        php_code = php_code.replace('__THEME_SLUG__', theme_slug)
+    if "__THEME_SLUG__" in php_code:
+        php_code = php_code.replace("__THEME_SLUG__", theme_slug)
         repairs.append(f"Replaced __THEME_SLUG__ with '{theme_slug}'")
 
     # Pattern 4: THEMESLUG in function names
-    if 'THEMESLUG' in php_code:
-        php_code = php_code.replace('THEMESLUG', theme_slug)
+    if "THEMESLUG" in php_code:
+        php_code = php_code.replace("THEMESLUG", theme_slug)
         repairs.append(f"Replaced THEMESLUG with '{theme_slug}'")
 
     if php_code != original_code:
@@ -730,9 +723,7 @@ def validate_and_fix_placeholders(php_code: str, theme_name: str) -> tuple[str, 
 
 
 def ensure_template_structure(
-    php_code: str,
-    filename: str,
-    theme_name: str
+    php_code: str, filename: str, theme_name: str
 ) -> tuple[str, list[str]]:
     """Ensure WordPress template files have required structural components.
 
@@ -754,35 +745,35 @@ def ensure_template_structure(
     modified = False
 
     # Check for get_header()
-    has_get_header = 'get_header()' in php_code or 'get_header(' in php_code
+    has_get_header = "get_header()" in php_code or "get_header(" in php_code
     if not has_get_header:
         # Insert get_header() at the beginning
-        if php_code.strip().startswith('<?php'):
-            php_code = php_code.replace('<?php', '<?php\nget_header();\n?>\n', 1)
+        if php_code.strip().startswith("<?php"):
+            php_code = php_code.replace("<?php", "<?php\nget_header();\n?>\n", 1)
         else:
-            php_code = '<?php get_header(); ?>\n' + php_code
+            php_code = "<?php get_header(); ?>\n" + php_code
         repairs.append(f"Added missing get_header() to {filename}")
         modified = True
 
     # Check for get_footer()
-    has_get_footer = 'get_footer()' in php_code or 'get_footer(' in php_code
+    has_get_footer = "get_footer()" in php_code or "get_footer(" in php_code
     if not has_get_footer:
         # Append get_footer() at the end
-        php_code = php_code.rstrip() + '\n<?php get_footer(); ?>\n'
+        php_code = php_code.rstrip() + "\n<?php get_footer(); ?>\n"
         repairs.append(f"Added missing get_footer() to {filename}")
         modified = True
 
     # Check for WordPress loop in templates that need it
-    needs_loop = filename in ['index.php', 'front-page.php', 'archive.php', 'search.php']
-    has_loop = 'have_posts()' in php_code and 'the_post()' in php_code
+    needs_loop = filename in ["index.php", "front-page.php", "archive.php", "search.php"]
+    has_loop = "have_posts()" in php_code and "the_post()" in php_code
 
     if needs_loop and not has_loop:
         # Check if there's a WP_Query (alternative to main loop)
-        has_wp_query = 'WP_Query' in php_code or 'new WP_Query' in php_code
+        has_wp_query = "WP_Query" in php_code or "new WP_Query" in php_code
 
         if not has_wp_query:
             # Insert a basic WordPress loop
-            loop_code = '''
+            loop_code = """
 <div class="content-area">
     <?php if ( have_posts() ) : ?>
         <?php while ( have_posts() ) : the_post(); ?>
@@ -801,20 +792,22 @@ def ensure_template_structure(
         </article>
     <?php endif; ?>
 </div>
-''' % (theme_name, theme_name)
+""" % (theme_name, theme_name)
 
             # Find where to insert (after get_header, before get_footer)
-            footer_pos = php_code.find('get_footer()')
+            footer_pos = php_code.find("get_footer()")
             if footer_pos > 0:
                 # Find the <?php before get_footer
-                php_tag_pos = php_code.rfind('<?php', 0, footer_pos)
+                php_tag_pos = php_code.rfind("<?php", 0, footer_pos)
                 if php_tag_pos > 0:
-                    php_code = php_code[:php_tag_pos] + loop_code + '\n' + php_code[php_tag_pos:]
+                    php_code = php_code[:php_tag_pos] + loop_code + "\n" + php_code[php_tag_pos:]
                 else:
-                    php_code = php_code[:footer_pos] + loop_code + '\n<?php ' + php_code[footer_pos:]
+                    php_code = (
+                        php_code[:footer_pos] + loop_code + "\n<?php " + php_code[footer_pos:]
+                    )
             else:
                 # No footer found, append before end
-                php_code = php_code.rstrip() + '\n' + loop_code
+                php_code = php_code.rstrip() + "\n" + loop_code
 
             repairs.append(f"Added missing WordPress loop to {filename}")
             modified = True
@@ -837,42 +830,42 @@ def attempt_php_syntax_fixes(php_code: str) -> tuple[str, list[str]]:
     repairs = []
 
     # Fix 1: Unbalanced braces
-    open_braces = php_code.count('{')
-    close_braces = php_code.count('}')
+    open_braces = php_code.count("{")
+    close_braces = php_code.count("}")
     if open_braces > close_braces:
         # Add missing closing braces
         missing = open_braces - close_braces
-        php_code = php_code.rstrip() + '\n' + ('}' * missing)
+        php_code = php_code.rstrip() + "\n" + ("}" * missing)
         repairs.append(f"Added {missing} missing closing brace(s)")
     elif close_braces > open_braces:
         # Remove extra closing braces from the end
         extra = close_braces - open_braces
         for _ in range(extra):
-            last_brace = php_code.rfind('}')
+            last_brace = php_code.rfind("}")
             if last_brace > 0:
-                php_code = php_code[:last_brace] + php_code[last_brace+1:]
+                php_code = php_code[:last_brace] + php_code[last_brace + 1 :]
         repairs.append(f"Removed {extra} extra closing brace(s)")
 
     # Fix 2: Unbalanced parentheses
-    open_parens = php_code.count('(')
-    close_parens = php_code.count(')')
+    open_parens = php_code.count("(")
+    close_parens = php_code.count(")")
     if open_parens > close_parens:
         missing = open_parens - close_parens
-        php_code = php_code.rstrip() + (')' * missing)
+        php_code = php_code.rstrip() + (")" * missing)
         repairs.append(f"Added {missing} missing closing parenthesis(es)")
 
     # Fix 3: Missing semicolons before closing PHP tag
-    php_code = re.sub(r'([^;\s\{\}])\s*\?>', r'\1; ?>', php_code)
+    php_code = re.sub(r"([^;\s\{\}])\s*\?>", r"\1; ?>", php_code)
 
     # Fix 4: Double semicolons
     before = php_code
-    php_code = re.sub(r';{2,}', ';', php_code)
+    php_code = re.sub(r";{2,}", ";", php_code)
     if php_code != before:
         repairs.append("Fixed double semicolons")
 
     # Fix 5: Empty PHP blocks (<?php ?> or <?php ; ?>)
     before = php_code
-    php_code = re.sub(r'<\?php\s*;?\s*\?>', '', php_code)
+    php_code = re.sub(r"<\?php\s*;?\s*\?>", "", php_code)
     if php_code != before:
         repairs.append("Removed empty PHP blocks")
 
@@ -884,7 +877,7 @@ def validate_and_repair_php_file(
     file_type: str,
     filename: str,
     max_retries: int = 2,
-    theme_dir: Path | None = None
+    theme_dir: Path | None = None,
 ) -> tuple[str, bool, list[str]]:
     """Validate and repair a PHP file with retry logic.
 
@@ -908,7 +901,7 @@ def validate_and_repair_php_file(
     current_code = php_code
 
     # STEP 1: Footer-specific sanitization (before general validation)
-    if file_type == 'footer' and filename == 'footer.php':
+    if file_type == "footer" and filename == "footer.php":
         logger.info(f"🔧 Running footer-specific sanitizer on {filename}")
         sanitized_code, cleanups = sanitize_footer_php(current_code)
         if cleanups:
@@ -922,10 +915,7 @@ def validate_and_repair_php_file(
     for attempt in range(max_retries + 1):
         # Validate and attempt auto-fix
         fixed_code, is_valid, issues = validate_and_fix_php(
-            current_code,
-            file_type=file_type,
-            filename=filename,
-            auto_fix=True
+            current_code, file_type=file_type, filename=filename, auto_fix=True
         )
 
         if is_valid:
@@ -937,13 +927,13 @@ def validate_and_repair_php_file(
                 logger.info(f"✓ {filename} passed validation")
 
             # STEP 3: Footer-specific validation and PHP syntax check
-            if file_type == 'footer' and filename == 'footer.php':
+            if file_type == "footer" and filename == "footer.php":
                 # Step 3a: Validate footer requirements (structure, no duplicates, etc.)
-                logger.info(f"🔍 Validating footer.php requirements")
+                logger.info("🔍 Validating footer.php requirements")
                 requirements_valid, requirement_errors = validate_footer_requirements(fixed_code)
 
                 if not requirements_valid:
-                    log_messages.append(f"✗ FOOTER VALIDATION FAILED:")
+                    log_messages.append("✗ FOOTER VALIDATION FAILED:")
                     for error in requirement_errors:
                         log_messages.append(f"  - {error}")
                         logger.error(f"  Footer requirement error: {error}")
@@ -952,8 +942,8 @@ def validate_and_repair_php_file(
                     current_code = fixed_code
                     continue
                 else:
-                    log_messages.append(f"✓ FOOTER REQUIREMENTS: All checks passed")
-                    logger.info(f"✓ Footer.php meets all structural requirements")
+                    log_messages.append("✓ FOOTER REQUIREMENTS: All checks passed")
+                    logger.info("✓ Footer.php meets all structural requirements")
 
                 # Step 3b: PHP syntax check using php -l
                 if theme_dir:
@@ -972,7 +962,9 @@ def validate_and_repair_php_file(
                         continue
                     else:
                         if syntax_issues:  # PHP CLI not available
-                            log_messages.append(f"⚠ {filename}: PHP CLI not available (skipped syntax check)")
+                            log_messages.append(
+                                f"⚠ {filename}: PHP CLI not available (skipped syntax check)"
+                            )
                         else:
                             log_messages.append(f"✓ PHP SYNTAX VALID: {filename}")
                             logger.info(f"✓ PHP syntax validation passed for {filename}")
@@ -1011,47 +1003,51 @@ def validate_functions_php_no_output(php_code: str) -> tuple[bool, list[str]]:
 
     # Remove all function/class definitions and string literals to avoid false positives
     # We'll check for output statements that are NOT inside functions
-    lines = php_code.split('\n')
+    lines = php_code.split("\n")
     in_function = 0
     in_class = 0
-    in_string = False
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
 
         # Skip comments
-        if stripped.startswith('//') or stripped.startswith('#') or stripped.startswith('/*') or stripped.startswith('*'):
+        if (
+            stripped.startswith("//")
+            or stripped.startswith("#")
+            or stripped.startswith("/*")
+            or stripped.startswith("*")
+        ):
             continue
 
         # Track function/class depth
-        if re.search(r'\bfunction\s+\w+\s*\(', stripped):
-            in_function += stripped.count('{')
-        if re.search(r'\bclass\s+\w+', stripped):
-            in_class += stripped.count('{')
+        if re.search(r"\bfunction\s+\w+\s*\(", stripped):
+            in_function += stripped.count("{")
+        if re.search(r"\bclass\s+\w+", stripped):
+            in_class += stripped.count("{")
 
         # Adjust depth based on braces
         if in_function > 0:
-            in_function += stripped.count('{') - stripped.count('}')
+            in_function += stripped.count("{") - stripped.count("}")
         if in_class > 0:
-            in_class += stripped.count('{') - stripped.count('}')
+            in_class += stripped.count("{") - stripped.count("}")
 
         # Only check for output when NOT inside a function or class
         if in_function == 0 and in_class == 0:
             # Check for direct echo/print statements
-            if re.search(r'\becho\s+', stripped) and not stripped.startswith('//'):
+            if re.search(r"\becho\s+", stripped) and not stripped.startswith("//"):
                 issues.append(f"Line {i}: Direct 'echo' statement outside function")
 
-            if re.search(r'\bprint\s+', stripped) and not stripped.startswith('//'):
+            if re.search(r"\bprint\s+", stripped) and not stripped.startswith("//"):
                 issues.append(f"Line {i}: Direct 'print' statement outside function")
 
             # Check for HTML outside PHP tags
-            if not stripped.startswith('<?') and not stripped.startswith('?>'):
+            if not stripped.startswith("<?") and not stripped.startswith("?>"):
                 # Check if line contains HTML tags
-                if re.search(r'<(?!php\b)[a-z]+[^>]*>', stripped, re.IGNORECASE):
+                if re.search(r"<(?!php\b)[a-z]+[^>]*>", stripped, re.IGNORECASE):
                     issues.append(f"Line {i}: HTML output outside PHP tags")
 
             # Check for short echo tags with direct output
-            if re.search(r'<\?=', stripped):
+            if re.search(r"<\?=", stripped):
                 issues.append(f"Line {i}: Short echo tag '<?=' with direct output")
 
     has_output = len(issues) > 0
@@ -1068,7 +1064,7 @@ def get_fallback_functions_php(theme_name: str) -> str:
         Fallback functions.php code
     """
     # Convert theme name to valid PHP function name (replace hyphens with underscores)
-    safe_function_name = theme_name.replace('-', '_')
+    safe_function_name = theme_name.replace("-", "_")
     text_domain = sanitize_text_domain(theme_name)
 
     # Generate compatibility layer
@@ -1125,14 +1121,22 @@ add_action( 'after_setup_theme', '{safe_function_name}_setup' );
  */
 function {safe_function_name}_scripts() {{
     // Enqueue base layout stylesheet (structural styles)
-    wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+    $base_css = get_template_directory_uri() . '/assets/css/style.css';
+    wp_enqueue_style( 'theme-base-layout', $base_css, array(), '1.0.0' );
 
     // Enqueue main theme stylesheet
-    wp_enqueue_style( '{theme_name}-style', get_stylesheet_uri(), array( 'theme-base-layout' ), wp_get_theme()->get( 'Version' ) );
+    wp_enqueue_style(
+        '{theme_name}-style',
+        get_stylesheet_uri(),
+        array( 'theme-base-layout' ),
+        wp_get_theme()->get( 'Version' )
+    );
 
     // Enqueue wpgen-ui assets (front-end only, no editor deps)
-    wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
-    wp_enqueue_script( 'wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true );
+    $ui_css = get_template_directory_uri() . '/assets/css/wpgen-ui.css';
+    wp_enqueue_style( 'wpgen-ui', $ui_css, array(), '1.0.0' );
+    $ui_js = get_template_directory_uri() . '/assets/js/wpgen-ui.js';
+    wp_enqueue_script( 'wpgen-ui', $ui_js, array(), '1.0.0', true );
 }}
 add_action( 'wp_enqueue_scripts', '{safe_function_name}_scripts' );
 
@@ -1148,7 +1152,8 @@ function {safe_function_name}_editor_assets() {{
     // wp_enqueue_script(
     //     '{theme_name}-editor',
     //     get_template_directory_uri() . '/assets/js/editor.js',
-    //     array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-components', 'wp-data', 'wp-edit-post' ),
+    //     array( 'wp-blocks', 'wp-element', 'wp-i18n',
+    //            'wp-components', 'wp-data', 'wp-edit-post' ),
     //     wp_get_theme()->get( 'Version' ),
     //     true
     // );
@@ -1206,7 +1211,11 @@ function {safe_function_name}_get_the_image( $size = 'large' ) {{
         the_post_thumbnail( $size );
     }} else {{
         // Optional: Display a placeholder image
-        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+        $placeholder_url = get_template_directory_uri()
+            . '/assets/images/placeholder.png';
+        echo '<img src="' . esc_url( $placeholder_url )
+            . '" alt="' . esc_attr( get_the_title() )
+            . '" class="placeholder-image" />';
     }}
 }}
 
@@ -1266,17 +1275,19 @@ def ensure_base_layout_enqueue(php_code: str, theme_name: str) -> tuple[str, lis
     repairs: list[str] = []
 
     # Skip if the base layout enqueue is already present
-    if 'theme-base-layout' in php_code or 'assets/css/style.css' in php_code:
+    if "theme-base-layout" in php_code or "assets/css/style.css" in php_code:
         return php_code, repairs
 
-    safe_name = re.sub(r'[^a-zA-Z0-9_]+', '_', theme_name or 'wpgen_theme')
+    safe_name = re.sub(r"[^a-zA-Z0-9_]+", "_", theme_name or "wpgen_theme")
     enqueue_snippet = f"""
 // Auto-injected by WPGen: ensure structural CSS always loads
 if ( ! function_exists('{safe_name}_enqueue_base_layout') ) {{
     function {safe_name}_enqueue_base_layout() {{
-        wp_enqueue_style( 'theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0' );
+        $base_css = get_template_directory_uri() . '/assets/css/style.css';
+        wp_enqueue_style( 'theme-base-layout', $base_css, array(), '1.0.0' );
         if ( ! wp_style_is( 'wpgen-ui', 'enqueued' ) ) {{
-            wp_enqueue_style( 'wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0' );
+            $ui_css = get_template_directory_uri() . '/assets/css/wpgen-ui.css';
+            wp_enqueue_style( 'wpgen-ui', $ui_css, array(), '1.0.0' );
         }}
     }}
     add_action( 'wp_enqueue_scripts', '{safe_name}_enqueue_base_layout', 5 );
@@ -1305,7 +1316,10 @@ def check_plugin_compatibility(php_code: str, theme_name: str) -> list[str]:
         # Look for constant usage (not definition)
         if const_name in php_code:
             # Check if it's being defined (not just used)
-            if f"define( '{const_name}'" not in php_code and f"defined( '{const_name}'" not in php_code:
+            if (
+                f"define( '{const_name}'" not in php_code
+                and f"defined( '{const_name}'" not in php_code
+            ):
                 warnings.append(
                     f"References constant {const_name} but doesn't define it. "
                     f"Ensure plugin compatibility layer is present."
@@ -1330,16 +1344,24 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     header_file = theme_dir / "header.php"
     if header_file.exists():
         try:
-            content = header_file.read_text(encoding='utf-8')
+            content = header_file.read_text(encoding="utf-8")
             # Check for HTML class attributes (not CSS selectors)
-            if 'site-header' not in content:
-                issues.append("header.php missing '.site-header' class - layout structure incomplete")
-            if 'site-branding' not in content:
-                issues.append("header.php missing '.site-branding' wrapper - logo may not be constrained")
-            if 'the_custom_logo()' not in content:
-                issues.append("header.php missing 'the_custom_logo()' call - custom logo support incomplete")
-            if 'main-navigation' not in content:
-                issues.append("header.php missing '.main-navigation' class - navigation structure incomplete")
+            if "site-header" not in content:
+                issues.append(
+                    "header.php missing '.site-header' class - layout structure incomplete"
+                )
+            if "site-branding" not in content:
+                issues.append(
+                    "header.php missing '.site-branding' wrapper - logo may not be constrained"
+                )
+            if "the_custom_logo()" not in content:
+                issues.append(
+                    "header.php missing 'the_custom_logo()' call - custom logo support incomplete"
+                )
+            if "main-navigation" not in content:
+                issues.append(
+                    "header.php missing '.main-navigation' class - navigation structure incomplete"
+                )
         except Exception as e:
             logger.warning(f"Could not validate header.php structure: {e}")
     else:
@@ -1349,17 +1371,19 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     footer_file = theme_dir / "footer.php"
     if footer_file.exists():
         try:
-            content = footer_file.read_text(encoding='utf-8')
+            content = footer_file.read_text(encoding="utf-8")
             # Very relaxed validation: accept any <footer> tag with any attributes
             # Accept alternative closing structures (</div> wrappers, etc.) as long as DOM closes
             # This ensures maximum compatibility with local models and prevents false positives
-            has_footer = '<footer' in content.lower()
-            has_wp_footer = 'wp_footer()' in content
-            has_closing_tags = ('</body>' in content.lower() and '</html>' in content.lower())
+            has_footer = "<footer" in content.lower()
+            has_wp_footer = "wp_footer()" in content
+            has_closing_tags = "</body>" in content.lower() and "</html>" in content.lower()
 
             # Only warn if critical WordPress hooks are missing
             if not has_wp_footer:
-                issues.append("footer.php missing wp_footer() hook - WordPress scripts/styles may not load")
+                issues.append(
+                    "footer.php missing wp_footer() hook - WordPress scripts/styles may not load"
+                )
 
             # Only warn if HTML document is not properly closed
             if not has_closing_tags:
@@ -1367,7 +1391,9 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
 
             # Footer tag is recommended but not required - just log info, don't fail validation
             if not has_footer:
-                logger.info("footer.php does not use semantic <footer> tag (recommended but not required)")
+                logger.info(
+                    "footer.php does not use semantic <footer> tag (recommended but not required)"
+                )
         except Exception as e:
             logger.warning(f"Could not validate footer.php structure: {e}")
     else:
@@ -1379,12 +1405,14 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
         issues.append("Missing assets/css/style.css - base layout styles not present")
     else:
         try:
-            content = base_css.read_text(encoding='utf-8')
+            content = base_css.read_text(encoding="utf-8")
             # Check for essential layout rules
-            if '.site-header' not in content:
+            if ".site-header" not in content:
                 issues.append("Base layout CSS missing '.site-header' styles")
-            if '.site-branding img' not in content and '.custom-logo-link img' not in content:
-                issues.append("Base layout CSS missing logo constraint styles - logos may be full-width")
+            if ".site-branding img" not in content and ".custom-logo-link img" not in content:
+                issues.append(
+                    "Base layout CSS missing logo constraint styles - logos may be full-width"
+                )
         except Exception as e:
             logger.warning(f"Could not validate base layout CSS: {e}")
 
@@ -1392,8 +1420,8 @@ def validate_layout_structure(theme_dir: Path) -> list[str]:
     functions_file = theme_dir / "functions.php"
     if functions_file.exists():
         try:
-            content = functions_file.read_text(encoding='utf-8')
-            if 'theme-base-layout' not in content and 'assets/css/style.css' not in content:
+            content = functions_file.read_text(encoding="utf-8")
+            if "theme-base-layout" not in content and "assets/css/style.css" not in content:
                 issues.append("functions.php not enqueuing base layout CSS - styles will not load")
         except Exception as e:
             logger.warning(f"Could not validate functions.php enqueue: {e}")
@@ -1432,50 +1460,69 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
 
     for php_file in php_files:
         try:
-            content = php_file.read_text(encoding='utf-8')
+            content = php_file.read_text(encoding="utf-8")
 
             # Check for plugin compatibility issues (only in functions.php)
-            if php_file.name == 'functions.php':
+            if php_file.name == "functions.php":
                 compat_warnings = check_plugin_compatibility(content, theme_dir.name)
                 for warning in compat_warnings:
                     logger.warning(f"Plugin compatibility: {warning}")
                     warnings.append(f"{php_file.name}: {warning}")
 
             # Check for Python expressions that weren't evaluated
-            if '{theme_name.' in content or '{requirements[' in content:
+            if "{theme_name." in content or "{requirements[" in content:
                 issues.append(f"{php_file.name}: Contains unevaluated Python expression")
                 logger.error(f"Found Python expression in {php_file}: {content[:100]}")
 
             # Check for markdown code fences
-            if '```' in content:
+            if "```" in content:
                 issues.append(f"{php_file.name}: Contains markdown code fences")
 
             # Check for explanatory text
-            first_line = content.split('\n')[0].strip()
-            if first_line and not first_line.startswith('<?php') and not first_line.startswith('<!DOCTYPE'):
-                if any(phrase in first_line.lower() for phrase in ["here's", "here is", "below is", "this is"]):
+            first_line = content.split("\n")[0].strip()
+            if (
+                first_line
+                and not first_line.startswith("<?php")
+                and not first_line.startswith("<!DOCTYPE")
+            ):
+                if any(
+                    phrase in first_line.lower()
+                    for phrase in ["here's", "here is", "below is", "this is"]
+                ):
                     issues.append(f"{php_file.name}: Contains explanatory text before code")
 
             # Check for invalid/undefined WordPress functions
-            if 'post_loop(' in content:
-                issues.append(f"{php_file.name}: Uses undefined function 'post_loop()' - should use 'have_posts()' and 'the_post()'")
+            if "post_loop(" in content:
+                issues.append(
+                    f"{php_file.name}: Uses undefined function"
+                    " 'post_loop()' - should use"
+                    " 'have_posts()' and 'the_post()'"
+                )
 
             # Check for get_template_part calls and verify referenced files exist
-            template_part_pattern = r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"](?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+            template_part_pattern = (
+                r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"](?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+            )
             for match in re.finditer(template_part_pattern, content):
                 slug = match.group(1)
                 name = match.group(2) if match.group(2) else None
 
                 # Check if template-parts directory exists
-                template_parts_dir = theme_dir / 'template-parts'
+                template_parts_dir = theme_dir / "template-parts"
                 if name:
                     # Check for {slug}-{name}.php
                     expected_file = theme_dir / f"{slug}-{name}.php"
                     if not expected_file.exists():
                         # Also check in template-parts directory
-                        alt_file = template_parts_dir / f"{slug.replace('template-parts/', '')}-{name}.php"
+                        alt_file = (
+                            template_parts_dir / f"{slug.replace('template-parts/', '')}-{name}.php"
+                        )
                         if not alt_file.exists():
-                            issues.append(f"{php_file.name}: References template part '{slug}-{name}.php' which doesn't exist")
+                            issues.append(
+                                f"{php_file.name}: References"
+                                f" template part '{slug}-{name}.php'"
+                                " which doesn't exist"
+                            )
                 else:
                     # Check for {slug}.php
                     expected_file = theme_dir / f"{slug}.php"
@@ -1483,29 +1530,41 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
                         # Also check in template-parts directory
                         alt_file = template_parts_dir / f"{slug.replace('template-parts/', '')}.php"
                         if not alt_file.exists():
-                            issues.append(f"{php_file.name}: References template part '{slug}.php' which doesn't exist")
+                            issues.append(
+                                f"{php_file.name}: References"
+                                f" template part '{slug}.php'"
+                                " which doesn't exist"
+                            )
 
             # Track templates with get_header() and get_footer()
-            if 'get_header(' in content and php_file.name not in ['header.php', 'functions.php']:
+            if "get_header(" in content and php_file.name not in ["header.php", "functions.php"]:
                 templates_with_header.append(php_file.name)
-            if 'get_footer(' in content and php_file.name not in ['footer.php', 'functions.php']:
+            if "get_footer(" in content and php_file.name not in ["footer.php", "functions.php"]:
                 templates_with_footer.append(php_file.name)
 
             # Check for unchecked wp_pagenavi() calls
             # Check each occurrence, not just the first
-            if 'wp_pagenavi(' in content:
-                lines = content.split('\n')
+            if "wp_pagenavi(" in content:
+                lines = content.split("\n")
                 for i, line in enumerate(lines):
-                    if 'wp_pagenavi(' in line:
+                    if "wp_pagenavi(" in line:
                         # Check previous 3 lines for function_exists check
                         context_start = max(0, i - 3)
                         prev_lines = lines[context_start:i]
 
-                        has_check = any('function_exists' in pline and 'wp_pagenavi' in pline
-                                       for pline in prev_lines)
+                        has_check = any(
+                            "function_exists" in pline and "wp_pagenavi" in pline
+                            for pline in prev_lines
+                        )
 
                         if not has_check:
-                            issues.append(f"{php_file.name}: Line {i+1} calls wp_pagenavi() without function_exists() check - will crash if plugin not installed")
+                            issues.append(
+                                f"{php_file.name}: Line {i+1}"
+                                " calls wp_pagenavi() without"
+                                " function_exists() check -"
+                                " will crash if plugin not"
+                                " installed"
+                            )
                             break  # Only report first occurrence to avoid spam
 
             # Basic PHP syntax check if PHP is available
@@ -1519,7 +1578,9 @@ def validate_theme_for_wordpress_safety(theme_dir: Path) -> tuple[bool, list[str
     # Check for templates with get_header() but missing get_footer()
     templates_missing_footer = set(templates_with_header) - set(templates_with_footer)
     for template in templates_missing_footer:
-        issues.append(f"{template}: Calls get_header() but missing get_footer() - incomplete template")
+        issues.append(
+            f"{template}: Calls get_header() but missing get_footer() - incomplete template"
+        )
 
     # Log warnings (these don't fail validation, but are useful info)
     if warnings:
@@ -1552,7 +1613,11 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
     Returns:
         Guaranteed-safe header.php code
     """
-    site_name = requirements.get('theme_display_name', 'My WordPress Site') if requirements else 'My WordPress Site'
+    (
+        requirements.get("theme_display_name", "My WordPress Site")
+        if requirements
+        else "My WordPress Site"
+    )
     text_domain = sanitize_text_domain(theme_name)
 
     return f"""<!DOCTYPE html>
@@ -1570,7 +1635,10 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', '{text_domain}' ); ?></a>
+    <a class="skip-link screen-reader-text"
+        href="#content"><?php
+        esc_html_e( 'Skip to content', '{text_domain}' );
+    ?></a>
 
     <header class="site-header">
         <div class="header-inner container">
@@ -1605,16 +1673,27 @@ def get_fallback_header_php(theme_name: str, requirements: dict = None) -> str:
                 <?php endif; ?>
             </div><!-- .site-branding -->
 
-            <button class="mobile-menu-toggle" aria-label="<?php esc_attr_e( 'Toggle Menu', '{text_domain}' ); ?>" aria-expanded="false" aria-controls="site-navigation">
+            <button class="mobile-menu-toggle"
+                aria-label="<?php
+                    esc_attr_e( 'Toggle Menu', '{text_domain}' );
+                ?>"
+                aria-expanded="false"
+                aria-controls="site-navigation">
                 <span class="menu-icon">
                     <span class="menu-line"></span>
                     <span class="menu-line"></span>
                     <span class="menu-line"></span>
                 </span>
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{text_domain}' ); ?></span>
+                <span class="screen-reader-text"><?php
+                    esc_html_e( 'Menu', '{text_domain}' );
+                ?></span>
             </button>
 
-            <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{text_domain}' ); ?>">
+            <nav id="site-navigation"
+                class="main-navigation"
+                aria-label="<?php
+                    esc_attr_e( 'Primary Navigation', '{text_domain}' );
+                ?>">
                 <?php
                 wp_nav_menu(
                     array(
@@ -1678,8 +1757,14 @@ def get_fallback_footer_php(theme_name: str) -> str:
                         </div>
                     <?php else : ?>
                         <div class="footer-widget-area footer-widget-1">
-                            <h3 class="widget-title"><?php esc_html_e( 'About', '{text_domain}' ); ?></h3>
-                            <p><?php echo esc_html( get_bloginfo( 'description', 'display' ) ); ?></p>
+                            <h3 class="widget-title"><?php
+                                esc_html_e( 'About', '{text_domain}' );
+                            ?></h3>
+                            <p><?php
+                                echo esc_html(
+                                    get_bloginfo( 'description', 'display' )
+                                );
+                            ?></p>
                         </div>
                     <?php endif; ?>
 
@@ -1713,7 +1798,10 @@ def get_fallback_footer_php(theme_name: str) -> str:
                             /* translators: 1: Copyright symbol and year, 2: Site name */
                             esc_html__( '%1$s %2$s. All rights reserved.', '{text_domain}' ),
                             '&copy; ' . esc_html( gmdate( 'Y' ) ),
-                            '<a href="' . esc_url( home_url( '/' ) ) . '" rel="home">' . esc_html( get_bloginfo( 'name' ) ) . '</a>'
+                            '<a href="' . esc_url( home_url( '/' ) )
+                            . '" rel="home">'
+                            . esc_html( get_bloginfo( 'name' ) )
+                            . '</a>'
                         );
                         ?>
                     </p>
@@ -1741,13 +1829,13 @@ def get_fallback_template(template_name: str, theme_name: str) -> str:
         Fallback template code
     """
     # Return strict structural templates for header/footer
-    if template_name == 'header.php':
+    if template_name == "header.php":
         return get_fallback_header_php(theme_name)
-    elif template_name == 'footer.php':
+    elif template_name == "footer.php":
         return get_fallback_footer_php(theme_name)
 
     templates = {
-        'single.php': """<?php
+        "single.php": """<?php
 /**
  * Single post template
  */
@@ -1777,7 +1865,7 @@ endif;
 
 get_footer();
 """,
-        'page.php': """<?php
+        "page.php": """<?php
 /**
  * Page template
  */
@@ -1800,7 +1888,7 @@ endif;
 
 get_footer();
 """,
-        'archive.php': """<?php
+        "archive.php": """<?php
 /**
  * Archive template
  */
@@ -1835,7 +1923,7 @@ endif;
 
 get_footer();
 """,
-        'search.php': """<?php
+        "search.php": """<?php
 /**
  * Search results template
  */
@@ -1844,7 +1932,10 @@ get_header();
 
 <header class="page-header">
     <h1 class="page-title">
-        <?php printf( esc_html__( 'Search Results for: %s', '{theme_name}' ), '<span>' . get_search_query() . '</span>' ); ?>
+        <?php printf(
+            esc_html__( 'Search Results for: %s', '{theme_name}' ),
+            '<span>' . get_search_query() . '</span>'
+        ); ?>
     </h1>
 </header>
 
@@ -1870,7 +1961,7 @@ endif;
 
 get_footer();
 """,
-        '404.php': """<?php
+        "404.php": """<?php
 /**
  * 404 error page template
  */
@@ -1889,7 +1980,7 @@ get_header();
 <?php
 get_footer();
 """,
-        'sidebar.php': """<?php
+        "sidebar.php": """<?php
 /**
  * Sidebar template
  */
@@ -1901,7 +1992,7 @@ if ( ! is_active_sidebar( 'sidebar-1' ) ) {
 <aside id="secondary" class="widget-area">
     <?php dynamic_sidebar( 'sidebar-1' ); ?>
 </aside>
-"""
+""",
     }
 
     return templates.get(template_name, "")
@@ -1918,11 +2009,10 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
         Tuple of (repaired_code, list_of_repairs_made)
     """
     repairs = []
-    original_code = php_code
 
     # 1. Fix wp_pagenavi() calls without function_exists() wrapper
     # Pattern: Find wp_pagenavi() not already wrapped in function_exists
-    lines = php_code.split('\n')
+    lines = php_code.split("\n")
     repaired_lines = []
     i = 0
 
@@ -1930,22 +2020,23 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
         line = lines[i]
 
         # Check if this line contains wp_pagenavi()
-        if 'wp_pagenavi(' in line and '<?php' not in line:
+        if "wp_pagenavi(" in line and "<?php" not in line:
             # Check if previous few lines contain function_exists check for this call
             context_start = max(0, i - 3)
             context_lines = lines[context_start:i]
 
-            # Check if already wrapped: look for "function_exists" AND "wp_pagenavi" in preceding lines
+            # Check if already wrapped: look for "function_exists"
+            # AND "wp_pagenavi" in preceding lines
             already_wrapped = False
             for prev_line in context_lines:
-                if 'function_exists' in prev_line and 'wp_pagenavi' in prev_line:
+                if "function_exists" in prev_line and "wp_pagenavi" in prev_line:
                     already_wrapped = True
                     break
 
             if not already_wrapped:
                 # Get indentation
                 indent = len(line) - len(line.lstrip())
-                indent_str = ' ' * indent
+                indent_str = " " * indent
 
                 # Replace with wrapped version
                 repaired_lines.append(f"{indent_str}if ( function_exists( 'wp_pagenavi' ) ) {{")
@@ -1961,39 +2052,41 @@ def repair_wordpress_code(php_code: str, theme_name: str) -> tuple[str, list[str
         repaired_lines.append(line)
         i += 1
 
-    php_code = '\n'.join(repaired_lines)
+    php_code = "\n".join(repaired_lines)
 
     # 2. Replace post_loop() with proper WordPress loop
-    if 'post_loop(' in php_code:
-        php_code = re.sub(
-            r'post_loop\(\s*\)',
-            'the_post()',
-            php_code
-        )
+    if "post_loop(" in php_code:
+        php_code = re.sub(r"post_loop\(\s*\)", "the_post()", php_code)
         repairs.append("Replaced post_loop() with the_post()")
 
     # 3. Ensure theme helper functions exist if referenced
-    safe_function_name = theme_name.replace('-', '_')
+    safe_function_name = theme_name.replace("-", "_")
 
     # Check if helper functions are called but not defined
     helpers_needed = []
-    if f'{safe_function_name}_get_the_meta_data(' in php_code and \
-       f'function {safe_function_name}_get_the_meta_data(' not in php_code:
-        helpers_needed.append('get_the_meta_data')
+    if (
+        f"{safe_function_name}_get_the_meta_data(" in php_code
+        and f"function {safe_function_name}_get_the_meta_data(" not in php_code
+    ):
+        helpers_needed.append("get_the_meta_data")
 
-    if f'{safe_function_name}_get_the_image(' in php_code and \
-       f'function {safe_function_name}_get_the_image(' not in php_code:
-        helpers_needed.append('get_the_image')
+    if (
+        f"{safe_function_name}_get_the_image(" in php_code
+        and f"function {safe_function_name}_get_the_image(" not in php_code
+    ):
+        helpers_needed.append("get_the_image")
 
-    if f'{safe_function_name}_pagination(' in php_code and \
-       f'function {safe_function_name}_pagination(' not in php_code:
-        helpers_needed.append('pagination')
+    if (
+        f"{safe_function_name}_pagination(" in php_code
+        and f"function {safe_function_name}_pagination(" not in php_code
+    ):
+        helpers_needed.append("pagination")
 
     if helpers_needed:
         # Add missing helper functions at the end
         helper_code = "\n\n// Auto-generated helper functions\n"
 
-        if 'get_the_meta_data' in helpers_needed:
+        if "get_the_meta_data" in helpers_needed:
             helper_code += f"""
 /**
  * Display post meta data (date and author).
@@ -2006,7 +2099,7 @@ function {safe_function_name}_get_the_meta_data() {{
 }}
 """
 
-        if 'get_the_image' in helpers_needed:
+        if "get_the_image" in helpers_needed:
             helper_code += f"""
 /**
  * Display the post thumbnail with fallback.
@@ -2015,12 +2108,16 @@ function {safe_function_name}_get_the_image( $size = 'large' ) {{
     if ( has_post_thumbnail() ) {{
         the_post_thumbnail( $size );
     }} else {{
-        echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/placeholder.png' ) . '" alt="' . esc_attr( get_the_title() ) . '" class="placeholder-image" />';
+        $placeholder_url = get_template_directory_uri()
+            . '/assets/images/placeholder.png';
+        echo '<img src="' . esc_url( $placeholder_url )
+            . '" alt="' . esc_attr( get_the_title() )
+            . '" class="placeholder-image" />';
     }}
 }}
 """
 
-        if 'pagination' in helpers_needed:
+        if "pagination" in helpers_needed:
             helper_code += f"""
 /**
  * Display pagination with fallback.
@@ -2062,8 +2159,7 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
         Tuple of (sanitized_code, list_of_cleanups_with_line_numbers)
     """
     cleanups = []
-    original_code = php_code
-    lines = php_code.split('\n')
+    lines = php_code.split("\n")
 
     # STEP 1: Fix common escape errors
     # Replace \' with ' (LLM often escapes quotes unnecessarily)
@@ -2072,37 +2168,45 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     if php_code != before:
         # Count how many times we replaced
         count = before.count(r"\'")
-        cleanups.append(f"[SANITIZER] Replaced {count} instances of \\' with ' (unnecessary escapes)")
+        cleanups.append(
+            f"[SANITIZER] Replaced {count} instances of \\' with ' (unnecessary escapes)"
+        )
 
     # Replace \" with " (LLM often escapes quotes unnecessarily)
     before = php_code
-    php_code = php_code.replace(r'\"', '"')
+    php_code = php_code.replace(r"\"", '"')
     if php_code != before:
-        count = before.count(r'\"')
-        cleanups.append(f"[SANITIZER] Replaced {count} instances of \\\" with \" (unnecessary escapes)")
+        count = before.count(r"\"")
+        cleanups.append(
+            f'[SANITIZER] Replaced {count} instances of \\" with " (unnecessary escapes)'
+        )
 
     # STEP 2: Remove backslashes before HTML tags
     before = php_code
-    php_code = re.sub(r'\\<', '<', php_code)
-    php_code = re.sub(r'\\>', '>', php_code)
+    php_code = re.sub(r"\\<", "<", php_code)
+    php_code = re.sub(r"\\>", ">", php_code)
     if php_code != before:
-        cleanups.append(f"[SANITIZER] Removed backslashes before HTML tags (\\< and \\>)")
+        cleanups.append("[SANITIZER] Removed backslashes before HTML tags (\\< and \\>)")
 
     # STEP 3: Remove backslashes before spaces
     before = php_code
-    php_code = re.sub(r'\\ ', ' ', php_code)
+    php_code = re.sub(r"\\ ", " ", php_code)
     if php_code != before:
-        cleanups.append(f"[SANITIZER] Removed backslashes before spaces (\\ )")
+        cleanups.append("[SANITIZER] Removed backslashes before spaces (\\ )")
 
     # STEP 4: Remove unpaired/illegal backslashes
     # This regex keeps only valid PHP escapes: \n, \r, \t, \\, \', \", \$
     # Everything else is removed
     before = php_code
     # Match backslash NOT followed by valid escape characters
-    php_code = re.sub(r'\\(?![nrt"\'\\$])', '', php_code)
+    php_code = re.sub(r'\\(?![nrt"\'\\$])', "", php_code)
     if php_code != before:
         removed_count = len(before) - len(php_code)
-        cleanups.append(f"[SANITIZER] Removed {removed_count} illegal backslash(es) (preserving \\n, \\r, \\t, \\\\, \\', \\\", \\$)")
+        cleanups.append(
+            f"[SANITIZER] Removed {removed_count} illegal"
+            " backslash(es) (preserving"
+            " \\n, \\r, \\t, \\\\, \\', \\\", \\$)"
+        )
 
     # STEP 5: Remove backslashes before letters (except valid escapes)
     # This catches things like \a, \b, \c, etc. that aren't valid PHP escapes
@@ -2110,34 +2214,38 @@ def final_pass_sanitizer(php_code: str, filename: str = "file.php") -> tuple[str
     # Remove \ before letters that aren't part of valid escapes
     # Valid: \n, \r, \t (already preserved above)
     # Invalid: \a, \b, \c, \d, etc.
-    php_code = re.sub(r'\\([a-mo-qs-zA-MO-QS-Z])', r'\1', php_code)
+    php_code = re.sub(r"\\([a-mo-qs-zA-MO-QS-Z])", r"\1", php_code)
     if php_code != before:
-        cleanups.append(f"[SANITIZER] Removed backslashes before non-escape letters (\\a, \\b, etc.)")
+        cleanups.append(
+            "[SANITIZER] Removed backslashes before non-escape letters (\\a, \\b, etc.)"
+        )
 
     # STEP 6: Repair malformed PHP blocks
-    php_open_count = php_code.count('<?php')
-    php_close_count = php_code.count('?>')
+    php_open_count = php_code.count("<?php")
+    php_close_count = php_code.count("?>")
 
     if php_open_count != php_close_count:
         if php_open_count > php_close_count:
             # More opens than closes - add missing closes
             missing = php_open_count - php_close_count
-            php_code += '\n?>' * missing
+            php_code += "\n?>" * missing
             cleanups.append(f"[SANITIZER] Added {missing} missing ?> tag(s) to balance PHP blocks")
         else:
             # More closes than opens - add missing opens at the start
             missing = php_close_count - php_open_count
-            php_code = '<?php\n' * missing + php_code
-            cleanups.append(f"[SANITIZER] Added {missing} missing <?php tag(s) to balance PHP blocks")
+            php_code = "<?php\n" * missing + php_code
+            cleanups.append(
+                f"[SANITIZER] Added {missing} missing <?php tag(s) to balance PHP blocks"
+            )
 
     # STEP 7: Log line-by-line changes for detailed debugging
-    if cleanups and len(lines) == len(php_code.split('\n')):
-        new_lines = php_code.split('\n')
+    if cleanups and len(lines) == len(php_code.split("\n")):
+        new_lines = php_code.split("\n")
         changed_lines = []
         for i, (old_line, new_line) in enumerate(zip(lines, new_lines), start=1):
             if old_line != new_line:
                 # Find what changed
-                if '\\' in old_line and old_line != new_line:
+                if "\\" in old_line and old_line != new_line:
                     changed_lines.append(i)
 
         if changed_lines and len(changed_lines) <= 10:  # Only log if reasonable number
@@ -2158,26 +2266,26 @@ def repair_php_blocks(php_code: str) -> tuple[str, list[str]]:
     repairs = []
 
     # Count PHP tags
-    php_open_count = php_code.count('<?php')
-    php_close_count = php_code.count('?>')
+    php_open_count = php_code.count("<?php")
+    php_close_count = php_code.count("?>")
 
     if php_open_count != php_close_count:
         if php_open_count > php_close_count:
             # More opens than closes - add missing closes
             missing = php_open_count - php_close_count
-            php_code += '\n?>' * missing
+            php_code += "\n?>" * missing
             repairs.append(f"Added {missing} missing ?> tag(s)")
         else:
             # More closes than opens - add missing opens
             missing = php_close_count - php_open_count
             # Try to add at the beginning if it doesn't already start with <?php
-            if not php_code.strip().startswith('<?php'):
-                php_code = '<?php\n' + php_code
+            if not php_code.strip().startswith("<?php"):
+                php_code = "<?php\n" + php_code
                 missing -= 1
 
             # If still missing, add more at the start
             if missing > 0:
-                php_code = '<?php\n' * missing + php_code
+                php_code = "<?php\n" * missing + php_code
                 repairs.append(f"Added {missing} missing <?php tag(s)")
 
     return php_code, repairs
@@ -2206,7 +2314,7 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
     Raises:
         ValueError: If the filename is not recognized (no stub generation allowed)
     """
-    if filename == 'footer.php':
+    if filename == "footer.php":
         return """</main>
 
 <footer class="site-footer">
@@ -2221,8 +2329,8 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 </html>
 """
 
-    elif filename == 'header.php':
-        return f"""<!DOCTYPE html>
+    elif filename == "header.php":
+        return """<!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>">
@@ -2239,7 +2347,9 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
             <?php if ( has_custom_logo() ) : ?>
                 <?php the_custom_logo(); ?>
             <?php else : ?>
-                <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+                <h1 class="site-title"><a href="<?php
+                    echo esc_url( home_url( '/' ) );
+                ?>"><?php bloginfo( 'name' ); ?></a></h1>
             <?php endif; ?>
         </div>
 
@@ -2258,15 +2368,17 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 <main id="content" class="site-main">
 """
 
-    elif filename == 'index.php':
-        return f"""<?php get_header(); ?>
+    elif filename == "index.php":
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php if ( have_posts() ) : ?>
         <?php while ( have_posts() ) : the_post(); ?>
             <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
                 <header class="entry-header">
-                    <h2 class="entry-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                    <h2 class="entry-title"><a
+                        href="<?php the_permalink(); ?>"
+                        ><?php the_title(); ?></a></h2>
                 </header>
                 <div class="entry-content">
                     <?php the_excerpt(); ?>
@@ -2282,8 +2394,8 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 <?php get_footer(); ?>
 """
 
-    elif filename == 'single.php':
-        return f"""<?php get_header(); ?>
+    elif filename == "single.php":
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php while ( have_posts() ) : the_post(); ?>
@@ -2301,8 +2413,8 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 <?php get_footer(); ?>
 """
 
-    elif filename == 'page.php':
-        return f"""<?php get_header(); ?>
+    elif filename == "page.php":
+        return """<?php get_header(); ?>
 
 <div class="content-area">
     <?php while ( have_posts() ) : the_post(); ?>
@@ -2320,16 +2432,16 @@ def get_minimal_fallback(filename: str, theme_name: str = "theme") -> str:
 <?php get_footer(); ?>
 """
 
-    elif filename == 'sidebar.php':
-        return f"""<aside class="sidebar">
+    elif filename == "sidebar.php":
+        return """<aside class="sidebar">
     <?php if ( is_active_sidebar( 'sidebar-1' ) ) : ?>
         <?php dynamic_sidebar( 'sidebar-1' ); ?>
     <?php endif; ?>
 </aside>
 """
 
-    elif filename == 'functions.php':
-        safe_name = theme_name.replace('-', '_')
+    elif filename == "functions.php":
+        safe_name = theme_name.replace("-", "_")
         return f"""<?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -2374,7 +2486,8 @@ add_action( 'widgets_init', '{safe_name}_widgets_init' );
         # The system should use Jinja2 fallback templates instead
         raise ValueError(
             f"No minimal fallback available for {filename}. "
-            f"Stub templates are FORBIDDEN. Use Jinja2 fallback templates from the template directory instead."
+            "Stub templates are FORBIDDEN. Use Jinja2 fallback"
+            " templates from the template directory instead."
         )
 
 
@@ -2396,7 +2509,6 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
         Tuple of (sanitized_code, list_of_cleanups_performed)
     """
     cleanups = []
-    original_code = php_code
 
     # Step 0: Footer-specific WordPress function sanitization
     # Fix common LLM errors in copyright lines
@@ -2411,7 +2523,9 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
     php_code = re.sub(r"bloginfo\(\\*'description'\\*\)", "bloginfo('description')", php_code)
     php_code = re.sub(r"bloginfo\(\\*'url'\\*\)", "bloginfo('url')", php_code)
     if php_code != before:
-        cleanups.append("Normalized WordPress function calls (date, bloginfo) to remove backslash escaping")
+        cleanups.append(
+            "Normalized WordPress function calls (date, bloginfo) to remove backslash escaping"
+        )
 
     # Step 1: Remove backslashes before quotes (convert \' to ' and \" to ")
     # But preserve valid PHP escape sequences in strings
@@ -2421,47 +2535,47 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
     # Replace \" with " (except in strings with proper context)
     php_code = re.sub(r'\\"', '"', php_code)
     if php_code != before:
-        cleanups.append("Converted escaped quotes (\' and \") to regular quotes")
+        cleanups.append("Converted escaped quotes (' and \") to regular quotes")
 
     # Step 2: Remove backslashes before HTML tags
     before = php_code
-    php_code = re.sub(r'\\<', '<', php_code)  # \< to <
-    php_code = re.sub(r'\\>', '>', php_code)  # \> to >
+    php_code = re.sub(r"\\<", "<", php_code)  # \< to <
+    php_code = re.sub(r"\\>", ">", php_code)  # \> to >
     if php_code != before:
         cleanups.append("Removed backslashes before HTML tags")
 
     # Step 3: Remove backslashes before whitespace
     before = php_code
-    php_code = re.sub(r'\\ +', ' ', php_code)  # "\ " to " "
-    php_code = re.sub(r'\\\t', '\t', php_code)  # "\t" to tab
-    php_code = re.sub(r'\\\n', '\n', php_code)  # "\n" to newline
+    php_code = re.sub(r"\\ +", " ", php_code)  # "\ " to " "
+    php_code = re.sub(r"\\\t", "\t", php_code)  # "\t" to tab
+    php_code = re.sub(r"\\\n", "\n", php_code)  # "\n" to newline
     if php_code != before:
         cleanups.append("Removed backslashes before whitespace")
 
     # Step 4: Remove other stray backslashes (aggressive cleaning)
     before = php_code
     # Remove backslashes before common punctuation (but preserve in strings)
-    php_code = re.sub(r'\\,', ',', php_code)
-    php_code = re.sub(r'\\;', ';', php_code)
-    php_code = re.sub(r'\\\(', '(', php_code)
-    php_code = re.sub(r'\\\)', ')', php_code)
-    php_code = re.sub(r'\\\{', '{', php_code)
-    php_code = re.sub(r'\\\}', '}', php_code)
-    php_code = re.sub(r'\\\[', '[', php_code)
-    php_code = re.sub(r'\\\]', ']', php_code)
+    php_code = re.sub(r"\\,", ",", php_code)
+    php_code = re.sub(r"\\;", ";", php_code)
+    php_code = re.sub(r"\\\(", "(", php_code)
+    php_code = re.sub(r"\\\)", ")", php_code)
+    php_code = re.sub(r"\\\{", "{", php_code)
+    php_code = re.sub(r"\\\}", "}", php_code)
+    php_code = re.sub(r"\\\[", "[", php_code)
+    php_code = re.sub(r"\\\]", "]", php_code)
     if php_code != before:
         cleanups.append("Removed stray backslashes before punctuation")
 
     # Step 5: Remove duplicated <footer> sections (keep only the first)
-    footer_matches = list(re.finditer(r'<footer[^>]*>', php_code, re.IGNORECASE))
+    footer_matches = list(re.finditer(r"<footer[^>]*>", php_code, re.IGNORECASE))
     if len(footer_matches) > 1:
         # Find all complete footer sections
         footer_sections = []
         for i, match in enumerate(footer_matches):
             start = match.start()
             # Find the corresponding </footer>
-            remaining = php_code[match.end():]
-            close_match = re.search(r'</footer>', remaining, re.IGNORECASE)
+            remaining = php_code[match.end() :]
+            close_match = re.search(r"</footer>", remaining, re.IGNORECASE)
             if close_match:
                 end = match.end() + close_match.end()
                 footer_sections.append((start, end))
@@ -2471,13 +2585,15 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
             # Work backwards to maintain string indices
             for start, end in reversed(footer_sections[1:]):
                 php_code = php_code[:start] + php_code[end:]
-            cleanups.append(f"Removed {len(footer_sections) - 1} duplicate <footer> section(s), kept first one")
+            cleanups.append(
+                f"Removed {len(footer_sections) - 1} duplicate <footer> section(s), kept first one"
+            )
 
     # Step 6: Ensure exactly one </body> tag
-    body_close_count = len(re.findall(r'</body>', php_code, re.IGNORECASE))
+    body_close_count = len(re.findall(r"</body>", php_code, re.IGNORECASE))
     if body_close_count > 1:
         # Keep only the last </body>
-        php_code = re.sub(r'</body>', '', php_code, count=body_close_count - 1, flags=re.IGNORECASE)
+        php_code = re.sub(r"</body>", "", php_code, count=body_close_count - 1, flags=re.IGNORECASE)
         cleanups.append(f"Removed {body_close_count - 1} duplicate </body> tag(s), kept one")
     elif body_close_count == 0:
         # Add missing </body>
@@ -2485,10 +2601,10 @@ def sanitize_footer_php(php_code: str) -> tuple[str, list[str]]:
         cleanups.append("Added missing </body> tag")
 
     # Step 7: Ensure exactly one </html> tag
-    html_close_count = len(re.findall(r'</html>', php_code, re.IGNORECASE))
+    html_close_count = len(re.findall(r"</html>", php_code, re.IGNORECASE))
     if html_close_count > 1:
         # Keep only the last </html>
-        php_code = re.sub(r'</html>', '', php_code, count=html_close_count - 1, flags=re.IGNORECASE)
+        php_code = re.sub(r"</html>", "", php_code, count=html_close_count - 1, flags=re.IGNORECASE)
         cleanups.append(f"Removed {html_close_count - 1} duplicate </html> tag(s), kept one")
     elif html_close_count == 0:
         # Add missing </html>
@@ -2514,16 +2630,16 @@ def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, st
     issues = []
 
     # Create a temporary file with the PHP code
-    import tempfile
     import os
+    import tempfile
 
     try:
         with tempfile.NamedTemporaryFile(
-            mode='w',
-            suffix='.php',
+            mode="w",
+            suffix=".php",
             delete=False,
-            encoding='utf-8',
-            dir=theme_dir if theme_dir.exists() else None
+            encoding="utf-8",
+            dir=theme_dir if theme_dir.exists() else None,
         ) as tmp:
             tmp.write(php_code)
             tmp_path = tmp.name
@@ -2531,10 +2647,7 @@ def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, st
         # Run php -l on the file
         try:
             result = subprocess.run(
-                ['php', '-l', tmp_path],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["php", "-l", tmp_path], capture_output=True, text=True, timeout=5
             )
 
             if result.returncode == 0:
@@ -2558,7 +2671,7 @@ def validate_footer_php_syntax(php_code: str, theme_dir: Path) -> tuple[bool, st
             # Clean up temp file
             try:
                 os.unlink(tmp_path)
-            except:
+            except OSError:
                 pass
 
     except Exception as e:
@@ -2585,32 +2698,32 @@ def validate_footer_requirements(php_code: str) -> tuple[bool, list[str]]:
     errors = []
 
     # Check 1: No more than one <footer> tag
-    footer_count = len(re.findall(r'<footer[^>]*>', php_code, re.IGNORECASE))
+    footer_count = len(re.findall(r"<footer[^>]*>", php_code, re.IGNORECASE))
     if footer_count > 1:
         errors.append(f"Multiple <footer> tags found ({footer_count}), expected exactly 1")
 
     # Check 2: No stray backslashes in PHP blocks
     # Extract PHP blocks
-    php_blocks = re.findall(r'<\?php(.*?)\?>', php_code, re.DOTALL)
+    php_blocks = re.findall(r"<\?php(.*?)\?>", php_code, re.DOTALL)
     for i, block in enumerate(php_blocks):
         # Look for suspicious backslashes (not in strings)
         # This is a simple heuristic - remove strings first
-        block_no_strings = re.sub(r"'[^']*'", '', block)
-        block_no_strings = re.sub(r'"[^"]*"', '', block_no_strings)
+        block_no_strings = re.sub(r"'[^']*'", "", block)
+        block_no_strings = re.sub(r'"[^"]*"', "", block_no_strings)
 
         # Check for backslashes before common characters
-        if re.search(r'\\[<>\s,;(){}]', block_no_strings):
+        if re.search(r"\\[<>\s,;(){}]", block_no_strings):
             errors.append(f"Stray backslashes found in PHP block {i+1}")
 
     # Check 3: Exactly one </body> tag
-    body_close_count = len(re.findall(r'</body>', php_code, re.IGNORECASE))
+    body_close_count = len(re.findall(r"</body>", php_code, re.IGNORECASE))
     if body_close_count == 0:
         errors.append("Missing </body> tag")
     elif body_close_count > 1:
         errors.append(f"Multiple </body> tags found ({body_close_count}), expected exactly 1")
 
     # Check 4: Exactly one </html> tag
-    html_close_count = len(re.findall(r'</html>', php_code, re.IGNORECASE))
+    html_close_count = len(re.findall(r"</html>", php_code, re.IGNORECASE))
     if html_close_count == 0:
         errors.append("Missing </html> tag")
     elif html_close_count > 1:
@@ -2652,22 +2765,21 @@ def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
             <?php endif; ?>
         </div>
         <div class="site-info">
-            <p>&copy; <?php echo date( 'Y' ); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
+            <p>&copy; <?php echo date( 'Y' ); ?>
+                <?php bloginfo( 'name' ); ?>.
+                All rights reserved.</p>
         </div>
     </div>
 </footer>
 """
 
     # 1. Ensure wp_footer() hook exists
-    if 'wp_footer()' not in php_code:
+    if "wp_footer()" not in php_code:
         # Find the position before </body> or at the end
-        if '</body>' in content_lower:
+        if "</body>" in content_lower:
             # Insert before </body>
             php_code = re.sub(
-                r'(</body>)',
-                r'<?php wp_footer(); ?>\n\1',
-                php_code,
-                flags=re.IGNORECASE
+                r"(</body>)", r"<?php wp_footer(); ?>\n\1", php_code, flags=re.IGNORECASE
             )
             repairs.append("Added missing wp_footer() hook before </body>")
         else:
@@ -2676,31 +2788,26 @@ def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
             repairs.append("Added missing wp_footer() hook and closing tags")
 
     # 2. Ensure closing </body> and </html> tags exist
-    if '</body>' not in content_lower:
+    if "</body>" not in content_lower:
         php_code = php_code.rstrip() + "\n</body>\n</html>\n"
         repairs.append("Added missing </body></html> closing tags")
-    elif '</html>' not in content_lower:
+    elif "</html>" not in content_lower:
         php_code = php_code.rstrip() + "\n</html>\n"
         repairs.append("Added missing </html> closing tag")
 
     # 3. If no <footer> tag at all, insert safe default footer
-    if '<footer' not in content_lower:
+    if "<footer" not in content_lower:
         # Try to insert before wp_footer() or </body>
-        if 'wp_footer()' in php_code:
+        if "wp_footer()" in php_code:
             php_code = re.sub(
-                r'(<\?php\s+wp_footer\(\);?\s*\?>)',
-                safe_footer + r'\n\1',
+                r"(<\?php\s+wp_footer\(\);?\s*\?>)",
+                safe_footer + r"\n\1",
                 php_code,
-                flags=re.IGNORECASE
+                flags=re.IGNORECASE,
             )
             repairs.append("Inserted safe default <footer> block (was missing)")
-        elif '</body>' in content_lower:
-            php_code = re.sub(
-                r'(</body>)',
-                safe_footer + r'\n\1',
-                php_code,
-                flags=re.IGNORECASE
-            )
+        elif "</body>" in content_lower:
+            php_code = re.sub(r"(</body>)", safe_footer + r"\n\1", php_code, flags=re.IGNORECASE)
             repairs.append("Inserted safe default <footer> block before </body>")
         else:
             # Append before the end
@@ -2710,49 +2817,47 @@ def repair_footer_php(php_code: str) -> tuple[str, list[str]]:
     # 4. If content area (</main>, </div class="content">, etc.) is not closed,
     # try to add a closing tag before footer
     # Look for opening <main but no closing </main>
-    has_main_open = '<main' in content_lower
-    has_main_close = '</main>' in content_lower
+    has_main_open = "<main" in content_lower
+    has_main_close = "</main>" in content_lower
 
     if has_main_open and not has_main_close:
         # Insert </main> before <footer>
-        if '<footer' in content_lower:
+        if "<footer" in content_lower:
             php_code = re.sub(
-                r'(<footer)',
-                r'</main><!-- .site-main -->\n\n\1',
+                r"(<footer)",
+                r"</main><!-- .site-main -->\n\n\1",
                 php_code,
                 count=1,
-                flags=re.IGNORECASE
+                flags=re.IGNORECASE,
             )
             repairs.append("Added missing </main> closing tag before footer")
 
     # 5. Ensure there's at least some visible content in footer
     # Check if footer has any visible text or widgets
-    if '<footer' in content_lower:
+    if "<footer" in content_lower:
         # Extract footer content
         footer_match = re.search(
-            r'<footer[^>]*>(.*?)</footer>',
-            php_code,
-            flags=re.IGNORECASE | re.DOTALL
+            r"<footer[^>]*>(.*?)</footer>", php_code, flags=re.IGNORECASE | re.DOTALL
         )
         if footer_match:
             footer_content = footer_match.group(1)
             # Remove PHP code and check if there's any HTML content
-            footer_content_no_php = re.sub(r'<\?php.*?\?>', '', footer_content, flags=re.DOTALL)
+            footer_content_no_php = re.sub(r"<\?php.*?\?>", "", footer_content, flags=re.DOTALL)
             # Check for any meaningful HTML tags or text
             has_content = (
-                'dynamic_sidebar' in footer_content or
-                '<div' in footer_content_no_php or
-                '<p' in footer_content_no_php or
-                len(footer_content_no_php.strip()) > 20
+                "dynamic_sidebar" in footer_content
+                or "<div" in footer_content_no_php
+                or "<p" in footer_content_no_php
+                or len(footer_content_no_php.strip()) > 20
             )
             if not has_content:
                 # Footer is empty, replace it with safe footer
                 php_code = re.sub(
-                    r'<footer[^>]*>.*?</footer>',
+                    r"<footer[^>]*>.*?</footer>",
                     safe_footer,
                     php_code,
                     count=1,
-                    flags=re.IGNORECASE | re.DOTALL
+                    flags=re.IGNORECASE | re.DOTALL,
                 )
                 repairs.append("Replaced empty footer with safe default content")
 
@@ -2777,37 +2882,37 @@ def validate_and_fix_template_structure(theme_dir: Path) -> dict[str, Any]:
     """
     logger.info("Validating and fixing template structure")
     results = {
-        'valid': True,
-        'errors': [],
-        'warnings': [],
-        'repairs': [],
+        "valid": True,
+        "errors": [],
+        "warnings": [],
+        "repairs": [],
     }
 
     # Define required structure for each template
     template_requirements = {
-        'header.php': {
-            'must_contain': ['<header', 'wp_head()', '<main'],
-            'must_not_contain': ['</main>'],  # Should NOT close main
-            'should_contain': ['wp_nav_menu', 'bloginfo'],
-            'php_required': True,
+        "header.php": {
+            "must_contain": ["<header", "wp_head()", "<main"],
+            "must_not_contain": ["</main>"],  # Should NOT close main
+            "should_contain": ["wp_nav_menu", "bloginfo"],
+            "php_required": True,
         },
-        'footer.php': {
-            'must_contain': ['</main>', '<footer', 'wp_footer()'],
-            'must_not_contain': [],
-            'should_contain': ['</body>', '</html>'],
-            'php_required': True,
+        "footer.php": {
+            "must_contain": ["</main>", "<footer", "wp_footer()"],
+            "must_not_contain": [],
+            "should_contain": ["</body>", "</html>"],
+            "php_required": True,
         },
-        'index.php': {
-            'must_contain': ['get_header()', 'get_footer()', 'have_posts'],
-            'must_not_contain': [],
-            'should_contain': ['the_post()', 'the_content'],
-            'php_required': True,
+        "index.php": {
+            "must_contain": ["get_header()", "get_footer()", "have_posts"],
+            "must_not_contain": [],
+            "should_contain": ["the_post()", "the_content"],
+            "php_required": True,
         },
-        'functions.php': {
-            'must_contain': ['<?php'],
-            'must_not_contain': [],
-            'should_contain': ['function', 'add_action', 'add_theme_support'],
-            'php_required': True,
+        "functions.php": {
+            "must_contain": ["<?php"],
+            "must_not_contain": [],
+            "should_contain": ["function", "add_action", "add_theme_support"],
+            "php_required": True,
         },
     }
 
@@ -2816,11 +2921,11 @@ def validate_and_fix_template_structure(theme_dir: Path) -> dict[str, Any]:
         template_path = theme_dir / template_name
 
         if not template_path.exists():
-            results['warnings'].append(f"Template not found: {template_name}")
+            results["warnings"].append(f"Template not found: {template_name}")
             continue
 
         try:
-            with open(template_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(template_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             original_content = content
@@ -2828,24 +2933,20 @@ def validate_and_fix_template_structure(theme_dir: Path) -> dict[str, Any]:
             repairs_made = []
 
             # Check for required elements
-            for required in requirements['must_contain']:
+            for required in requirements["must_contain"]:
                 if required.lower() not in content_lower:
-                    content, repair_msg = _add_missing_element(
-                        content, template_name, required
-                    )
+                    content, repair_msg = _add_missing_element(content, template_name, required)
                     if repair_msg:
                         repairs_made.append(repair_msg)
-                        results['repairs'].append(f"{template_name}: {repair_msg}")
+                        results["repairs"].append(f"{template_name}: {repair_msg}")
 
             # Check for prohibited elements
-            for prohibited in requirements['must_not_contain']:
+            for prohibited in requirements["must_not_contain"]:
                 if prohibited.lower() in content_lower:
-                    content, repair_msg = _remove_element(
-                        content, template_name, prohibited
-                    )
+                    content, repair_msg = _remove_element(content, template_name, prohibited)
                     if repair_msg:
                         repairs_made.append(repair_msg)
-                        results['repairs'].append(f"{template_name}: {repair_msg}")
+                        results["repairs"].append(f"{template_name}: {repair_msg}")
 
             # Validate PHP syntax
             is_valid, error_msg = validate_php_syntax(content)
@@ -2855,31 +2956,31 @@ def validate_and_fix_template_structure(theme_dir: Path) -> dict[str, Any]:
                 content, php_repairs = repair_wordpress_code(content, template_name)
                 repairs_made.extend(php_repairs)
                 for repair in php_repairs:
-                    results['repairs'].append(f"{template_name}: {repair}")
+                    results["repairs"].append(f"{template_name}: {repair}")
 
                 # Validate again
                 is_valid, error_msg = validate_php_syntax(content)
                 if not is_valid:
-                    results['errors'].append(f"{template_name}: {error_msg}")
-                    results['valid'] = False
+                    results["errors"].append(f"{template_name}: {error_msg}")
+                    results["valid"] = False
 
             # Check for unmatched braces/tags
             brace_issues = _check_balanced_braces(content)
             if brace_issues:
                 for issue in brace_issues:
-                    results['errors'].append(f"{template_name}: {issue}")
-                results['valid'] = False
+                    results["errors"].append(f"{template_name}: {issue}")
+                results["valid"] = False
 
             # Write repaired content if changed
             if content != original_content:
-                with open(template_path, 'w', encoding='utf-8') as f:
+                with open(template_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 logger.info(f"Auto-repaired {template_name} ({len(repairs_made)} fixes)")
 
         except Exception as e:
             logger.error(f"Error validating {template_name}: {e}")
-            results['errors'].append(f"{template_name}: Validation error - {str(e)}")
-            results['valid'] = False
+            results["errors"].append(f"{template_name}: Validation error - {str(e)}")
+            results["valid"] = False
 
     return results
 
@@ -2888,106 +2989,106 @@ def _add_missing_element(content: str, template_name: str, element: str) -> tupl
     """Add a missing required element to a template."""
     repair_msg = ""
 
-    if template_name == 'header.php':
-        if element == '<header':
+    if template_name == "header.php":
+        if element == "<header":
             # Add header tag after body
-            if '<body' in content.lower():
+            if "<body" in content.lower():
                 content = re.sub(
-                    r'(<body[^>]*>)',
+                    r"(<body[^>]*>)",
                     r'\1\n<header class="site-header">\n    <!-- Header content -->\n</header>\n',
                     content,
                     count=1,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
                 repair_msg = "Added missing <header> tag"
 
-        elif element == 'wp_head()':
+        elif element == "wp_head()":
             # Add wp_head() before </head>
-            if '</head>' in content.lower():
+            if "</head>" in content.lower():
                 content = re.sub(
-                    r'(</head>)',
-                    r'<?php wp_head(); ?>\n\1',
-                    content,
-                    count=1,
-                    flags=re.IGNORECASE
+                    r"(</head>)", r"<?php wp_head(); ?>\n\1", content, count=1, flags=re.IGNORECASE
                 )
                 repair_msg = "Added missing wp_head() call"
 
-        elif element == '<main':
+        elif element == "<main":
             # Add opening main tag at the end
-            if '</header>' in content.lower():
+            if "</header>" in content.lower():
                 content = re.sub(
-                    r'(</header>)',
+                    r"(</header>)",
                     r'\1\n<main id="content" class="site-main">\n',
                     content,
                     count=1,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
             else:
                 content += '\n<main id="content" class="site-main">\n'
-            repair_msg = "Added opening <main id=\"content\"> tag"
+            repair_msg = 'Added opening <main id="content"> tag'
 
-    elif template_name == 'footer.php':
-        if element == '</main>':
+    elif template_name == "footer.php":
+        if element == "</main>":
             # Add closing main tag at the beginning
-            content = '</main><!-- .site-main -->\n\n' + content
+            content = "</main><!-- .site-main -->\n\n" + content
             repair_msg = "Added closing </main> tag"
 
-        elif element == '<footer':
+        elif element == "<footer":
             # Add footer tag
-            if 'wp_footer()' in content:
+            if "wp_footer()" in content:
                 content = re.sub(
-                    r'(<\?php\s+wp_footer\(\);?\s*\?>)',
-                    r'<footer class="site-footer">\n    <div class="footer-content">\n        <p>&copy; <?php echo date(\'Y\'); ?> <?php bloginfo(\'name\'); ?></p>\n    </div>\n</footer>\n\n\1',
-                    content,
-                    count=1
-                )
-            else:
-                content = '<footer class="site-footer">\n    <div class="footer-content">\n        <p>&copy; <?php echo date(\'Y\'); ?> <?php bloginfo(\'name\'); ?></p>\n    </div>\n</footer>\n' + content
-            repair_msg = "Added <footer> tag"
-
-        elif element == 'wp_footer()':
-            # Add wp_footer() before </body>
-            if '</body>' in content.lower():
-                content = re.sub(
-                    r'(</body>)',
-                    r'<?php wp_footer(); ?>\n\1',
+                    r"(<\?php\s+wp_footer\(\);?\s*\?>)",
+                    r'<footer class="site-footer">\n'
+                    r'    <div class="footer-content">\n'
+                    r"        <p>&copy; <?php echo date('Y'); ?>"
+                    r" <?php bloginfo('name'); ?></p>\n"
+                    r"    </div>\n"
+                    r"</footer>\n\n\1",
                     content,
                     count=1,
-                    flags=re.IGNORECASE
                 )
             else:
-                content += '\n<?php wp_footer(); ?>\n</body>\n</html>\n'
+                content = (
+                    '<footer class="site-footer">\n'
+                    '    <div class="footer-content">\n'
+                    "        <p>&copy; <?php echo date('Y'); ?>"
+                    " <?php bloginfo('name'); ?></p>\n"
+                    "    </div>\n"
+                    "</footer>\n" + content
+                )
+            repair_msg = "Added <footer> tag"
+
+        elif element == "wp_footer()":
+            # Add wp_footer() before </body>
+            if "</body>" in content.lower():
+                content = re.sub(
+                    r"(</body>)",
+                    r"<?php wp_footer(); ?>\n\1",
+                    content,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+            else:
+                content += "\n<?php wp_footer(); ?>\n</body>\n</html>\n"
             repair_msg = "Added wp_footer() call"
 
-    elif template_name == 'index.php':
-        if element == 'get_header()':
+    elif template_name == "index.php":
+        if element == "get_header()":
             # Add get_header() at the beginning
-            if not content.startswith('<?php'):
-                content = '<?php get_header(); ?>\n\n' + content
+            if not content.startswith("<?php"):
+                content = "<?php get_header(); ?>\n\n" + content
             else:
-                content = re.sub(
-                    r'(<\?php)',
-                    r'\1 get_header(); ?>',
-                    content,
-                    count=1
-                )
+                content = re.sub(r"(<\?php)", r"\1 get_header(); ?>", content, count=1)
             repair_msg = "Added get_header() call"
 
-        elif element == 'get_footer()':
+        elif element == "get_footer()":
             # Add get_footer() at the end
-            if '?>' in content:
+            if "?>" in content:
                 content = re.sub(
-                    r'(\?>)(?!.*\?>)',
-                    r'<?php get_footer(); \1',
-                    content,
-                    flags=re.DOTALL
+                    r"(\?>)(?!.*\?>)", r"<?php get_footer(); \1", content, flags=re.DOTALL
                 )
             else:
-                content += '\n<?php get_footer(); ?>\n'
+                content += "\n<?php get_footer(); ?>\n"
             repair_msg = "Added get_footer() call"
 
-        elif element == 'have_posts':
+        elif element == "have_posts":
             # Add basic WordPress loop
             loop_code = """
 if ( have_posts() ) :
@@ -2998,15 +3099,15 @@ if ( have_posts() ) :
 endif;
 """
             # Insert after get_header if present
-            if 'get_header()' in content:
+            if "get_header()" in content:
                 content = re.sub(
-                    r'(get_header\(\);?\s*\?>)',
-                    r'\1\n\n<?php\n' + loop_code + '\n?>',
+                    r"(get_header\(\);?\s*\?>)",
+                    r"\1\n\n<?php\n" + loop_code + "\n?>",
                     content,
-                    count=1
+                    count=1,
                 )
             else:
-                content += '\n<?php\n' + loop_code + '\n?>\n'
+                content += "\n<?php\n" + loop_code + "\n?>\n"
             repair_msg = "Added WordPress loop"
 
     return content, repair_msg
@@ -3016,14 +3117,9 @@ def _remove_element(content: str, template_name: str, element: str) -> tuple[str
     """Remove a prohibited element from a template."""
     repair_msg = ""
 
-    if template_name == 'header.php' and element == '</main>':
+    if template_name == "header.php" and element == "</main>":
         # Remove closing main tag from header
-        content = re.sub(
-            r'</main[^>]*>',
-            '',
-            content,
-            flags=re.IGNORECASE
-        )
+        content = re.sub(r"</main[^>]*>", "", content, flags=re.IGNORECASE)
         repair_msg = "Removed incorrect </main> tag (should be in footer.php)"
 
     return content, repair_msg
@@ -3034,20 +3130,20 @@ def _check_balanced_braces(content: str) -> list[str]:
     issues = []
 
     # Remove PHP strings and comments to avoid false positives
-    cleaned = re.sub(r"'[^']*'", '', content)
-    cleaned = re.sub(r'"[^"]*"', '', cleaned)
-    cleaned = re.sub(r'//.*?$', '', cleaned, flags=re.MULTILINE)
-    cleaned = re.sub(r'/\*.*?\*/', '', cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r"'[^']*'", "", content)
+    cleaned = re.sub(r'"[^"]*"', "", cleaned)
+    cleaned = re.sub(r"//.*?$", "", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"/\*.*?\*/", "", cleaned, flags=re.DOTALL)
 
     # Check PHP braces
-    php_open = cleaned.count('{')
-    php_close = cleaned.count('}')
+    php_open = cleaned.count("{")
+    php_close = cleaned.count("}")
     if php_open != php_close:
         issues.append(f"Unmatched braces: {php_open} opening, {php_close} closing")
 
     # Check PHP tags
-    php_tag_open = len(re.findall(r'<\?php', cleaned, re.IGNORECASE))
-    php_tag_close = cleaned.count('?>')
+    php_tag_open = len(re.findall(r"<\?php", cleaned, re.IGNORECASE))
+    php_tag_close = cleaned.count("?>")
     if php_tag_open != php_tag_close:
         issues.append(f"Unmatched PHP tags: {php_tag_open} <?php, {php_tag_close} ?>")
 
@@ -3074,73 +3170,87 @@ def sanitize_theme_filename(filename: str) -> tuple[str, list[str]]:
     original = filename
 
     # Strip any leading "page-" prefix that LLMs sometimes add
-    if filename.startswith('page-'):
+    if filename.startswith("page-"):
         filename = filename[5:]  # Remove "page-"
-        changes.append(f"Removed 'page-' prefix")
+        changes.append("Removed 'page-' prefix")
 
     # Remove duplicate extensions (.php.php, .css.css, etc.)
     while True:
         # Check for double .php
-        if filename.endswith('.php.php'):
+        if filename.endswith(".php.php"):
             filename = filename[:-4]  # Remove one .php
             changes.append("Removed duplicate .php extension")
         # Check for .css.php (wrong extension)
-        elif filename.endswith('.css.php'):
+        elif filename.endswith(".css.php"):
             filename = filename[:-4]  # Remove .php, keep .css
             changes.append("Removed incorrect .php extension from CSS file")
         # Check for .html.php (wrong extension)
-        elif filename.endswith('.html.php'):
+        elif filename.endswith(".html.php"):
             filename = filename[:-5]  # Remove .html
             changes.append("Removed .html extension from PHP file")
         # Check for .js.php (wrong extension)
-        elif filename.endswith('.js.php'):
+        elif filename.endswith(".js.php"):
             filename = filename[:-4]  # Remove .php, keep .js
             changes.append("Removed incorrect .php extension from JS file")
         # Check for any other double extension
-        elif re.search(r'\.\w+\.\w+$', filename):
+        elif re.search(r"\.\w+\.\w+$", filename):
             # Keep only the last extension
-            parts = filename.rsplit('.', 2)
+            parts = filename.rsplit(".", 2)
             if len(parts) >= 3:
-                filename = parts[0] + '.' + parts[2]
+                filename = parts[0] + "." + parts[2]
                 changes.append(f"Removed duplicate extension .{parts[1]}")
         else:
             break
 
     # Ensure PHP template files have .php extension only
     php_templates = [
-        'header', 'footer', 'index', 'functions', 'single', 'page',
-        'archive', 'search', '404', 'sidebar', 'front-page',
-        'home', 'category', 'tag', 'author', 'date', 'attachment'
+        "header",
+        "footer",
+        "index",
+        "functions",
+        "single",
+        "page",
+        "archive",
+        "search",
+        "404",
+        "sidebar",
+        "front-page",
+        "home",
+        "category",
+        "tag",
+        "author",
+        "date",
+        "attachment",
     ]
 
-    base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    base_name = filename.rsplit(".", 1)[0] if "." in filename else filename
     if base_name in php_templates:
-        if not filename.endswith('.php'):
-            filename = base_name + '.php'
-            changes.append(f"Corrected extension to .php for template file")
+        if not filename.endswith(".php"):
+            filename = base_name + ".php"
+            changes.append("Corrected extension to .php for template file")
 
     # Ensure style.css is exactly that
-    if 'style' in filename.lower() and filename != 'style.css':
-        if not filename.startswith('_') and not filename.startswith('.'):
-            filename = 'style.css'
+    if "style" in filename.lower() and filename != "style.css":
+        if not filename.startswith("_") and not filename.startswith("."):
+            filename = "style.css"
             changes.append("Normalized to 'style.css'")
 
     # Prevent common hallucinated filenames
     invalid_patterns = {
-        r'^template-.*\.php$': None,  # template-header.php → header.php
-        r'^wp-.*\.php$': None,  # wp-header.php → header.php
-        r'^theme-.*\.php$': None,  # theme-header.php → header.php
+        r"^template-.*\.php$": None,  # template-header.php → header.php
+        r"^wp-.*\.php$": None,  # wp-header.php → header.php
+        r"^theme-.*\.php$": None,  # theme-header.php → header.php
     }
 
     for pattern, replacement in invalid_patterns.items():
         if re.match(pattern, filename):
             # Extract the core name (e.g., "header" from "template-header.php")
-            match = re.search(r'-([\w-]+)\.php$', filename)
+            match = re.search(r"-([\w-]+)\.php$", filename)
             if match:
                 core_name = match.group(1)
                 if core_name in php_templates:
                     filename = f"{core_name}.php"
-                    changes.append(f"Removed invalid prefix from filename")
+                    changes.append("Removed invalid prefix from filename")
 
     if changes:
         logger.info(f"Sanitized filename: '{original}' → '{filename}'")
@@ -3164,29 +3274,31 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
         Dictionary with validation results and renames performed
     """
     results = {
-        'valid': True,
-        'renames': [],
-        'errors': [],
+        "valid": True,
+        "renames": [],
+        "errors": [],
     }
 
     theme_dir = Path(theme_dir)
 
     if not theme_dir.exists():
-        results['valid'] = False
-        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        results["valid"] = False
+        results["errors"].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
     # Import WordPress template hierarchy validator
     from .template_hierarchy_validator import TemplateHierarchyValidator
+
     validator = TemplateHierarchyValidator()
 
-    # Check if WooCommerce is enabled (check for woocommerce.php or functions.php with WooCommerce support)
+    # Check if WooCommerce is enabled (check for woocommerce.php
+    # or functions.php with WooCommerce support)
     woocommerce_enabled = False
     functions_php = theme_dir / "functions.php"
     if functions_php.exists():
         try:
-            content = functions_php.read_text(encoding='utf-8')
-            if 'woocommerce' in content.lower():
+            content = functions_php.read_text(encoding="utf-8")
+            if "woocommerce" in content.lower():
                 woocommerce_enabled = True
         except Exception:
             pass
@@ -3205,47 +3317,58 @@ def validate_theme_filenames(theme_dir: Path) -> dict[str, Any]:
 
                 # Check if target already exists
                 if new_path.exists() and new_path != file_path:
-                    logger.warning(f"Cannot rename {original_name} to {sanitized_name}: target already exists")
-                    results['errors'].append(f"Rename conflict: {original_name} → {sanitized_name} (target exists)")
-                    results['valid'] = False
+                    logger.warning(
+                        f"Cannot rename {original_name} to {sanitized_name}: target already exists"
+                    )
+                    results["errors"].append(
+                        f"Rename conflict: {original_name} → {sanitized_name} (target exists)"
+                    )
+                    results["valid"] = False
                     continue
                 else:
                     try:
                         file_path.rename(new_path)
-                        results['renames'].append(f"{original_name} → {sanitized_name}")
+                        results["renames"].append(f"{original_name} → {sanitized_name}")
                         logger.info(f"Renamed file: {original_name} → {sanitized_name}")
                         # Update for next check
                         file_path = new_path
                         original_name = sanitized_name
                     except Exception as e:
                         logger.error(f"Failed to rename {original_name}: {e}")
-                        results['errors'].append(f"Failed to rename {original_name}: {str(e)}")
-                        results['valid'] = False
+                        results["errors"].append(f"Failed to rename {original_name}: {str(e)}")
+                        results["valid"] = False
                         continue
 
             # Step 2: Validate against WordPress template hierarchy
-            if original_name.endswith(('.php', '.css')):
-                is_valid, error_msg = validator.is_valid_template_name(original_name, woocommerce_enabled)
+            if original_name.endswith((".php", ".css")):
+                is_valid, error_msg = validator.is_valid_template_name(
+                    original_name, woocommerce_enabled
+                )
                 if not is_valid:
                     # Try to suggest a valid name
                     suggested_name = validator.suggest_valid_template_name(original_name)
                     error_with_suggestion = f"{error_msg}. Suggested: {suggested_name}"
-                    results['errors'].append(error_with_suggestion)
-                    results['valid'] = False
+                    results["errors"].append(error_with_suggestion)
+                    results["valid"] = False
                     logger.error(f"Invalid WordPress template: {error_with_suggestion}")
 
                     # Auto-fix if it's a simple case (capitalized name)
-                    if original_name != original_name.lower() and original_name.endswith('.php'):
+                    if original_name != original_name.lower() and original_name.endswith(".php"):
                         lowercase_name = original_name.lower()
                         new_path = theme_dir / lowercase_name
                         if not new_path.exists():
                             try:
                                 file_path.rename(new_path)
-                                results['renames'].append(f"{original_name} → {lowercase_name} (WordPress hierarchy fix)")
-                                logger.info(f"Auto-fixed capitalized template: {original_name} → {lowercase_name}")
+                                results["renames"].append(
+                                    f"{original_name} → {lowercase_name} (WordPress hierarchy fix)"
+                                )
+                                logger.info(
+                                    "Auto-fixed capitalized template:"
+                                    f" {original_name} → {lowercase_name}"
+                                )
                                 # Remove from errors since we fixed it
-                                results['errors'].pop()
-                                results['valid'] = True
+                                results["errors"].pop()
+                                results["valid"] = True
                             except Exception as e:
                                 logger.error(f"Failed to auto-fix {original_name}: {e}")
 
@@ -3271,34 +3394,34 @@ def scan_mixed_content(theme_dir: Path, enforce_https: bool = True) -> dict[str,
         }
     """
     results = {
-        'valid': True,
-        'http_urls': [],
-        'errors': [],
+        "valid": True,
+        "http_urls": [],
+        "errors": [],
     }
 
     theme_dir = Path(theme_dir)
 
     if not theme_dir.exists():
-        results['valid'] = False
-        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        results["valid"] = False
+        results["errors"].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
     # Allowed HTTP patterns that are safe (localhost, local development)
     allowed_patterns = [
-        r'http://localhost',
-        r'http://127\.0\.0\.1',
-        r'http://\[::1\]',
-        r'http://.*\.local',
-        r'http://schemas\.wp\.org',  # WordPress JSON schemas
-        r'http://www\.w3\.org',      # W3C standards (DTDs, etc.)
-        r'http://gmpg\.org/xfn',     # XFN profile (legacy but standard)
+        r"http://localhost",
+        r"http://127\.0\.0\.1",
+        r"http://\[::1\]",
+        r"http://.*\.local",
+        r"http://schemas\.wp\.org",  # WordPress JSON schemas
+        r"http://www\.w3\.org",  # W3C standards (DTDs, etc.)
+        r"http://gmpg\.org/xfn",  # XFN profile (legacy but standard)
     ]
 
     # File extensions to scan
-    extensions = ['.php', '.js', '.css', '.json', '.html', '.htm']
+    extensions = [".php", ".js", ".css", ".json", ".html", ".htm"]
 
     # Recursively scan all files
-    for file_path in theme_dir.rglob('*'):
+    for file_path in theme_dir.rglob("*"):
         if not file_path.is_file():
             continue
 
@@ -3306,8 +3429,8 @@ def scan_mixed_content(theme_dir: Path, enforce_https: bool = True) -> dict[str,
             continue
 
         try:
-            content = file_path.read_text(encoding='utf-8', errors='ignore')
-            lines = content.split('\n')
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+            lines = content.split("\n")
 
             for line_num, line in enumerate(lines, 1):
                 # Find all http:// URLs
@@ -3319,27 +3442,31 @@ def scan_mixed_content(theme_dir: Path, enforce_https: bool = True) -> dict[str,
 
                     if not is_allowed:
                         relative_path = file_path.relative_to(theme_dir)
-                        results['http_urls'].append({
-                            'file': str(relative_path),
-                            'line': line_num,
-                            'url': url,
-                            'context': line.strip()[:100]  # First 100 chars for context
-                        })
+                        results["http_urls"].append(
+                            {
+                                "file": str(relative_path),
+                                "line": line_num,
+                                "url": url,
+                                "context": line.strip()[:100],  # First 100 chars for context
+                            }
+                        )
 
         except Exception as e:
             logger.warning(f"Error scanning {file_path}: {e}")
             continue
 
     # If enforce_https is True and we found insecure URLs, mark as invalid
-    if enforce_https and results['http_urls']:
-        results['valid'] = False
+    if enforce_https and results["http_urls"]:
+        results["valid"] = False
         error_msg = f"Found {len(results['http_urls'])} insecure HTTP URL(s) in theme:"
-        results['errors'].append(error_msg)
+        results["errors"].append(error_msg)
 
-        for item in results['http_urls']:
-            results['errors'].append(f"  {item['file']}:{item['line']} → {item['url']}")
+        for item in results["http_urls"]:
+            results["errors"].append(f"  {item['file']}:{item['line']} → {item['url']}")
 
-        results['errors'].append("\nTo fix: Use https:// or WordPress helpers like get_template_directory_uri()")
+        results["errors"].append(
+            "\nTo fix: Use https:// or WordPress helpers like get_template_directory_uri()"
+        )
 
     return results
 
@@ -3357,21 +3484,23 @@ def check_forbidden_config_directives(theme_dir: Path) -> dict[str, Any]:
         Dictionary with scan results:
         {
             'valid': bool,
-            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'violations': list of dicts with
+                {'file': str, 'line': int,
+                 'pattern': str, 'context': str},
             'errors': list of error messages
         }
     """
     results = {
-        'valid': True,
-        'violations': [],
-        'errors': [],
+        "valid": True,
+        "violations": [],
+        "errors": [],
     }
 
     theme_dir = Path(theme_dir)
 
     if not theme_dir.exists():
-        results['valid'] = False
-        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        results["valid"] = False
+        results["errors"].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
     # Forbidden patterns that should never appear in theme files
@@ -3385,10 +3514,10 @@ def check_forbidden_config_directives(theme_dir: Path) -> dict[str, Any]:
     ]
 
     # File extensions to scan (PHP files only)
-    extensions = ['.php']
+    extensions = [".php"]
 
     # Recursively scan all PHP files
-    for file_path in theme_dir.rglob('*'):
+    for file_path in theme_dir.rglob("*"):
         if not file_path.is_file():
             continue
 
@@ -3396,44 +3525,48 @@ def check_forbidden_config_directives(theme_dir: Path) -> dict[str, Any]:
             continue
 
         # Skip wp-config-sample.php (legitimate place for WP_DEBUG)
-        if file_path.name == 'wp-config-sample.php' or file_path.name == 'wp-config.php':
+        if file_path.name == "wp-config-sample.php" or file_path.name == "wp-config.php":
             continue
 
         try:
-            content = file_path.read_text(encoding='utf-8', errors='ignore')
-            lines = content.split('\n')
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+            lines = content.split("\n")
 
             for line_num, line in enumerate(lines, 1):
                 for pattern_regex, pattern_name in forbidden_patterns:
                     if re.search(pattern_regex, line, re.IGNORECASE):
                         relative_path = file_path.relative_to(theme_dir)
-                        results['violations'].append({
-                            'file': str(relative_path),
-                            'line': line_num,
-                            'pattern': pattern_name,
-                            'context': line.strip()[:150]  # First 150 chars for context
-                        })
+                        results["violations"].append(
+                            {
+                                "file": str(relative_path),
+                                "line": line_num,
+                                "pattern": pattern_name,
+                                "context": line.strip()[:150],  # First 150 chars for context
+                            }
+                        )
 
         except Exception as e:
             logger.warning(f"Error scanning {file_path}: {e}")
             continue
 
     # Mark as invalid if violations found
-    if results['violations']:
-        results['valid'] = False
-        error_msg = f"Found {len(results['violations'])} forbidden config directive(s) in theme files:"
-        results['errors'].append(error_msg)
+    if results["violations"]:
+        results["valid"] = False
+        error_msg = (
+            f"Found {len(results['violations'])} forbidden config directive(s) in theme files:"
+        )
+        results["errors"].append(error_msg)
 
-        for violation in results['violations']:
-            results['errors'].append(
+        for violation in results["violations"]:
+            results["errors"].append(
                 f"  {violation['file']}:{violation['line']} → {violation['pattern']}"
             )
-            results['errors'].append(f"    Context: {violation['context']}")
+            results["errors"].append(f"    Context: {violation['context']}")
 
-        results['errors'].append(
+        results["errors"].append(
             "\nThemes must NOT define WP_DEBUG, error_reporting, or ini_set directives."
         )
-        results['errors'].append("These belong in wp-config.php, not theme files.")
+        results["errors"].append("These belong in wp-config.php, not theme files.")
 
     return results
 
@@ -3455,21 +3588,23 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
         Dictionary with scan results:
         {
             'valid': bool,
-            'violations': list of dicts with {'file': str, 'line': int, 'pattern': str, 'context': str},
+            'violations': list of dicts with
+                {'file': str, 'line': int,
+                 'pattern': str, 'context': str},
             'errors': list of error messages
         }
     """
     results = {
-        'valid': True,
-        'violations': [],
-        'errors': [],
+        "valid": True,
+        "violations": [],
+        "errors": [],
     }
 
     theme_dir = Path(theme_dir)
 
     if not theme_dir.exists():
-        results['valid'] = False
-        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        results["valid"] = False
+        results["errors"].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
     # Invalid PHP patterns to detect
@@ -3481,14 +3616,17 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
         (r"\bforeach\s*\([^)]*\)\s*;", "foreach with trailing semicolon: foreach (...);"),
         (r"\bwhile\s*\([^)]*\)\s*;", "while with trailing semicolon: while (...);"),
         (r"\bfor\s*\([^)]*\)\s*;", "for with trailing semicolon: for (...);"),
-        (r"\bfunction\s+\w+\s*\([^)]*\)\s*;", "Function declaration with semicolon: function name();"),
+        (
+            r"\bfunction\s+\w+\s*\([^)]*\)\s*;",
+            "Function declaration with semicolon: function name();",
+        ),
     ]
 
     # File extensions to scan (PHP files only)
-    extensions = ['.php']
+    extensions = [".php"]
 
     # Recursively scan all PHP files
-    for file_path in theme_dir.rglob('*'):
+    for file_path in theme_dir.rglob("*"):
         if not file_path.is_file():
             continue
 
@@ -3496,8 +3634,8 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
             continue
 
         try:
-            content = file_path.read_text(encoding='utf-8', errors='ignore')
-            lines = content.split('\n')
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+            lines = content.split("\n")
 
             for line_num, line in enumerate(lines, 1):
                 for pattern_regex, pattern_name in invalid_patterns:
@@ -3508,35 +3646,39 @@ def check_invalid_php_patterns(theme_dir: Path) -> dict[str, Any]:
                         # Extract the matched text for better error messages
                         matched_text = match.group(0)
 
-                        results['violations'].append({
-                            'file': str(relative_path),
-                            'line': line_num,
-                            'pattern': pattern_name,
-                            'matched': matched_text,
-                            'context': line.strip()[:150]  # First 150 chars for context
-                        })
+                        results["violations"].append(
+                            {
+                                "file": str(relative_path),
+                                "line": line_num,
+                                "pattern": pattern_name,
+                                "matched": matched_text,
+                                "context": line.strip()[:150],  # First 150 chars for context
+                            }
+                        )
 
         except Exception as e:
             logger.warning(f"Error scanning {file_path}: {e}")
             continue
 
     # Mark as invalid if violations found
-    if results['violations']:
-        results['valid'] = False
+    if results["violations"]:
+        results["valid"] = False
         error_msg = f"Found {len(results['violations'])} invalid PHP pattern(s) in theme files:"
-        results['errors'].append(error_msg)
+        results["errors"].append(error_msg)
 
-        for violation in results['violations']:
-            results['errors'].append(
+        for violation in results["violations"]:
+            results["errors"].append(
                 f"  {violation['file']}:{violation['line']} → {violation['pattern']}"
             )
-            results['errors'].append(f"    Matched: '{violation['matched']}'")
-            results['errors'].append(f"    Context: {violation['context']}")
+            results["errors"].append(f"    Matched: '{violation['matched']}'")
+            results["errors"].append(f"    Context: {violation['context']}")
 
-        results['errors'].append("\nSuggested fixes:")
-        results['errors'].append("  - Remove empty PHP blocks: <?= ; ?> → (remove entirely)")
-        results['errors'].append("  - Remove semicolons before braces: if (...); { → if (...) {")
-        results['errors'].append("  - Use braces for functions: function name(); → function name() {")
+        results["errors"].append("\nSuggested fixes:")
+        results["errors"].append("  - Remove empty PHP blocks: <?= ; ?> → (remove entirely)")
+        results["errors"].append("  - Remove semicolons before braces: if (...); { → if (...) {")
+        results["errors"].append(
+            "  - Use braces for functions: function name(); → function name() {"
+        )
 
     return results
 
@@ -3558,37 +3700,35 @@ def check_block_categories(theme_dir: Path) -> dict[str, Any]:
         }
     """
     results = {
-        'valid': True,
-        'violations': [],
-        'errors': [],
+        "valid": True,
+        "violations": [],
+        "errors": [],
     }
 
     theme_dir = Path(theme_dir)
 
     if not theme_dir.exists():
-        results['valid'] = False
-        results['errors'].append(f"Theme directory does not exist: {theme_dir}")
+        results["valid"] = False
+        results["errors"].append(f"Theme directory does not exist: {theme_dir}")
         return results
 
     # Valid WordPress core block categories
     valid_categories = {"text", "media", "design", "widgets", "theme", "embed"}
 
     # Find all block.json files
-    for file_path in theme_dir.rglob('block.json'):
+    for file_path in theme_dir.rglob("block.json"):
         try:
             import json
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 block_data = json.load(f)
 
-            category = block_data.get('category', '')
+            category = block_data.get("category", "")
             if category and category not in valid_categories:
                 relative_path = file_path.relative_to(theme_dir)
-                results['valid'] = False
-                results['violations'].append({
-                    'file': str(relative_path),
-                    'category': category
-                })
-                results['errors'].append(
+                results["valid"] = False
+                results["violations"].append({"file": str(relative_path), "category": category})
+                results["errors"].append(
                     f"Invalid block category '{category}' in {relative_path}. "
                     f"Must be one of: {', '.join(sorted(valid_categories))}"
                 )
@@ -3633,29 +3773,29 @@ def scan_generated_theme(theme_dir: Path, strict: bool = True) -> dict[str, Any]
 
     # Collect all errors
     all_errors = []
-    all_errors.extend(config_check['errors'])
-    all_errors.extend(php_check['errors'])
-    all_errors.extend(block_check['errors'])
+    all_errors.extend(config_check["errors"])
+    all_errors.extend(php_check["errors"])
+    all_errors.extend(block_check["errors"])
 
     # Determine overall validity
-    is_valid = config_check['valid'] and php_check['valid'] and block_check['valid']
+    is_valid = config_check["valid"] and php_check["valid"] and block_check["valid"]
 
     results = {
-        'valid': is_valid,
-        'config_check': config_check,
-        'php_check': php_check,
-        'block_check': block_check,
-        'all_errors': all_errors,
+        "valid": is_valid,
+        "config_check": config_check,
+        "php_check": php_check,
+        "block_check": block_check,
+        "all_errors": all_errors,
     }
 
     # If strict mode, also check mixed content
     if strict:
         mixed_content_check = scan_mixed_content(theme_dir, enforce_https=True)
-        results['mixed_content_check'] = mixed_content_check
-        all_errors.extend(mixed_content_check['errors'])
-        is_valid = is_valid and mixed_content_check['valid']
-        results['valid'] = is_valid
-        results['all_errors'] = all_errors
+        results["mixed_content_check"] = mixed_content_check
+        all_errors.extend(mixed_content_check["errors"])
+        is_valid = is_valid and mixed_content_check["valid"]
+        results["valid"] = is_valid
+        results["all_errors"] = all_errors
 
     # Log summary
     if is_valid:
@@ -3680,11 +3820,11 @@ def is_stub_template(php_code: str) -> bool:
         True if this appears to be a stub template
     """
     stub_patterns = [
-        r'//\s*TODO',
-        r'//\s*Minimal\s+fallback',
+        r"//\s*TODO",
+        r"//\s*Minimal\s+fallback",
         r'echo\s+["\']Coming\s+soon',
-        r'//\s*Placeholder',
-        r'//\s*STUB',
+        r"//\s*Placeholder",
+        r"//\s*STUB",
     ]
 
     for pattern in stub_patterns:
@@ -3718,45 +3858,49 @@ def ensure_full_template_structure(php_code: str, filename: str) -> tuple[str, l
     fixed_code = php_code
 
     # List of page-level templates that need full structure
-    page_templates = ['index.php', 'page.php', 'single.php', 'archive.php',
-                      'front-page.php', 'category.php', 'tag.php', 'author.php',
-                      'search.php', '404.php', 'home.php']
+    page_templates = [
+        "index.php",
+        "page.php",
+        "single.php",
+        "archive.php",
+        "front-page.php",
+        "category.php",
+        "tag.php",
+        "author.php",
+        "search.php",
+        "404.php",
+        "home.php",
+    ]
 
     if filename not in page_templates:
         return fixed_code, fixes
 
     # Check for get_header()
-    if 'get_header()' not in fixed_code:
-        fixed_code = '<?php get_header(); ?>\n' + fixed_code
+    if "get_header()" not in fixed_code:
+        fixed_code = "<?php get_header(); ?>\n" + fixed_code
         fixes.append(f"Added missing get_header() to {filename}")
 
     # Check for <main> tag
-    if '<main' not in fixed_code:
+    if "<main" not in fixed_code:
         # Insert <main> after get_header() call
         fixed_code = re.sub(
-            r'(get_header\(\);?\s*\?>)',
-            r'\1\n<main class="site-main">',
-            fixed_code,
-            count=1
+            r"(get_header\(\);?\s*\?>)", r'\1\n<main class="site-main">', fixed_code, count=1
         )
         fixes.append(f"Added missing <main> opening tag to {filename}")
 
-    if '</main>' not in fixed_code:
+    if "</main>" not in fixed_code:
         # Insert </main> before get_footer() call or at the end
-        if 'get_footer()' in fixed_code:
+        if "get_footer()" in fixed_code:
             fixed_code = re.sub(
-                r'(<\?php\s+get_footer\(\);?)',
-                r'</main>\n\n\1',
-                fixed_code,
-                count=1
+                r"(<\?php\s+get_footer\(\);?)", r"</main>\n\n\1", fixed_code, count=1
             )
         else:
-            fixed_code = fixed_code.rstrip() + '\n</main>\n'
+            fixed_code = fixed_code.rstrip() + "\n</main>\n"
         fixes.append(f"Added missing </main> closing tag to {filename}")
 
     # Check for get_footer()
-    if 'get_footer()' not in fixed_code:
-        fixed_code = fixed_code.rstrip() + '\n\n<?php get_footer(); ?>\n'
+    if "get_footer()" not in fixed_code:
+        fixed_code = fixed_code.rstrip() + "\n\n<?php get_footer(); ?>\n"
         fixes.append(f"Added missing get_footer() to {filename}")
 
     return fixed_code, fixes
@@ -3772,7 +3916,7 @@ def remove_duplicate_footers(php_code: str) -> tuple[str, int]:
         Tuple of (cleaned_code, number_of_duplicates_removed)
     """
     # Pattern to match footer blocks
-    footer_pattern = r'<footer[^>]*>.*?</footer>'
+    footer_pattern = r"<footer[^>]*>.*?</footer>"
 
     footer_matches = list(re.finditer(footer_pattern, php_code, re.DOTALL | re.IGNORECASE))
 
@@ -3785,7 +3929,7 @@ def remove_duplicate_footers(php_code: str) -> tuple[str, int]:
     # Remove duplicates from the end backwards to preserve indices
     fixed_code = php_code
     for match in reversed(footer_matches[1:]):
-        fixed_code = fixed_code[:match.start()] + fixed_code[match.end():]
+        fixed_code = fixed_code[: match.start()] + fixed_code[match.end() :]
 
     logger.info(f"Removed {duplicates_removed} duplicate footer block(s)")
 

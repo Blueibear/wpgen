@@ -79,6 +79,9 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      - name: Format check
+        run: black --check .
+
       - name: Tests
         env:
           WPGEN_CHECK_MODELS: "0"

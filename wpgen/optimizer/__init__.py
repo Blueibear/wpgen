@@ -2,4 +2,4 @@
 
 from wpgen.optimizer.prompt_optimizer import PromptOptimizer
 
-__all__ = ['PromptOptimizer']
+__all__ = ["PromptOptimizer"]

@@ -9,18 +9,20 @@ Checks for invalid PHP patterns like:
 - function name(); (function declaration with semicolon)
 """
 
-import tempfile
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+
 import pytest
 
 
 def test_no_invalid_php_patterns_in_generated_theme(tmp_path):
     """Generate a theme and ensure no invalid PHP patterns exist."""
+    from unittest.mock import MagicMock
+
     from wpgen.generators.wordpress_generator import WordPressGenerator
     from wpgen.utils.code_validator import check_invalid_php_patterns
-    from unittest.mock import MagicMock
 
     # Create a minimal theme configuration
     requirements = {
@@ -29,11 +31,7 @@ def test_no_invalid_php_patterns_in_generated_theme(tmp_path):
         "description": "Test theme to verify valid PHP",
         "author": "Test",
         "version": "1.0.0",
-        "features": {
-            "responsive": True,
-            "dark_mode": False,
-            "woocommerce": False
-        }
+        "features": {"responsive": True, "dark_mode": False, "woocommerce": False},
     }
 
     # Generate theme in temp directory with mock LLM
@@ -49,12 +47,13 @@ def test_no_invalid_php_patterns_in_generated_theme(tmp_path):
         results = check_invalid_php_patterns(theme_dir)
 
         # Assert no violations
-        assert results['valid'], \
-            f"Theme contains invalid PHP patterns:\n" + \
-            "\n".join(results['errors'])
+        assert results["valid"], "Theme contains invalid PHP patterns:\n" + "\n".join(
+            results["errors"]
+        )
 
-        assert len(results['violations']) == 0, \
-            f"Found {len(results['violations'])} violation(s): {results['violations']}"
+        assert (
+            len(results["violations"]) == 0
+        ), f"Found {len(results['violations'])} violation(s): {results['violations']}"
 
     finally:
         # Cleanup
@@ -90,31 +89,32 @@ function bad_function(); {
         results = check_invalid_php_patterns(theme_dir)
 
         # Should find multiple violations
-        assert not results['valid'], "Should have found violations"
-        assert len(results['violations']) >= 5, \
-            f"Expected at least 5 violations, found {len(results['violations'])}"
+        assert not results["valid"], "Should have found violations"
+        assert (
+            len(results["violations"]) >= 5
+        ), f"Expected at least 5 violations, found {len(results['violations'])}"
 
         # Check specific patterns are detected
-        violation_patterns = [v['pattern'] for v in results['violations']]
-        assert any('short echo' in p for p in violation_patterns), \
-            "Should detect empty short echo"
-        assert any('PHP block' in p for p in violation_patterns), \
-            "Should detect empty PHP block"
-        assert any('if' in p for p in violation_patterns), \
-            "Should detect if with semicolon"
-        assert any('foreach' in p for p in violation_patterns), \
-            "Should detect foreach with semicolon"
-        assert any('function' in p.lower() for p in violation_patterns), \
-            "Should detect function with semicolon"
+        violation_patterns = [v["pattern"] for v in results["violations"]]
+        assert any("short echo" in p for p in violation_patterns), "Should detect empty short echo"
+        assert any("PHP block" in p for p in violation_patterns), "Should detect empty PHP block"
+        assert any("if" in p for p in violation_patterns), "Should detect if with semicolon"
+        assert any(
+            "foreach" in p for p in violation_patterns
+        ), "Should detect foreach with semicolon"
+        assert any(
+            "function" in p.lower() for p in violation_patterns
+        ), "Should detect function with semicolon"
 
 
 def test_php_lint_if_available(tmp_path):
     """If php command is available, run php -l on all generated files."""
-    from wpgen.generators.wordpress_generator import WordPressGenerator
     from unittest.mock import MagicMock
 
+    from wpgen.generators.wordpress_generator import WordPressGenerator
+
     # Check if php is available
-    php_available = shutil.which('php') is not None
+    php_available = shutil.which("php") is not None
 
     if not php_available:
         pytest.skip("php command not available - skipping lint test")
@@ -126,11 +126,7 @@ def test_php_lint_if_available(tmp_path):
         "description": "Test theme for PHP linting",
         "author": "Test",
         "version": "1.0.0",
-        "features": {
-            "responsive": True,
-            "dark_mode": False,
-            "woocommerce": False
-        }
+        "features": {"responsive": True, "dark_mode": False, "woocommerce": False},
     }
 
     # Generate theme in temp directory with mock LLM
@@ -143,7 +139,7 @@ def test_php_lint_if_available(tmp_path):
         theme_dir = Path(theme_path)
 
         # Find all PHP files
-        php_files = list(theme_dir.rglob('*.php'))
+        php_files = list(theme_dir.rglob("*.php"))
         assert len(php_files) > 0, "Should have generated PHP files"
 
         # Run php -l on each file
@@ -151,23 +147,16 @@ def test_php_lint_if_available(tmp_path):
         for php_file in php_files:
             try:
                 result = subprocess.run(
-                    ['php', '-l', str(php_file)],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                    ["php", "-l", str(php_file)], capture_output=True, text=True, timeout=10
                 )
 
                 if result.returncode != 0:
-                    failed_files.append({
-                        'file': php_file.name,
-                        'output': result.stdout + result.stderr
-                    })
+                    failed_files.append(
+                        {"file": php_file.name, "output": result.stdout + result.stderr}
+                    )
 
             except Exception as e:
-                failed_files.append({
-                    'file': php_file.name,
-                    'output': str(e)
-                })
+                failed_files.append({"file": php_file.name, "output": str(e)})
 
         # Assert no files failed
         if failed_files:
@@ -215,7 +204,7 @@ function good_function() {
         results = check_invalid_php_patterns(theme_dir)
 
         # Should NOT find violations
-        assert results['valid'], \
-            f"Valid PHP should not be flagged. Found violations: {results['violations']}"
-        assert len(results['violations']) == 0, \
-            "Should not flag valid PHP patterns"
+        assert results[
+            "valid"
+        ], f"Valid PHP should not be flagged. Found violations: {results['violations']}"
+        assert len(results["violations"]) == 0, "Should not flag valid PHP patterns"

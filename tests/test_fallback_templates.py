@@ -53,7 +53,7 @@ class TestFallbackTemplates:
         php_code = get_fallback_functions_php("test-theme")
 
         # Write to temp file and validate with PHP
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
             f.write(php_code)
             temp_path = f.name
 
@@ -61,10 +61,7 @@ class TestFallbackTemplates:
             # Try to validate with php -l
             try:
                 result = subprocess.run(
-                    ["php", "-l", temp_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
+                    ["php", "-l", temp_path], capture_output=True, text=True, timeout=5
                 )
 
                 if result.returncode == 0:
@@ -181,14 +178,22 @@ class TestFallbackTemplates:
         assert "function test-theme" not in functions_php, "Function names should not have hyphens"
 
         # Test all template files
-        templates = ["single.php", "page.php", "archive.php", "search.php", "404.php", "sidebar.php"]
+        templates = [
+            "single.php",
+            "page.php",
+            "archive.php",
+            "search.php",
+            "404.php",
+            "sidebar.php",
+        ]
         for template_name in templates:
             template_code = get_fallback_template(template_name, theme_name)
             if template_code:
                 # Check for Python-specific patterns that shouldn't be in PHP
                 assert ".replace(" not in template_code, f"Python code in {template_name}"
-                assert "{theme_name" not in template_code or "'{theme_name}'" in template_code, \
-                    f"Unevaluated variable in {template_name}"
+                assert (
+                    "{theme_name" not in template_code or "'{theme_name}'" in template_code
+                ), f"Unevaluated variable in {template_name}"
 
 
 class TestWordPressSafetyValidation:
@@ -221,7 +226,9 @@ class TestWordPressSafetyValidation:
         # Create assets/css/style.css
         assets_css_dir = theme_dir / "assets" / "css"
         assets_css_dir.mkdir(parents=True)
-        (assets_css_dir / "style.css").write_text("/* Base Layout */\n.site-header {}\n.site-branding img {}")
+        (assets_css_dir / "style.css").write_text(
+            "/* Base Layout */\n.site-header {}\n.site-branding img {}"
+        )
 
         return theme_dir
 

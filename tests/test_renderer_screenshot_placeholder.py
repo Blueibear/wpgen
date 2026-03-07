@@ -8,7 +8,7 @@ from wpgen.templates.renderer import ThemeRenderer
 
 def _hex_to_rgb(value: str) -> tuple[int, int, int]:
     value = value.lstrip("#")
-    return tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+    return tuple(int(value[i : i + 2], 16) for i in (0, 2, 4))
 
 
 def test_placeholder_screenshot_uses_theme_palette(tmp_path: Path) -> None:

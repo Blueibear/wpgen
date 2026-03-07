@@ -27,12 +27,13 @@ from wpgen.utils.code_validator import scan_mixed_content
 
 class Colors:
     """ANSI color codes for terminal output."""
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    BOLD = "\033[1m"
+    END = "\033[0m"
 
 
 def print_header(text):
@@ -72,13 +73,13 @@ def check_required_hooks(theme_dir: Path) -> tuple[bool, list[str]]:
     # Check header.php
     header_file = theme_dir / "header.php"
     if header_file.exists():
-        header_content = header_file.read_text(encoding='utf-8')
+        header_content = header_file.read_text(encoding="utf-8")
 
         required_hooks = [
-            ('wp_head()', 'wp_head hook'),
-            ('wp_body_open()', 'wp_body_open hook'),
-            ('language_attributes()', 'language_attributes function'),
-            ('body_class()', 'body_class function'),
+            ("wp_head()", "wp_head hook"),
+            ("wp_body_open()", "wp_body_open hook"),
+            ("language_attributes()", "language_attributes function"),
+            ("body_class()", "body_class function"),
         ]
 
         print_info("Checking header.php...")
@@ -97,17 +98,17 @@ def check_required_hooks(theme_dir: Path) -> tuple[bool, list[str]]:
     # Check footer.php
     footer_file = theme_dir / "footer.php"
     if footer_file.exists():
-        footer_content = footer_file.read_text(encoding='utf-8')
+        footer_content = footer_file.read_text(encoding="utf-8")
 
         print_info("\nChecking footer.php...")
-        if 'wp_footer()' in footer_content:
+        if "wp_footer()" in footer_content:
             print_success("Found wp_footer hook")
         else:
             print_error("Missing wp_footer hook")
             errors.append("footer.php missing wp_footer hook")
             passed = False
 
-        if '</body>' in footer_content and '</html>' in footer_content:
+        if "</body>" in footer_content and "</html>" in footer_content:
             print_success("Has proper closing tags")
         else:
             print_error("Missing proper closing tags")
@@ -127,14 +128,14 @@ def check_mixed_content(theme_dir: Path) -> tuple[bool, list[str]]:
 
     results = scan_mixed_content(theme_dir, enforce_https=True)
 
-    if results['valid']:
+    if results["valid"]:
         print_success("No insecure HTTP URLs found")
         return True, []
     else:
         print_error(f"Found {len(results['http_urls'])} insecure HTTP URL(s):")
-        for item in results['http_urls']:
+        for item in results["http_urls"]:
             print_warning(f"  {item['file']}:{item['line']} → {item['url']}")
-        return False, results['errors']
+        return False, results["errors"]
 
 
 def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
@@ -149,7 +150,7 @@ def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
         print_error("functions.php not found")
         return False, ["functions.php not found"]
 
-    functions_content = functions_file.read_text(encoding='utf-8')
+    functions_content = functions_file.read_text(encoding="utf-8")
 
     # Extract wp_enqueue_scripts function
     pattern = r"function\s+\w+_scripts\(\)\s*\{(.*?)\}\s*add_action\(\s*'wp_enqueue_scripts'"
@@ -161,7 +162,7 @@ def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
         print_info("Checking wp_enqueue_scripts function...")
 
         # Check for forbidden dependencies in front-end enqueue
-        forbidden_deps = ['react', 'react-dom', 'wp-blocks', 'wp-element', 'jetpack']
+        forbidden_deps = ["react", "react-dom", "wp-blocks", "wp-element", "jetpack"]
         found_forbidden = []
 
         for dep in forbidden_deps:
@@ -169,7 +170,9 @@ def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
                 found_forbidden.append(dep)
 
         if found_forbidden:
-            print_error(f"Found editor dependencies in wp_enqueue_scripts: {', '.join(found_forbidden)}")
+            print_error(
+                f"Found editor dependencies in wp_enqueue_scripts: {', '.join(found_forbidden)}"
+            )
             errors.append(f"wp_enqueue_scripts contains editor deps: {', '.join(found_forbidden)}")
             passed = False
         else:
@@ -178,7 +181,7 @@ def check_enqueue_separation(theme_dir: Path) -> tuple[bool, list[str]]:
         print_warning("Could not find wp_enqueue_scripts function")
 
     # Check for enqueue_block_editor_assets hook
-    if 'enqueue_block_editor_assets' in functions_content:
+    if "enqueue_block_editor_assets" in functions_content:
         print_success("Has enqueue_block_editor_assets hook for editor scripts")
     else:
         print_warning("No enqueue_block_editor_assets hook (optional but recommended)")
@@ -194,7 +197,7 @@ def check_wordpress_loop(theme_dir: Path) -> tuple[bool, list[str]]:
     passed = True
 
     # Templates that should have a Loop
-    templates_to_check = ['index.php', 'front-page.php', 'single.php', 'page.php', 'archive.php']
+    templates_to_check = ["index.php", "front-page.php", "single.php", "page.php", "archive.php"]
 
     for template_name in templates_to_check:
         template_file = theme_dir / template_name
@@ -202,42 +205,43 @@ def check_wordpress_loop(theme_dir: Path) -> tuple[bool, list[str]]:
             continue  # Skip if template doesn't exist
 
         print_info(f"Checking {template_name}...")
-        content = template_file.read_text(encoding='utf-8')
+        content = template_file.read_text(encoding="utf-8")
 
         # Check for required Loop components
-        has_have_posts = 'have_posts()' in content
-        has_the_post = 'the_post()' in content
-        has_get_header = 'get_header()' in content
-        has_get_footer = 'get_footer()' in content
+        has_have_posts = "have_posts()" in content
+        has_the_post = "the_post()" in content
+        has_get_header = "get_header()" in content
+        has_get_footer = "get_footer()" in content
 
         if has_have_posts and has_the_post:
-            print_success(f"  Has WordPress Loop (have_posts/the_post)")
+            print_success("  Has WordPress Loop (have_posts/the_post)")
         else:
-            print_error(f"  Missing WordPress Loop")
+            print_error("  Missing WordPress Loop")
             errors.append(f"{template_name} missing WordPress Loop (have_posts/the_post)")
             passed = False
 
         if has_get_header and has_get_footer:
-            print_success(f"  Calls get_header() and get_footer()")
+            print_success("  Calls get_header() and get_footer()")
         else:
             if not has_get_header:
-                print_error(f"  Missing get_header()")
+                print_error("  Missing get_header()")
                 errors.append(f"{template_name} missing get_header()")
                 passed = False
             if not has_get_footer:
-                print_error(f"  Missing get_footer()")
+                print_error("  Missing get_footer()")
                 errors.append(f"{template_name} missing get_footer()")
                 passed = False
 
         # Check for else clause (fallback content for empty sites/Customizer)
-        if template_name == 'index.php':
+        if template_name == "index.php":
             # index.php should have fallback content for Customizer preview
-            has_else_clause = ('else' in content and
-                             ('no-content' in content or 'Nothing' in content or 'not found' in content.lower()))
+            has_else_clause = "else" in content and (
+                "no-content" in content or "Nothing" in content or "not found" in content.lower()
+            )
             if has_else_clause:
-                print_success(f"  Has fallback content for empty sites")
+                print_success("  Has fallback content for empty sites")
             else:
-                print_warning(f"  Missing fallback content (Customizer may show blank)")
+                print_warning("  Missing fallback content (Customizer may show blank)")
 
     return passed, errors
 
@@ -246,8 +250,8 @@ def check_block_categories(theme_dir: Path) -> tuple[bool, list[str]]:
     """Check that block.json files use valid core categories."""
     print_header("Checking Block Categories")
 
-    valid_categories = {'text', 'media', 'design', 'widgets', 'theme', 'embed'}
-    invalid_categories = {'design_layout', 'layout', 'common', 'formatting'}
+    valid_categories = {"text", "media", "design", "widgets", "theme", "embed"}
+    invalid_categories = {"design_layout", "layout", "common", "formatting"}
 
     errors = []
     passed = True
@@ -269,11 +273,11 @@ def check_block_categories(theme_dir: Path) -> tuple[bool, list[str]]:
             continue
 
         try:
-            with open(block_json_file, 'r') as f:
+            with open(block_json_file, "r") as f:
                 block_data = json.load(f)
 
-            block_name = block_data.get('name', block_dir.name)
-            category = block_data.get('category')
+            block_name = block_data.get("name", block_dir.name)
+            category = block_data.get("category")
 
             if not category:
                 print_error(f"Block {block_name} missing category")
@@ -313,12 +317,12 @@ def main():
 
             # Generate theme with minimal requirements
             requirements = {
-                'theme_name': 'wpgen-smoke-test',
-                'theme_display_name': 'WPGen Smoke Test',
-                'description': 'Smoke test theme generated by WPGen',
-                'author': 'WPGen',
-                'version': '1.0.0',
-                'design_profile': 'minimal',
+                "theme_name": "wpgen-smoke-test",
+                "theme_display_name": "WPGen Smoke Test",
+                "description": "Smoke test theme generated by WPGen",
+                "author": "WPGen",
+                "version": "1.0.0",
+                "design_profile": "minimal",
             }
 
             print_info("Running theme generator...")

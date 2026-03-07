@@ -2,7 +2,6 @@
 """Test script to verify theme generation works with the validation fixes."""
 
 import sys
-import os
 from pathlib import Path
 
 # Add wpgen to path
@@ -26,9 +25,9 @@ class MockLLMProvider(BaseLLMProvider):
 
 def test_theme_generation():
     """Test that theme generation works with fallback templates."""
-    print("="*60)
+    print("=" * 60)
     print("Testing Theme Generation with Validation Fixes")
-    print("="*60)
+    print("=" * 60)
 
     # Create mock LLM provider
     llm = MockLLMProvider()
@@ -128,9 +127,9 @@ def test_theme_generation():
                 status = "✅" if present else "❌"
                 print(f"  {status} {check_name}: {present}")
 
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("✅ THEME GENERATION TEST PASSED!")
-            print("="*60)
+            print("=" * 60)
             return True
         else:
             print("\n❌ Some required files are missing!")
@@ -139,6 +138,7 @@ def test_theme_generation():
     except Exception as e:
         print(f"\n❌ FAILED: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
 

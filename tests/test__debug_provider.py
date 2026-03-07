@@ -1,7 +1,9 @@
 from __future__ import annotations
-import os
+
 import importlib
+import os
 import sys
+
 
 def test_provider_resolution_debug():
     # What does CI think the env is

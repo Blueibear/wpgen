@@ -4,7 +4,6 @@ This module generates complete WordPress themes based on parsed requirements.
 It creates all necessary files including style.css, functions.php, templates, etc.
 """
 
-import os
 import re
 import shutil
 from datetime import datetime
@@ -14,15 +13,13 @@ from typing import Any
 from ..llm.base import BaseLLMProvider
 from ..utils.code_validator import (
     clean_generated_code,
+    ensure_base_layout_enqueue,
     generate_plugin_compatibility_layer,
     get_fallback_functions_php,
     get_fallback_template,
-    ensure_base_layout_enqueue,
     get_minimal_fallback,
     normalize_php_output,
     remove_nonexistent_requires,
-    repair_wordpress_code,
-    repair_footer_php,
     validate_php_syntax,
 )
 from ..utils.logger import get_logger
@@ -82,13 +79,15 @@ def _ensure_style_header(theme_dir: str, requirements: dict, config: dict = None
         config: WordPress configuration dict
     """
     config = config or {}
-    # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
-    # This handles cases where paths are passed with Windows-style separators on any platform
-    normalized_dir = str(theme_dir).replace('\\', '/')
+    # Normalize path: convert Windows backslashes to forward slashes
+    # for cross-platform compatibility. This handles cases where paths
+    # are passed with Windows-style separators on any platform.
+    normalized_dir = str(theme_dir).replace("\\", "/")
     theme_path = Path(normalized_dir)
     style_path = theme_path / "style.css"
-    theme_name = (requirements.get("theme_display_name")
-                  or requirements.get("theme_name") or "WPGen Theme")
+    theme_name = (
+        requirements.get("theme_display_name") or requirements.get("theme_name") or "WPGen Theme"
+    )
 
     # Ensure theme_name is a string
     if not isinstance(theme_name, str):
@@ -143,26 +142,30 @@ Text Domain: {text_domain}
 
     # CRITICAL FIX: Strip BOM (Byte Order Mark) if present
     # BOM can cause WordPress to fail to recognize the theme header
-    if original.startswith('\ufeff'):
+    if original.startswith("\ufeff"):
         logger.warning("Removed BOM (Byte Order Mark) from style.css")
         original = original[1:]
 
     # CRITICAL FIX: Strip invisible Unicode characters that may cause parsing issues
     from ..utils.php_validation import strip_invisible_unicode
+
     cleaned, removed = strip_invisible_unicode(original)
     if removed > 0:
         logger.warning(f"Removed {removed} invisible Unicode character(s) from style.css")
     original = cleaned
 
     # CRITICAL FIX: Strip ANY content before the first /* comment
-    # LLMs sometimes generate explanatory text before CSS that would cause WordPress to reject the theme
-    first_comment_pos = original.find('/*')
+    # LLMs sometimes generate explanatory text before CSS
+    # that would cause WordPress to reject the theme
+    first_comment_pos = original.find("/*")
     if first_comment_pos > 0:
         # There's content before the first comment - this is invalid for style.css
         # Strip it and log a warning
         stripped_content = original[:first_comment_pos].strip()
         if stripped_content:
-            logger.warning(f"Stripped invalid content before style.css header: '{stripped_content[:50]}...'")
+            logger.warning(
+                f"Stripped invalid content before style.css header: '{stripped_content[:50]}...'"
+            )
         original = original[first_comment_pos:]
 
     # Strip leading whitespace (but keep the content)
@@ -186,7 +189,7 @@ Text Domain: {text_domain}
             first_comment_end = trimmed.find("*/")
             if first_comment_end > 0:
                 # Remove the invalid header comment
-                original = trimmed[first_comment_end + 2:].lstrip()
+                original = trimmed[first_comment_end + 2 :].lstrip()
                 logger.warning("Removed invalid/incomplete theme header from style.css")
 
         style_path.write_text(header + "\n\n" + original, encoding="utf-8")
@@ -208,14 +211,18 @@ def _first_hex(color_scheme: str | None, fallback: str = "#0f172a") -> str:
 
     # Ensure color_scheme is a string (defensive check)
     if not isinstance(color_scheme, str):
-        logger.warning(f"color_scheme is not a string: {type(color_scheme).__name__}, using fallback")
+        logger.warning(
+            f"color_scheme is not a string: {type(color_scheme).__name__}, using fallback"
+        )
         return fallback
 
     m = re.search(r"#([0-9a-fA-F]{6})", color_scheme)
     return f"#{m.group(1)}" if m else fallback
 
 
-def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str, Any | None]]) -> None:
+def _ensure_screenshot(
+    theme_dir: str, requirements: dict, images: list[dict[str, Any | None]]
+) -> None:
     """Ensure theme has a screenshot.png file.
 
     Creates a screenshot from the first user image or generates a placeholder.
@@ -232,9 +239,10 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
         logger.warning("PIL (Pillow) not installed. Skipping screenshot generation.")
         return
 
-    # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
-    # This handles cases where paths are passed with Windows-style separators on any platform
-    normalized_dir = str(theme_dir).replace('\\', '/')
+    # Normalize path: convert Windows backslashes to forward slashes
+    # for cross-platform compatibility. This handles cases where paths
+    # are passed with Windows-style separators on any platform.
+    normalized_dir = str(theme_dir).replace("\\", "/")
     theme_path = Path(normalized_dir)
     shot_path = theme_path / "screenshot.png"
     if shot_path.exists():
@@ -246,7 +254,7 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
             # Images are dicts with 'path', 'data', 'mime_type' etc
             img_data = images[0]
             if isinstance(img_data, dict):
-                src = img_data.get('path')
+                src = img_data.get("path")
                 if not src:
                     logger.warning("Image dict has no 'path' key, falling back to placeholder")
                     raise ValueError("No path in image data")
@@ -254,7 +262,7 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
                 src = img_data
 
             # Verify path exists - normalize and use Path for cross-platform compatibility
-            src_path = Path(str(src).replace('\\', '/'))
+            src_path = Path(str(src).replace("\\", "/"))
             if not src_path.exists():
                 logger.warning(f"Image path does not exist: {src}")
                 raise FileNotFoundError(f"Image not found: {src}")
@@ -271,14 +279,17 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
                 logger.info(f"Generated screenshot from uploaded image: {src_path.name}")
                 return
         except Exception as e:
-            logger.warning(f"Could not use uploaded image for screenshot: {e}. Generating placeholder instead.")
+            logger.warning(
+                f"Could not use uploaded image for screenshot: {e}. Generating placeholder instead."
+            )
 
     # Generate placeholder screenshot
-    title = (requirements.get("theme_display_name")
-             or requirements.get("theme_name") or "WPGen Theme")
+    title = (
+        requirements.get("theme_display_name") or requirements.get("theme_name") or "WPGen Theme"
+    )
     primary = _first_hex(requirements.get("color_scheme"), "#0f172a")
     bg = (248, 250, 252)
-    fg = tuple(int(primary.strip("#")[i:i+2], 16) for i in (0, 2, 4))
+    fg = tuple(int(primary.strip("#")[i : i + 2], 16) for i in (0, 2, 4))
     img = Image.new("RGB", (1200, 900), bg)
     draw = ImageDraw.Draw(img)
     draw.rectangle([0, 600, 1200, 900], fill=fg)
@@ -290,11 +301,11 @@ def _ensure_screenshot(theme_dir: str, requirements: dict, images: list[dict[str
         font_sub = ImageFont.load_default()
     bbox = draw.textbbox((0, 0), title, font=font_title)
     tw = bbox[2] - bbox[0]
-    draw.text(((1200 - tw)//2, 330), title, fill=(17, 24, 39), font=font_title)
+    draw.text(((1200 - tw) // 2, 330), title, fill=(17, 24, 39), font=font_title)
     sub = "Generated by WPGen"
     bbox2 = draw.textbbox((0, 0), sub, font=font_sub)
     sw = bbox2[2] - bbox2[0]
-    draw.text(((1200 - sw)//2, 410), sub, fill=(55, 65, 81), font=font_sub)
+    draw.text(((1200 - sw) // 2, 410), sub, fill=(55, 65, 81), font=font_sub)
     img.save(shot_path, format="PNG", optimize=True)
     logger.info("Generated placeholder screenshot")
 
@@ -316,8 +327,9 @@ class WordPressGenerator:
             config: WordPress configuration from config.yaml
         """
         self.llm_provider = llm_provider
-        # Normalize path: convert Windows backslashes to forward slashes for cross-platform compatibility
-        self.output_dir = Path(str(output_dir).replace('\\', '/'))
+        # Normalize path: convert Windows backslashes to forward
+        # slashes for cross-platform compatibility
+        self.output_dir = Path(str(output_dir).replace("\\", "/"))
         self.config = config or {}
         self.safe_mode = self.config.get("safe_mode", False)
         self.design_images: list[dict[str, Any | None]] | None = None
@@ -405,36 +417,44 @@ class WordPressGenerator:
             # Sanitize filenames to prevent duplicates and invalid extensions
             logger.info("Sanitizing theme filenames...")
             from ..utils.code_validator import validate_theme_filenames
+
             filename_results = validate_theme_filenames(theme_dir)
 
-            if filename_results['renames']:
+            if filename_results["renames"]:
                 logger.info(f"✓ Sanitized {len(filename_results['renames'])} filename(s):")
-                for rename in filename_results['renames']:
+                for rename in filename_results["renames"]:
                     logger.info(f"  - {rename}")
 
-            if filename_results['errors']:
-                logger.warning(f"⚠️ Filename validation found {len(filename_results['errors'])} errors:")
-                for error in filename_results['errors']:
+            if filename_results["errors"]:
+                logger.warning(
+                    f"⚠️ Filename validation found {len(filename_results['errors'])} errors:"
+                )
+                for error in filename_results["errors"]:
                     logger.warning(f"  - {error}")
 
             # Validate and auto-fix template structure
             logger.info("Validating and fixing template structure...")
             from ..utils.code_validator import validate_and_fix_template_structure
+
             structure_validation = validate_and_fix_template_structure(theme_dir)
 
-            if structure_validation['repairs']:
-                logger.info(f"✓ Auto-repaired {len(structure_validation['repairs'])} template issues:")
-                for repair in structure_validation['repairs']:
+            if structure_validation["repairs"]:
+                logger.info(
+                    f"✓ Auto-repaired {len(structure_validation['repairs'])} template issues:"
+                )
+                for repair in structure_validation["repairs"]:
                     logger.info(f"  - {repair}")
 
-            if structure_validation['errors']:
-                logger.warning(f"⚠️ Template structure validation found {len(structure_validation['errors'])} errors:")
-                for error in structure_validation['errors'][:5]:
+            if structure_validation["errors"]:
+                err_count = len(structure_validation["errors"])
+                logger.warning(f"⚠️ Template structure validation found {err_count} errors:")
+                for error in structure_validation["errors"][:5]:
                     logger.warning(f"  - {error}")
 
             # Final WordPress safety validation
             logger.info("Performing final WordPress safety validation...")
             from ..utils.code_validator import validate_theme_for_wordpress_safety
+
             is_safe, issues = validate_theme_for_wordpress_safety(theme_dir)
 
             if not is_safe:
@@ -445,20 +465,25 @@ class WordPressGenerator:
                 if not self.safe_mode:
                     logger.warning("Consider using safe_mode=True to use tested fallback templates")
 
+                issue_count = len(issues)
+                issue_summary = "; ".join(issues[:3])
                 raise ValueError(
-                    f"Generated theme has {len(issues)} critical issue(s) that would crash WordPress. "
-                    f"Issues: {'; '.join(issues[:3])}. Enable safe_mode for reliable themes."
+                    f"Generated theme has {issue_count} critical "
+                    f"issue(s) that would crash WordPress. "
+                    f"Issues: {issue_summary}. "
+                    f"Enable safe_mode for reliable themes."
                 )
             else:
                 logger.info("✓ Theme passed WordPress safety validation")
 
             # Scan for mixed-content (insecure http:// URLs)
             from ..utils.code_validator import scan_mixed_content
+
             scan_results = scan_mixed_content(theme_dir, enforce_https=True)
 
-            if not scan_results['valid']:
+            if not scan_results["valid"]:
                 logger.warning("⚠️  Mixed-content scan found insecure HTTP URLs:")
-                for error in scan_results['errors']:
+                for error in scan_results["errors"]:
                     logger.warning(f"  {error}")
                 logger.warning("These URLs may cause mixed-content warnings on HTTPS sites")
                 # Note: We log as warning but don't fail generation since HTTP might be intentional
@@ -470,11 +495,12 @@ class WordPressGenerator:
             # Post-render scan: Check for forbidden patterns (WP_DEBUG, invalid PHP)
             logger.info("Running post-render scan for forbidden patterns...")
             from ..utils.code_validator import scan_generated_theme
+
             scan_results = scan_generated_theme(theme_dir, strict=True)
 
-            if not scan_results['valid']:
+            if not scan_results["valid"]:
                 logger.error("✗ Post-render scan FAILED - theme contains forbidden patterns:")
-                for error in scan_results['all_errors']:
+                for error in scan_results["all_errors"]:
                     logger.error(f"  {error}")
 
                 # Fail generation if forbidden patterns found
@@ -495,11 +521,16 @@ class WordPressGenerator:
 
     # Inline guards for preventing forbidden patterns during file write
     FORBIDDEN_DEBUG_TOKENS = (
-        "define('WP_DEBUG'", 'define("WP_DEBUG"',
-        "define('WP_DEBUG_LOG'", 'define("WP_DEBUG_LOG"',
-        "define('WP_DEBUG_DISPLAY'", 'define("WP_DEBUG_DISPLAY"',
-        "ini_set('display_errors'", 'ini_set("display_errors"',
-        "ini_set('error_reporting'", 'ini_set("error_reporting"',
+        "define('WP_DEBUG'",
+        'define("WP_DEBUG"',
+        "define('WP_DEBUG_LOG'",
+        'define("WP_DEBUG_LOG"',
+        "define('WP_DEBUG_DISPLAY'",
+        'define("WP_DEBUG_DISPLAY"',
+        "ini_set('display_errors'",
+        'ini_set("display_errors"',
+        "ini_set('error_reporting'",
+        'ini_set("error_reporting"',
         "error_reporting(",
     )
 
@@ -510,7 +541,10 @@ class WordPressGenerator:
         (re.compile(r"\bforeach\s*\([^)]*\)\s*;"), "foreach (...); (stray semicolon)"),
         (re.compile(r"\bwhile\s*\([^)]*\)\s*;"), "while (...); (stray semicolon)"),
         (re.compile(r"\bfor\s*\([^)]*\)\s*;"), "for (...); (stray semicolon)"),
-        (re.compile(r"\bfunction\s+\w+\s*\([^)]*\)\s*;"), "function name(); (semicolon instead of brace)"),
+        (
+            re.compile(r"\bfunction\s+\w+\s*\([^)]*\)\s*;"),
+            "function name(); (semicolon instead of brace)",
+        ),
     ]
 
     def _assert_no_debug_directives(self, text: str, path: str) -> None:
@@ -549,9 +583,9 @@ class WordPressGenerator:
             if m:
                 # Find line number
                 start = text.rfind("\n", 0, m.start()) + 1
-                line_num = text[:m.start()].count("\n") + 1
+                line_num = text[: m.start()].count("\n") + 1
                 end = text.find("\n", m.end())
-                snippet = text[start:(len(text) if end == -1 else end)]
+                snippet = text[start : (len(text) if end == -1 else end)]
                 raise RuntimeError(
                     f"Invalid PHP pattern in {path}:{line_num}\n"
                     f"  Line: {snippet.strip()}\n"
@@ -583,7 +617,9 @@ class WordPressGenerator:
         author_uri = self.config.get("author_uri", "")
 
         if not theme_uri:
-            theme_uri = requirements.get("repository_url", f"https://github.com/yourusername/{requirements['theme_name']}")
+            theme_uri = requirements.get(
+                "repository_url", f"https://github.com/yourusername/{requirements['theme_name']}"
+            )
 
         if not author_uri:
             # Try to get owner URL from requirements if GitHub was used
@@ -599,7 +635,7 @@ class WordPressGenerator:
                 author_uri = "https://github.com/yourusername"
 
         # Ensure tags are properly formatted as comma-separated strings
-        features = requirements.get('features', [])
+        features = requirements.get("features", [])
         if isinstance(features, list):
             # Convert list to comma-separated string, limit to 5 tags
             # Clean each tag to be WordPress-compatible (lowercase, no special chars)
@@ -607,12 +643,12 @@ class WordPressGenerator:
             for feature in features[:5]:
                 if isinstance(feature, str):
                     # Convert to lowercase, replace spaces/underscores with hyphens
-                    clean_tag = re.sub(r'[^a-z0-9-]+', '-', feature.lower()).strip('-')
+                    clean_tag = re.sub(r"[^a-z0-9-]+", "-", feature.lower()).strip("-")
                     if clean_tag:
                         clean_tags.append(clean_tag)
-            tags_str = ', '.join(clean_tags)
+            tags_str = ", ".join(clean_tags)
         else:
-            tags_str = str(features) if features else 'wordpress, theme'
+            tags_str = str(features) if features else "wordpress, theme"
 
         header = f"""/*
 Theme Name: {requirements['theme_display_name']}
@@ -645,7 +681,9 @@ Tags: {tags_str}
         if design_profile:
             context["design_profile"] = design_profile
 
-        description = f"""IMPORTANT: Respond ONLY with valid CSS code. No explanations, no markdown, no comments outside the CSS.
+        description = """\
+IMPORTANT: Respond ONLY with valid CSS code. \
+No explanations, no markdown, no comments outside the CSS.
 
 Create a modern, visually attractive, production-ready CSS stylesheet for a WordPress theme.
 This should be a COMPLETE, FULLY-STYLED theme - not a minimal boilerplate.
@@ -654,28 +692,30 @@ This should be a COMPLETE, FULLY-STYLED theme - not a minimal boilerplate.
 
         # Add design profile details if available
         if design_profile:
-            from ..design_profiles import profile_to_prompt_context, DesignProfile
             from ..design_inspiration import get_inspiration_context
+            from ..design_profiles import DesignProfile, profile_to_prompt_context
 
             # Convert dict back to DesignProfile if needed
             if isinstance(design_profile, dict):
-                temp_profile = DesignProfile(design_profile['name'], design_profile['description'])
-                temp_profile.colors = design_profile['colors']
-                temp_profile.fonts = design_profile['fonts']
-                temp_profile.spacing = design_profile['spacing']
-                temp_profile.layout = design_profile['layout']
-                temp_profile.components = design_profile['components']
+                temp_profile = DesignProfile(design_profile["name"], design_profile["description"])
+                temp_profile.colors = design_profile["colors"]
+                temp_profile.fonts = design_profile["fonts"]
+                temp_profile.spacing = design_profile["spacing"]
+                temp_profile.layout = design_profile["layout"]
+                temp_profile.components = design_profile["components"]
                 description += "DESIGN SYSTEM:\n"
                 description += profile_to_prompt_context(temp_profile)
                 description += "\n\n"
 
                 # Add design inspiration context
-                inspiration_context = get_inspiration_context(design_profile['name'])
+                inspiration_context = get_inspiration_context(design_profile["name"])
                 if inspiration_context:
                     description += inspiration_context
                     description += "\n\n"
 
-            description += "Use these exact colors, fonts, spacing, and component styles in the CSS.\n"
+            description += (
+                "Use these exact colors, fonts, spacing, and component styles in the CSS.\n"
+            )
         else:
             description += f"""DESIGN SYSTEM:
 Color Scheme: {context['color_scheme']}
@@ -819,8 +859,10 @@ CRITICAL REQUIREMENTS:
 - Style all WordPress elements (posts, comments, widgets)
 - Include sample content styling (blockquotes, lists, code, tables)
 
-DO NOT create minimal or placeholder styles. Every element should be fully styled and production-ready.
-The theme should look modern, professional, and visually impressive when activated."""
+DO NOT create minimal or placeholder styles. \
+Every element should be fully styled and production-ready.
+The theme should look modern, professional, \
+and visually impressive when activated."""
 
         try:
             # Pass design images for visual reference (especially important for CSS styling)
@@ -828,7 +870,7 @@ The theme should look modern, professional, and visually impressive when activat
                 description, "css", context, images=self.design_images
             )
             # CRITICAL: Clean LLM output to remove markdown fences and explanatory text
-            css_code = clean_generated_code(css_code, 'css')
+            css_code = clean_generated_code(css_code, "css")
 
             is_rich, reasons = self._is_css_rich(css_code)
             if not is_rich:
@@ -880,9 +922,15 @@ The theme should look modern, professional, and visually impressive when activat
             "integrations": requirements.get("integrations", []),
         }
 
-        description = f"""IMPORTANT: Respond ONLY with valid PHP code for functions.php. No explanations, no markdown code fences, no comments before the code. Start directly with <?php.
+        theme_nm = requirements["theme_name"]
+        theme_slug = theme_nm.replace("-", "_")
+        description = f"""\
+IMPORTANT: Respond ONLY with valid PHP code for functions.php. \
+No explanations, no markdown code fences, \
+no comments before the code. Start directly with <?php.
 
-Create a complete, modern functions.php file for a WordPress theme named '{requirements["theme_name"]}'.
+Create a complete, modern functions.php file \
+for a WordPress theme named '{theme_nm}'.
 
 CRITICAL REQUIREMENTS:
 1. Use proper PHP function naming - replace hyphens with underscores in function names
@@ -893,7 +941,8 @@ CRITICAL REQUIREMENTS:
    - THEMESLUG_posts_pagination() - posts pagination with fallback
 
 Include:
-- Theme setup function with theme support declarations (title-tag, post-thumbnails, html5, custom-logo, responsive-embeds, etc.)
+- Theme setup function with theme support declarations \
+(title-tag, post-thumbnails, html5, custom-logo, responsive-embeds, etc.)
 - Custom logo support with max height of 80px
 - Enqueue scripts and styles (MUST enqueue base layout CSS and wpgen-ui assets)
 - Register navigation menus: primary and footer locations
@@ -920,29 +969,49 @@ SHORTCODES - Include these modern shortcodes:
    - Uses .cta-section class
 
 HELPER FUNCTIONS - Include these exactly:
-- {requirements["theme_name"].replace('-', '_')}_get_the_meta_data() - echo date and author with escaping
-- {requirements["theme_name"].replace('-', '_')}_get_the_image($size='large') - the_post_thumbnail() with fallback
-- {requirements["theme_name"].replace('-', '_')}_pagination() - uses wp_pagenavi() if exists, else the_posts_navigation()
-- {requirements["theme_name"].replace('-', '_')}_posts_pagination() - uses wp_pagenavi() if exists, else the_posts_pagination()
+- {theme_slug}_get_the_meta_data() \
+- echo date and author with escaping
+- {theme_slug}_get_the_image($size='large') \
+- the_post_thumbnail() with fallback
+- {theme_slug}_pagination() \
+- uses wp_pagenavi() if exists, else the_posts_navigation()
+- {theme_slug}_posts_pagination() \
+- uses wp_pagenavi() if exists, else the_posts_pagination()
 
 IMPORTANT: Always enqueue these assets in the correct order:
 1. Base layout stylesheet (required for proper structure):
-   wp_enqueue_style('theme-base-layout', get_template_directory_uri() . '/assets/css/style.css', array(), '1.0.0');
+   wp_enqueue_style('theme-base-layout',
+     get_template_directory_uri() . '/assets/css/style.css',
+     array(), '1.0.0');
 2. Main theme stylesheet:
-   wp_enqueue_style('theme-style', get_stylesheet_uri(), array('theme-base-layout'), wp_get_theme()->get('Version'));
+   wp_enqueue_style('theme-style', get_stylesheet_uri(),
+     array('theme-base-layout'),
+     wp_get_theme()->get('Version'));
 3. WPGen UI enhancements:
-   wp_enqueue_style('wpgen-ui', get_template_directory_uri() . '/assets/css/wpgen-ui.css', array(), '1.0.0');
-   wp_enqueue_script('wpgen-ui', get_template_directory_uri() . '/assets/js/wpgen-ui.js', array(), '1.0.0', true);
+   wp_enqueue_style('wpgen-ui',
+     get_template_directory_uri() . '/assets/css/wpgen-ui.css',
+     array(), '1.0.0');
+   wp_enqueue_script('wpgen-ui',
+     get_template_directory_uri() . '/assets/js/wpgen-ui.js',
+     array(), '1.0.0', true);
 
 Note: theme-base-layout provides structural CSS and must load first.
 
 CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
-- wp_enqueue_scripts hook: ONLY front-end assets (NO React, NO @wordpress/*, NO Jetpack, NO wp-element, NO wp-blocks, NO wp-data)
-- enqueue_block_editor_assets hook: ONLY editor assets (React, Gutenberg, @wordpress/* packages, Jetpack blocks)
-- customize_preview_init hook: NO editor/Gutenberg/Jetpack packages (use vanilla JS only)
-- NEVER load these on front-end: react, react-dom, @wordpress/blocks, @wordpress/element, @wordpress/data, wp-blocks, wp-element, jetpack-*
-- Violating this will cause white Customizer screen, React errors, and Jetpack store conflicts.
-- If you need interactivity on front-end, use vanilla JavaScript or jQuery (already available in WordPress)."""
+- wp_enqueue_scripts hook: ONLY front-end assets \
+(NO React, NO @wordpress/*, NO Jetpack, \
+NO wp-element, NO wp-blocks, NO wp-data)
+- enqueue_block_editor_assets hook: ONLY editor assets \
+(React, Gutenberg, @wordpress/* packages, Jetpack blocks)
+- customize_preview_init hook: \
+NO editor/Gutenberg/Jetpack packages (use vanilla JS only)
+- NEVER load these on front-end: react, react-dom, \
+@wordpress/blocks, @wordpress/element, @wordpress/data, \
+wp-blocks, wp-element, jetpack-*
+- Violating this will cause white Customizer screen, \
+React errors, and Jetpack store conflicts.
+- If you need interactivity on front-end, use vanilla \
+JavaScript or jQuery (already available in WordPress)."""
 
         try:
             # Pass design images for visual reference
@@ -952,7 +1021,7 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
 
             # CRITICAL: Clean LLM output FIRST before any special handling
             # This removes markdown fences and explanatory text
-            php_code = clean_generated_code(php_code, 'php')
+            php_code = clean_generated_code(php_code, "php")
 
             # Ensure PHP opening tag
             if not php_code.strip().startswith("<?php"):
@@ -963,7 +1032,8 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                 requirements["theme_name"]
             )
 
-            # Remove the <?php tag from compatibility layer since we'll merge it with the generated code
+            # Remove the <?php tag from compatibility layer
+            # since we'll merge it with the generated code
             compatibility_layer_without_php_tag = compatibility_layer.replace("<?php\n", "").strip()
 
             # Insert compatibility layer right after the opening <?php tag
@@ -971,7 +1041,9 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                 # Split at first line break after <?php
                 parts = php_code.split("\n", 1)
                 if len(parts) > 1:
-                    php_code = parts[0] + "\n" + compatibility_layer_without_php_tag + "\n\n" + parts[1]
+                    php_code = (
+                        parts[0] + "\n" + compatibility_layer_without_php_tag + "\n\n" + parts[1]
+                    )
                 else:
                     php_code = parts[0] + "\n" + compatibility_layer_without_php_tag + "\n"
             else:
@@ -1011,13 +1083,17 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
         compat_dir.mkdir(parents=True, exist_ok=True)
 
         # Create the placeholder file
-        placeholder_file = compat_dir / "class-responsive-customizer-responsive-selectbtn-control.php"
+        placeholder_file = (
+            compat_dir / "class-responsive-customizer-responsive-selectbtn-control.php"
+        )
         placeholder_content = """<?php
 // Placeholder file added by generator to prevent plugin compatibility errors.
 ?>"""
 
         placeholder_file.write_text(placeholder_content, encoding="utf-8")
-        logger.info("Created plugin compatibility structure: includes/customizer/controls/selectbtn/")
+        logger.info(
+            "Created plugin compatibility structure: includes/customizer/controls/selectbtn/"
+        )
 
     def _validate_and_write_php(
         self, theme_dir: Path, filename: str, php_code: str, fallback_code: str | None = None
@@ -1057,14 +1133,16 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
         except Exception as e:
             logger.error(f"❌ Normalization failed for {filename}: {e}")
             if fallback_code:
-                logger.warning(f"→ Using fallback due to normalization failure")
+                logger.warning("→ Using fallback due to normalization failure")
                 php_code = fallback_code
             else:
                 php_code = get_minimal_fallback(filename, theme_name)
-                logger.warning(f"→ Using minimal fallback due to normalization failure")
+                logger.warning("→ Using minimal fallback due to normalization failure")
 
         # Ensure PHP opening tag (if not already present from normalization)
-        if not php_code.strip().startswith("<?php") and not php_code.strip().startswith("<!DOCTYPE"):
+        if not php_code.strip().startswith("<?php") and not php_code.strip().startswith(
+            "<!DOCTYPE"
+        ):
             php_code = "<?php\n" + php_code
 
         # ==============================================
@@ -1076,7 +1154,9 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
             missing_markers = [marker for marker in critical_markers if marker not in php_code]
             if len(php_code.strip()) < 80 or missing_markers:
                 logger.warning(
-                    f"{filename} missing critical structure ({', '.join(missing_markers) if missing_markers else 'content too short'}) - using fallback"
+                    f"{filename} missing critical structure "
+                    f"({', '.join(missing_markers) if missing_markers else 'content too short'})"
+                    " - using fallback"
                 )
                 if fallback_code:
                     php_code = fallback_code
@@ -1084,45 +1164,44 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                     php_code = get_minimal_fallback(filename, theme_name)
 
         # For functions.php, inject guaranteed base layout enqueue to avoid blank previews
-        if filename == 'functions.php':
+        if filename == "functions.php":
             php_code, enqueue_repairs = ensure_base_layout_enqueue(php_code, theme_name)
             for repair in enqueue_repairs:
                 logger.info(f"✓ {filename}: {repair}")
 
             # CRITICAL: Validate functions.php has no direct output
             from ..utils.code_validator import validate_functions_php_no_output
+
             has_output, output_issues = validate_functions_php_no_output(php_code)
             if has_output:
-                logger.error(f"functions.php contains direct output (this breaks WordPress):")
+                logger.error("functions.php contains direct output (this breaks WordPress):")
                 for issue in output_issues:
                     logger.error(f"  - {issue}")
                 logger.warning("Replacing with safe fallback functions.php")
-                php_code = fallback_code if fallback_code else get_minimal_fallback(filename, theme_name)
+                php_code = (
+                    fallback_code if fallback_code else get_minimal_fallback(filename, theme_name)
+                )
 
         # Determine file type for structure validation
-        file_type = 'template'
-        if filename == 'header.php':
-            file_type = 'header'
-        elif filename == 'footer.php':
-            file_type = 'footer'
-        elif filename == 'functions.php':
-            file_type = 'functions'
+        file_type = "template"
+        if filename == "header.php":
+            file_type = "header"
+        elif filename == "footer.php":
+            file_type = "footer"
+        elif filename == "functions.php":
+            file_type = "functions"
 
         # Use comprehensive validation and repair (with up to 2 retry attempts)
         # For footer.php, pass theme_dir to enable PHP syntax validation
         final_code, is_valid, log_messages = validate_and_repair_php_file(
-            php_code,
-            file_type=file_type,
-            filename=filename,
-            max_retries=2,
-            theme_dir=theme_dir
+            php_code, file_type=file_type, filename=filename, max_retries=2, theme_dir=theme_dir
         )
 
         # Log all validation messages
         for msg in log_messages:
-            if '✓' in msg:
+            if "✓" in msg:
                 logger.info(msg)
-            elif '✗' in msg:
+            elif "✗" in msg:
                 logger.error(msg)
             else:
                 logger.warning(msg)
@@ -1140,10 +1219,12 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
                 else:
                     logger.info(f"✓ Fallback {filename} validated successfully")
             else:
-                logger.error(f"⚠ No fallback available for {filename}, using best-effort repaired code")
+                logger.error(
+                    f"⚠ No fallback available for {filename}, using best-effort repaired code"
+                )
 
         # Inline guard: Check for forbidden debug directives (except in wp-config files)
-        if filename not in ['wp-config-sample.php', 'wp-config.php']:
+        if filename not in ["wp-config-sample.php", "wp-config.php"]:
             self._assert_no_debug_directives(final_code, filename)
 
         # Inline guard: Check for invalid PHP patterns
@@ -1222,8 +1303,10 @@ CRITICAL: Front-end vs Editor Asset Separation - STRICTLY ENFORCE
             "layout": requirements.get("layout", "full-width"),
         }
 
-        description = """Create the main index.php template file for WordPress.
-This is the fallback template that MUST display content in ALL cases (Customizer preview, empty site, etc.).
+        description = """\
+Create the main index.php template file for WordPress.
+This is the fallback template that MUST display content \
+in ALL cases (Customizer preview, empty site, etc.).
 
 CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
 1. MUST start with <?php get_header(); ?>
@@ -1242,8 +1325,10 @@ CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
        </article>
    <?php endif; ?>
 4. NEVER use undefined functions like post_loop()
-5. Use standard WordPress functions: the_title(), the_content(), the_excerpt(), the_permalink(), etc.
-6. ALWAYS include an 'else' clause with visible fallback content for empty sites (Customizer will be blank without this!)
+5. Use standard WordPress functions: the_title(), the_content(), \
+the_excerpt(), the_permalink(), etc.
+6. ALWAYS include an 'else' clause with visible fallback content \
+for empty sites (Customizer will be blank without this!)
 
 Include:
 - <main id="site-content" class="site-content"> wrapper
@@ -1268,6 +1353,7 @@ Use modern WordPress template tags and best practices."""
             logger.error(f"Failed to generate index.php: {str(e)}")
             # Use rich fallback
             from ..fallback_templates import get_rich_fallback_index
+
             fallback = get_rich_fallback_index(requirements["theme_name"])
             logger.info("Using rich fallback template for index.php")
             self._validate_and_write_php(theme_dir, "index.php", fallback)
@@ -1299,13 +1385,23 @@ Use modern WordPress template tags and best practices."""
                 <?php the_custom_logo(); ?>
             </div>
             <?php if ( is_front_page() && is_home() ) : ?>
-                <h1 class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+                <h1 class="site-title">
+                    <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+                        <?php bloginfo( 'name' ); ?>
+                    </a>
+                </h1>
             <?php else : ?>
-                <p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a></p>
+                <p class="site-title">
+                    <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+                        <?php bloginfo( 'name' ); ?>
+                    </a>
+                </p>
             <?php endif; ?>
             <p class="site-description"><?php bloginfo( 'description' ); ?></p>
         </div>
-        <button class="mobile-menu-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'theme' ); ?>" aria-expanded="false" aria-controls="primary-menu">
+        <button class="mobile-menu-toggle"
+            aria-label="<?php esc_attr_e( 'Toggle navigation', 'theme' ); ?>"
+            aria-expanded="false" aria-controls="primary-menu">
             <span class="menu-icon" aria-hidden="true"></span>
         </button>
         <nav class="main-navigation" aria-label="<?php esc_attr_e( 'Primary menu', 'theme' ); ?>">
@@ -1317,7 +1413,8 @@ Use modern WordPress template tags and best practices."""
                     'container'      => false,
                     'fallback_cb'    => function () {
                         echo '<ul id="primary-menu" class="primary-menu">';
-                        echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'theme' ) . '</a></li>';
+                        echo '<li><a href="' . esc_url( home_url( '/' ) ) . '">'
+                            . esc_html__( 'Home', 'theme' ) . '</a></li>';
                         echo '</ul>';
                     },
                 )
@@ -1351,9 +1448,7 @@ Use modern WordPress template tags and best practices."""
 
         except Exception as e:
             logger.error(f"Failed to generate header.php: {str(e)}")
-            fallback_header = (
-                cleaned_header if "cleaned_header" in locals() else header_layout
-            )
+            fallback_header = cleaned_header if "cleaned_header" in locals() else header_layout
             fallback = HEADER_BOILERPLATE.replace("{{HEADER_CONTENT}}", fallback_header)
             self._validate_and_write_php(theme_dir, "header.php", fallback)
 
@@ -1385,8 +1480,11 @@ Use modern WordPress template tags and best practices."""
         context = {"theme_name": requirements["theme_name"]}
 
         # Prompt the LLM to generate ONLY the inner footer content
-        description = """CRITICAL: Generate ONLY the inner footer markup (widgets, copyright, etc.).
-DO NOT generate <footer>, wp_footer(), </body>, or </html> tags - these are provided by the template.
+        description = """\
+CRITICAL: Generate ONLY the inner footer markup \
+(widgets, copyright, etc.).
+DO NOT generate <footer>, wp_footer(), </body>, or </html> \
+tags - these are provided by the template.
 DO NOT close or open <main> tags.
 
 Generate modern footer content including:
@@ -1439,18 +1537,21 @@ Output ONLY the inner content. No footer, wp_footer(), body, or html closing tag
             )
 
             # Clean the generated content
-            from ..utils.php_validation import sanitize_php_code
             from ..utils.code_validator import remove_duplicate_footers
-            inner_content = clean_generated_code(inner_content, 'php')
+            from ..utils.php_validation import sanitize_php_code
+
+            inner_content = clean_generated_code(inner_content, "php")
             inner_content = sanitize_php_code(inner_content)
 
             # Strip any accidentally generated footer, wp_footer(), body, html tags
-            inner_content = re.sub(r'<footer[^>]*>|</footer>', '', inner_content, flags=re.IGNORECASE)
-            inner_content = re.sub(r'<\?php\s+wp_footer\(\);?\s*\?>', '', inner_content)
-            inner_content = re.sub(r'</body>', '', inner_content, flags=re.IGNORECASE)
-            inner_content = re.sub(r'</html>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(
+                r"<footer[^>]*>|</footer>", "", inner_content, flags=re.IGNORECASE
+            )
+            inner_content = re.sub(r"<\?php\s+wp_footer\(\);?\s*\?>", "", inner_content)
+            inner_content = re.sub(r"</body>", "", inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r"</html>", "", inner_content, flags=re.IGNORECASE)
             # CRITICAL: Remove any <main> tags from footer
-            inner_content = re.sub(r'</?main[^>]*>', '', inner_content, flags=re.IGNORECASE)
+            inner_content = re.sub(r"</?main[^>]*>", "", inner_content, flags=re.IGNORECASE)
 
             # Remove duplicate footer blocks if LLM generated them
             inner_content, duplicates = remove_duplicate_footers(inner_content)
@@ -1461,7 +1562,7 @@ Output ONLY the inner content. No footer, wp_footer(), body, or html closing tag
                 raise ValueError("Generated footer content too short")
 
             # Insert inner content into boilerplate
-            php_code = FOOTER_BOILERPLATE.replace('{{FOOTER_CONTENT}}', inner_content)
+            php_code = FOOTER_BOILERPLATE.replace("{{FOOTER_CONTENT}}", inner_content)
 
             self._validate_and_write_php(theme_dir, "footer.php", php_code)
 
@@ -1483,7 +1584,7 @@ Output ONLY the inner content. No footer, wp_footer(), body, or html closing tag
         <div class="site-info">
             <p>&copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?>. All rights reserved.</p>
         </div>"""
-            fallback = FOOTER_BOILERPLATE.replace('{{FOOTER_CONTENT}}', fallback_content)
+            fallback = FOOTER_BOILERPLATE.replace("{{FOOTER_CONTENT}}", fallback_content)
             self._validate_and_write_php(theme_dir, "footer.php", fallback)
 
     def _generate_sidebar_php(self, theme_dir: Path, requirements: dict[str, Any]) -> None:
@@ -1509,12 +1610,12 @@ Include:
                 description, "php", context, images=self.design_images
             )
 
-            fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
+            fallback = get_fallback_template("sidebar.php", requirements["theme_name"])
             self._validate_and_write_php(theme_dir, "sidebar.php", php_code, fallback)
 
         except Exception as e:
             logger.error(f"Failed to generate sidebar.php: {str(e)}")
-            fallback = get_fallback_template('sidebar.php', requirements["theme_name"])
+            fallback = get_fallback_template("sidebar.php", requirements["theme_name"])
             self._validate_and_write_php(theme_dir, "sidebar.php", fallback)
 
     def _apply_richness_checks(
@@ -1548,7 +1649,9 @@ Include:
                     normalized_code,
                 )
             )
-            has_cta = bool(re.search(r"cta[-_\s]?section|call-to-action|class=\"[^\"]*cta", normalized_code))
+            has_cta = bool(
+                re.search(r"cta[-_\s]?section|call-to-action|class=\"[^\"]*cta", normalized_code)
+            )
 
             if not has_hero:
                 missing_sections.append("hero wrapper")
@@ -1564,17 +1667,24 @@ Include:
                     fallback_code = get_rich_fallback_front_page(theme_name)
 
                 logger.warning(
-                    f"{template_file} missing required sections ({', '.join(missing_sections)}); using rich fallback"
+                    f"{template_file} missing required sections "
+                    f"({', '.join(missing_sections)}); using rich fallback"
                 )
                 return fallback_code, True
 
         elif template_file == "archive.php":
             has_archive_header = bool(
-                re.search(r"archive[-_\s]?title|the_archive_title|archive-description", normalized_code)
+                re.search(
+                    r"archive[-_\s]?title|the_archive_title|archive-description", normalized_code
+                )
             )
-            has_grid_layout = bool(re.search(r"archive[-_\s]?grid|posts?-grid|post-card", normalized_code))
+            has_grid_layout = bool(
+                re.search(r"archive[-_\s]?grid|posts?-grid|post-card", normalized_code)
+            )
             has_pagination = bool(
-                re.search(r"the_posts_pagination|the_posts_navigation|paginate_links", normalized_code)
+                re.search(
+                    r"the_posts_pagination|the_posts_navigation|paginate_links", normalized_code
+                )
             )
 
             if not has_archive_header:
@@ -1591,7 +1701,8 @@ Include:
                     fallback_code = get_rich_fallback_archive(theme_name)
 
                 logger.warning(
-                    f"{template_file} missing rich layout elements ({', '.join(missing_sections)}); using rich fallback"
+                    f"{template_file} missing rich layout elements "
+                    f"({', '.join(missing_sections)}); using rich fallback"
                 )
                 return fallback_code, True
 
@@ -1608,9 +1719,8 @@ Include:
 
         # Import rich fallback templates
         from ..fallback_templates import (
+            get_rich_fallback_archive,
             get_rich_fallback_front_page,
-            get_rich_fallback_index,
-            get_rich_fallback_archive
         )
 
         templates_to_generate = {
@@ -1623,15 +1733,30 @@ Include:
         }
 
         # Add custom page templates (using WordPress-safe naming)
-        from ..utils.template_hierarchy_validator import get_page_template_filename, normalize_page_name
+        from ..utils.template_hierarchy_validator import (
+            get_page_template_filename,
+            normalize_page_name,
+        )
+
         for page in requirements.get("pages", []):
             # Skip core WordPress templates
-            if page not in ["index", "single", "archive", "search", "404", "home", "front-page", "page"]:
+            if page not in [
+                "index",
+                "single",
+                "archive",
+                "search",
+                "404",
+                "home",
+                "front-page",
+                "page",
+            ]:
                 # Ensure page name is normalized (should already be from parser, but double-check)
                 normalized_page = normalize_page_name(page)
                 if normalized_page:
                     template_file = get_page_template_filename(normalized_page)
-                    templates_to_generate[template_file] = f"Custom page template for {normalized_page}"
+                    templates_to_generate[template_file] = (
+                        f"Custom page template for {normalized_page}"
+                    )
                     logger.info(f"Adding custom page template: {template_file}")
                 else:
                     logger.warning(f"Skipping invalid page name: '{page}'")
@@ -1645,16 +1770,20 @@ Include:
                 # Special prompts for modern templates
                 if template_file == "front-page.php":
                     # Import pattern library for structured guidance
-                    from ..patterns import pattern_to_prompt_context, get_pattern
                     from ..design_inspiration import get_ecommerce_best_practices
+                    from ..patterns import pattern_to_prompt_context
 
-                    hero_pattern = pattern_to_prompt_context('hero')
-                    product_grid_pattern = pattern_to_prompt_context('product_grid')
-                    cta_pattern = pattern_to_prompt_context('cta_strip')
-                    feature_pattern = pattern_to_prompt_context('feature_strip')
+                    hero_pattern = pattern_to_prompt_context("hero")
+                    product_grid_pattern = pattern_to_prompt_context("product_grid")
+                    cta_pattern = pattern_to_prompt_context("cta_strip")
+                    feature_pattern = pattern_to_prompt_context("feature_strip")
 
-                    full_description = f"""Create a modern, visually impressive front-page.php (homepage) template for WordPress.
-This should be a COMPLETE, PRODUCTION-READY, ECOMMERCE-STYLE homepage with multiple rich sections - NOT a minimal blog layout.
+                    full_description = f"""\
+Create a modern, visually impressive front-page.php \
+(homepage) template for WordPress.
+This should be a COMPLETE, PRODUCTION-READY, \
+ECOMMERCE-STYLE homepage with multiple rich sections \
+- NOT a minimal blog layout.
 
 DESIGN PATTERNS TO FOLLOW:
 
@@ -1679,7 +1808,8 @@ REQUIRED STRUCTURE:
         <p class="hero-description"><?php bloginfo( 'description' ); ?></p>
         <div class="hero-buttons">
             <a href="#featured" class="btn btn-primary">Explore</a>
-            <a href="<?php echo esc_url( home_url( '/about' ) ); ?>" class="btn btn-secondary">Learn More</a>
+            <a href="<?php echo esc_url( home_url( '/about' ) ); ?>"
+                class="btn btn-secondary">Learn More</a>
         </div>
     </div>
 </section>
@@ -1729,7 +1859,8 @@ REQUIRED STRUCTURE:
     <div class="container text-center">
         <h2>Ready to Get Started?</h2>
         <p>Join thousands of satisfied users today.</p>
-        <a href="<?php echo esc_url( home_url( '/contact' ) ); ?>" class="btn btn-large">Get Started</a>
+        <a href="<?php echo esc_url( home_url( '/contact' ) ); ?>"
+            class="btn btn-large">Get Started</a>
     </div>
 </section>
 
@@ -1750,7 +1881,8 @@ CRITICAL REQUIREMENTS:
 This should look professional and impressive when activated - NOT minimal or empty."""
 
                 elif template_file == "archive.php":
-                    full_description = f"""Create a modern archive.php template with styled card grid layout.
+                    full_description = """\
+Create a modern archive.php template with styled card grid layout.
 
 REQUIRED STRUCTURE:
 
@@ -1785,13 +1917,18 @@ REQUIRED STRUCTURE:
                                 <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
                             </h2>
                             <div class="post-meta">
-                                <span class="post-date"><?php echo esc_html( get_the_date() ); ?></span>
-                                <span class="post-author">by <?php echo esc_html( get_the_author() ); ?></span>
+                                <span class="post-date">
+                                    <?php echo esc_html( get_the_date() ); ?>
+                                </span>
+                                <span class="post-author">
+                                    by <?php echo esc_html( get_the_author() ); ?>
+                                </span>
                             </div>
                             <div class="post-excerpt">
                                 <?php the_excerpt(); ?>
                             </div>
-                            <a href="<?php the_permalink(); ?>" class="read-more btn btn-outline">Read More</a>
+                            <a href="<?php the_permalink(); ?>"
+                                class="read-more btn btn-outline">Read More</a>
                         </div>
                     </article>
                 <?php endwhile; ?>
@@ -1832,7 +1969,8 @@ CRITICAL REQUIREMENTS:
        endwhile;
    endif;
 4. NEVER use undefined functions like post_loop(), get_the_meta_data() without theme prefix
-5. Use standard WordPress functions: the_title(), the_content(), the_excerpt(), the_permalink(), the_date(), the_author()
+5. Use standard WordPress functions: the_title(), the_content(), \
+the_excerpt(), the_permalink(), the_date(), the_author()
 6. For pagination, use the_posts_pagination() or the_posts_navigation() (NOT wp_pagenavi directly)
 7. Properly escape all output with esc_html(), esc_url(), esc_attr()
 
@@ -1861,9 +1999,13 @@ Follow WordPress template hierarchy and coding standards."""
                 )
 
                 if richness_fallback and fallback:
-                    logger.info(f"Applied rich fallback for {template_file} due to missing sections")
+                    logger.info(
+                        f"Applied rich fallback for {template_file} due to missing sections"
+                    )
 
-                self._validate_and_write_php(theme_dir, template_file, php_code, fallback if fallback else None)
+                self._validate_and_write_php(
+                    theme_dir, template_file, php_code, fallback if fallback else None
+                )
                 logger.info(f"Generated {template_file} successfully")
 
             except Exception as e:
@@ -1905,15 +2047,18 @@ Follow WordPress template hierarchy and coding standards."""
 
         for php_file in php_files:
             try:
-                content = php_file.read_text(encoding='utf-8')
+                content = php_file.read_text(encoding="utf-8")
                 # Match get_template_part( 'slug', 'name' ) or get_template_part( 'slug' )
-                pattern = r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"](?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+                pattern = (
+                    r"get_template_part\s*\(\s*['\"]([^'\"]+)['\"]"
+                    r"(?:\s*,\s*['\"]([^'\"]+)['\"])?\s*\)"
+                )
                 for match in re.finditer(pattern, content):
                     slug = match.group(1)
                     name = match.group(2) if match.group(2) else None
 
                     # Clean up slug (remove template-parts/ prefix if present)
-                    slug_clean = slug.replace('template-parts/', '')
+                    slug_clean = slug.replace("template-parts/", "")
 
                     if name:
                         template_parts_needed.add((slug_clean, name))
@@ -1938,7 +2083,7 @@ Follow WordPress template hierarchy and coding standards."""
             logger.info(f"Generating missing template part: {filename}")
 
             # Generate content based on the template part type
-            if 'content' in slug:
+            if "content" in slug:
                 # Content template part
                 content = f"""<?php
 /**
@@ -1954,7 +2099,12 @@ Follow WordPress template hierarchy and coding standards."""
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+            the_title(
+                '<h2 class="entry-title"><a href="'
+                    . esc_url( get_permalink() )
+                    . '" rel="bookmark">',
+                '</a></h2>'
+            );
         endif;
         ?>
         <div class="entry-meta">
@@ -2006,7 +2156,7 @@ Follow WordPress template hierarchy and coding standards."""
 """
 
             try:
-                template_file.write_text(content, encoding='utf-8')
+                template_file.write_text(content, encoding="utf-8")
                 logger.info(f"Generated template part: {filename}")
             except Exception as e:
                 logger.error(f"Failed to generate template part {filename}: {e}")
@@ -2017,7 +2167,8 @@ Follow WordPress template hierarchy and coding standards."""
         content_php = template_parts_dir / "content.php"
         if not content_php.exists():
             logger.info("Creating safe default content.php")
-            content_php.write_text(f"""<?php
+            content_php.write_text(
+                f"""<?php
 /**
  * Template part for displaying post content
  *
@@ -2031,7 +2182,10 @@ Follow WordPress template hierarchy and coding standards."""
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">', '</a></h2>' );
+            the_title(
+                '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '">',
+                '</a></h2>'
+            );
         endif;
         ?>
         <div class="entry-meta">
@@ -2056,12 +2210,15 @@ Follow WordPress template hierarchy and coding standards."""
         ?>
     </div>
 </article>
-""", encoding='utf-8')
+""",
+                encoding="utf-8",
+            )
 
         content_none_php = template_parts_dir / "content-none.php"
         if not content_none_php.exists():
             logger.info("Creating safe default content-none.php")
-            content_none_php.write_text(f"""<?php
+            content_none_php.write_text(
+                f"""<?php
 /**
  * Template part for displaying a message when no content is found
  *
@@ -2071,21 +2228,33 @@ Follow WordPress template hierarchy and coding standards."""
 
 <section class="no-results">
     <header class="page-header">
-        <h1 class="page-title"><?php esc_html_e( 'Nothing Found', '{requirements['theme_name']}' ); ?></h1>
+        <h1 class="page-title">
+            <?php esc_html_e( 'Nothing Found', '{requirements['theme_name']}' ); ?>
+        </h1>
     </header>
 
     <div class="page-content">
         <?php if ( is_search() ) : ?>
-            <p><?php esc_html_e( 'Sorry, no results were found. Try a different search.', '{requirements['theme_name']}' ); ?></p>
+            <p><?php esc_html_e(
+                'Sorry, no results were found. Try a different search.',
+                '{requirements['theme_name']}'
+            ); ?></p>
             <?php get_search_form(); ?>
         <?php else : ?>
-            <p><?php esc_html_e( 'No content found. Try exploring recent posts.', '{requirements['theme_name']}' ); ?></p>
+            <p><?php esc_html_e(
+                'No content found. Try exploring recent posts.',
+                '{requirements['theme_name']}'
+            ); ?></p>
         <?php endif; ?>
     </div>
 </section>
-""", encoding='utf-8')
+""",
+                encoding="utf-8",
+            )
 
-        logger.info(f"Template parts generation complete ({len(template_parts_needed)} files checked)")
+        logger.info(
+            f"Template parts generation complete ({len(template_parts_needed)} files checked)"
+        )
 
     def _generate_wpgen_ui_assets(self, theme_dir: Path) -> None:
         """Generate always-on UI enhancement assets (CSS/JS for transitions and mobile nav).
@@ -2383,8 +2552,10 @@ a {
     --spacing-4xl: 6rem;      /* 96px */
 
     /* Typography */
-    --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --font-headings: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-primary: -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-headings: -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 
     /* Layout */
     --container-max: 1200px;
@@ -3232,7 +3403,11 @@ select:focus {
             self._generate_dark_mode(theme_dir, requirements)
 
         # Animated preloader
-        if "preloader" in description or "loading logo" in description or "animated loading" in description:
+        if (
+            "preloader" in description
+            or "loading logo" in description
+            or "animated loading" in description
+        ):
             logger.info("Adding animated preloader")
             self._generate_preloader(theme_dir, requirements)
 
@@ -3295,7 +3470,9 @@ get_header();
 
             <header class="woocommerce-products-header">
                 <?php if ( apply_filters( 'woocommerce_show_page_title', true ) ) : ?>
-                    <h1 class="woocommerce-products-header__title page-title"><?php woocommerce_page_title(); ?></h1>
+                    <h1 class="woocommerce-products-header__title page-title">
+                        <?php woocommerce_page_title(); ?>
+                    </h1>
                 <?php endif; ?>
 
                 <?php
@@ -3408,7 +3585,9 @@ get_header();
         ?>
 
         <header class="woocommerce-products-header">
-            <h1 class="woocommerce-products-header__title page-title"><?php single_term_title(); ?></h1>
+            <h1 class="woocommerce-products-header__title page-title">
+                <?php single_term_title(); ?>
+            </h1>
 
             <?php
             /**
@@ -3472,7 +3651,9 @@ get_header();
         ?>
 
         <header class="woocommerce-products-header">
-            <h1 class="woocommerce-products-header__title page-title"><?php single_term_title(); ?></h1>
+            <h1 class="woocommerce-products-header__title page-title">
+                <?php single_term_title(); ?>
+            </h1>
 
             <?php do_action( 'woocommerce_archive_description' ); ?>
         </header>
@@ -3521,18 +3702,14 @@ get_header();
             "featured_products": {
                 "title": "Featured Products",
                 "icon": "products",
-                "category": "widgets"
+                "category": "widgets",
             },
             "lifestyle_image": {
                 "title": "Lifestyle Image",
                 "icon": "format-image",
-                "category": "media"
+                "category": "media",
             },
-            "promo_banner": {
-                "title": "Promo Banner",
-                "icon": "megaphone",
-                "category": "widgets"
-            }
+            "promo_banner": {"title": "Promo Banner", "icon": "megaphone", "category": "widgets"},
         }
 
         for block_name in blocks:
@@ -3546,7 +3723,9 @@ get_header();
             # Normalize category to valid WordPress core category
             normalized_category = normalize_block_category(config["category"])
             if normalized_category != config["category"]:
-                logger.info(f"Normalized block category '{config['category']}' to '{normalized_category}'")
+                logger.info(
+                    f"Normalized block category '{config['category']}' to '{normalized_category}'"
+                )
 
             # Create block.json
             block_json = {
@@ -3557,16 +3736,15 @@ get_header();
                 "category": normalized_category,  # Use normalized category
                 "icon": config["icon"],
                 "description": f"Display {config['title'].lower()}",
-                "supports": {
-                    "html": False
-                },
+                "supports": {"html": False},
                 "textdomain": "wpgen",
                 "editorScript": "file:./index.js",
                 "editorStyle": "file:./editor.css",
-                "style": "file:./style.css"
+                "style": "file:./style.css",
             }
 
             import json
+
             block_json_file = block_dir / "block.json"
             block_json_file.write_text(json.dumps(block_json, indent=2), encoding="utf-8")
 
@@ -3602,8 +3780,12 @@ registerBlockType(blockName, {{
             (block_dir / "index.js").write_text(index_js, encoding="utf-8")
 
             # Create empty CSS files
-            (block_dir / "style.css").write_text(f"/* {config['title']} block styles */\n", encoding="utf-8")
-            (block_dir / "editor.css").write_text(f"/* {config['title']} editor styles */\n", encoding="utf-8")
+            (block_dir / "style.css").write_text(
+                f"/* {config['title']} block styles */\n", encoding="utf-8"
+            )
+            (block_dir / "editor.css").write_text(
+                f"/* {config['title']} editor styles */\n", encoding="utf-8"
+            )
 
             logger.info(f"Created Gutenberg block: {block_name}")
 

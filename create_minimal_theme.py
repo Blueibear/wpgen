@@ -20,7 +20,7 @@ def create_minimal_theme(output_dir="output"):
 Theme Name: WPGen Minimal Safe Theme
 Theme URI: https://wpgen.local/
 Author: WPGen
-Description: Absolute minimal theme for testing. If this doesn't work, the issue is with WordPress itself.
+Description: Absolute minimal theme for testing. If this doesn't work, the issue is with WordPress.
 Version: 1.0.0
 License: GPL-2.0-or-later
 Text Domain: wpgen-minimal-safe
@@ -135,13 +135,14 @@ add_action( 'wp_enqueue_scripts', 'wpgen_minimal_scripts' );
     # Create screenshot
     try:
         from PIL import Image, ImageDraw, ImageFont
-        img = Image.new('RGB', (1200, 900), color='#f8f9fa')
+
+        img = Image.new("RGB", (1200, 900), color="#f8f9fa")
         d = ImageDraw.Draw(img)
 
         # Draw simple text
         try:
             font = ImageFont.truetype("arial.ttf", 60)
-        except:
+        except Exception:
             font = ImageFont.load_default()
 
         text = "WPGen Minimal Safe Theme"
@@ -149,7 +150,7 @@ add_action( 'wp_enqueue_scripts', 'wpgen_minimal_scripts' );
         w = bbox[2] - bbox[0]
         h = bbox[3] - bbox[1]
 
-        d.text(((1200-w)/2, (900-h)/2), text, fill='#333333', font=font)
+        d.text(((1200 - w) / 2, (900 - h) / 2), text, fill="#333333", font=font)
         img.save(str(theme_dir / "screenshot.png"))
     except Exception as e:
         print(f"Could not create screenshot: {e}")

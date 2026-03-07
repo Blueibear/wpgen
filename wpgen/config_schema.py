@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 
 class LLMProviderEnum(str, Enum):
     """Supported LLM providers."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     LOCAL_LMSTUDIO = "local-lmstudio"
@@ -26,12 +27,13 @@ class LLMProviderEnum(str, Enum):
 
 class OpenAIConfig(BaseModel):
     """OpenAI provider configuration."""
+
     model: str = Field(default="gpt-4-turbo-preview", description="OpenAI model name")
     max_tokens: int = Field(default=4096, ge=1, le=128000)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     api_key: str | None = Field(default=None, description="API key (from env OPENAI_API_KEY)")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def load_from_env(self):
         """Load API key from environment if not set."""
         if not self.api_key:
@@ -41,12 +43,13 @@ class OpenAIConfig(BaseModel):
 
 class AnthropicConfig(BaseModel):
     """Anthropic provider configuration."""
+
     model: str = Field(default="claude-3-5-sonnet-20241022", description="Anthropic model name")
     max_tokens: int = Field(default=4096, ge=1, le=200000)
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
     api_key: str | None = Field(default=None, description="API key (from env ANTHROPIC_API_KEY)")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def load_from_env(self):
         """Load API key from environment if not set."""
         if not self.api_key:
@@ -56,9 +59,12 @@ class AnthropicConfig(BaseModel):
 
 class LocalLLMConfig(BaseModel):
     """Local LLM provider configuration (LM Studio or Ollama)."""
+
     brains_model: str = Field(..., description="Brains model name for text-only reasoning")
     brains_base_url: str = Field(..., description="Brains model base URL")
-    vision_model: str | None = Field(default=None, description="Vision model name for image analysis")
+    vision_model: str | None = Field(
+        default=None, description="Vision model name for image analysis"
+    )
     vision_base_url: str | None = Field(default=None, description="Vision model base URL")
     max_tokens: int = Field(default=2048, ge=1, le=128000)
     temperature: float = Field(default=0.4, ge=0.0, le=2.0)
@@ -67,21 +73,18 @@ class LocalLLMConfig(BaseModel):
 
 class LLMConfig(BaseModel):
     """LLM configuration."""
+
     provider: LLMProviderEnum = Field(default=LLMProviderEnum.OPENAI)
     openai: OpenAIConfig | None = Field(default_factory=OpenAIConfig)
     anthropic: AnthropicConfig | None = Field(default_factory=AnthropicConfig)
     local_lmstudio: LocalLLMConfig | None = Field(
-        default=None,
-        alias="local-lmstudio",
-        description="LM Studio configuration"
+        default=None, alias="local-lmstudio", description="LM Studio configuration"
     )
     local_ollama: LocalLLMConfig | None = Field(
-        default=None,
-        alias="local-ollama",
-        description="Ollama configuration"
+        default=None, alias="local-ollama", description="Ollama configuration"
     )
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_provider_config(self):
         """Ensure selected provider has configuration."""
         provider_map = {
@@ -100,7 +103,7 @@ class LLMConfig(BaseModel):
 
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def override_from_env(self):
         """Override provider and models from environment variables."""
         # Override provider
@@ -135,6 +138,7 @@ class LLMConfig(BaseModel):
 
 class GitHubConfig(BaseModel):
     """GitHub integration configuration."""
+
     api_url: str = Field(default="https://api.github.com")
     repo_name_pattern: str = Field(default="wp-{theme_name}-{timestamp}")
     auto_create: bool = Field(default=True)
@@ -142,7 +146,7 @@ class GitHubConfig(BaseModel):
     default_branch: str = Field(default="main")
     token: str | None = Field(default=None, description="GitHub token (from env GITHUB_TOKEN)")
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def load_from_env(self):
         """Load token from environment if not set."""
         if not self.token:
@@ -152,6 +156,7 @@ class GitHubConfig(BaseModel):
 
 class WordPressConfig(BaseModel):
     """WordPress theme generation configuration."""
+
     theme_prefix: str = Field(default="wpgen")
     wp_version: str = Field(default="6.4")
     include_sample_content: bool = Field(default=True)
@@ -159,7 +164,7 @@ class WordPressConfig(BaseModel):
     author: str = Field(default="WPGen")
     license: str = Field(default="GPL-2.0-or-later")
 
-    @field_validator('theme_type')
+    @field_validator("theme_type")
     @classmethod
     def validate_theme_type(cls, v: str) -> str:
         """Validate theme type."""
@@ -170,11 +175,12 @@ class WordPressConfig(BaseModel):
 
 class OutputConfig(BaseModel):
     """Output configuration."""
+
     output_dir: str = Field(default="output")
     clean_before_generate: bool = Field(default=False)
     keep_local_copy: bool = Field(default=True)
 
-    @field_validator('output_dir')
+    @field_validator("output_dir")
     @classmethod
     def validate_output_dir(cls, v: str) -> str:
         """Ensure output directory is valid."""
@@ -185,13 +191,14 @@ class OutputConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     """Logging configuration."""
+
     level: str = Field(default="INFO")
     log_file: str = Field(default="logs/wpgen.jsonl")
     format: str = Field(default="text")
     console_output: bool = Field(default=True)
     colored_console: bool = Field(default=True)
 
-    @field_validator('level')
+    @field_validator("level")
     @classmethod
     def validate_level(cls, v: str) -> str:
         """Validate log level."""
@@ -201,7 +208,7 @@ class LoggingConfig(BaseModel):
             raise ValueError(f"Invalid log level: {v}. Must be one of: {', '.join(valid_levels)}")
         return v_upper
 
-    @field_validator('format')
+    @field_validator("format")
     @classmethod
     def validate_format(cls, v: str) -> str:
         """Validate log format."""
@@ -212,17 +219,21 @@ class LoggingConfig(BaseModel):
 
 class WebConfig(BaseModel):
     """Web UI configuration."""
+
     enabled: bool = Field(default=True)
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=5000, ge=1, le=65535)
     debug: bool = Field(default=False)
     secret_key: str | None = Field(default=None)
     cors_enabled: bool = Field(default=False, description="Enable CORS for cross-origin requests")
-    cors_origins: str = Field(default="*", description="Allowed CORS origins (comma-separated or *)")
+    cors_origins: str = Field(
+        default="*", description="Allowed CORS origins (comma-separated or *)"
+    )
 
 
 class DeploymentMethod(str, Enum):
     """Supported deployment methods."""
+
     GITHUB_ACTIONS = "github_actions"
     FTP = "ftp"
     SSH = "ssh"
@@ -230,20 +241,28 @@ class DeploymentMethod(str, Enum):
 
 class DeploymentConfig(BaseModel):
     """Deployment configuration."""
+
     enabled: bool = Field(default=False)
     method: DeploymentMethod = Field(default=DeploymentMethod.GITHUB_ACTIONS)
 
 
 class WordPressAPIConfig(BaseModel):
     """WordPress REST API configuration."""
+
     enabled: bool = Field(default=False)
-    site_url: str | None = Field(default=None, description="WordPress site URL (from env WP_SITE_URL)")
-    username: str | None = Field(default=None, description="WordPress username (from env WP_USERNAME)")
-    app_password: str | None = Field(default=None, description="WordPress app password (from env WP_APP_PASSWORD)")
+    site_url: str | None = Field(
+        default=None, description="WordPress site URL (from env WP_SITE_URL)"
+    )
+    username: str | None = Field(
+        default=None, description="WordPress username (from env WP_USERNAME)"
+    )
+    app_password: str | None = Field(
+        default=None, description="WordPress app password (from env WP_APP_PASSWORD)"
+    )
     auto_deploy: bool = Field(default=False)
     auto_activate: bool = Field(default=False)
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def load_from_env(self):
         """Load credentials from environment if not set."""
         if not self.site_url:
@@ -254,7 +273,7 @@ class WordPressAPIConfig(BaseModel):
             self.app_password = os.getenv("WP_APP_PASSWORD")
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_credentials(self):
         """Validate that if enabled, credentials are provided."""
         if self.enabled and not all([self.site_url, self.username, self.app_password]):
@@ -268,6 +287,7 @@ class WordPressAPIConfig(BaseModel):
 
 class ValidationConfig(BaseModel):
     """Code validation configuration."""
+
     enabled: bool = Field(default=True)
     strict: bool = Field(default=False, description="Fail on warnings in addition to errors")
     php_path: str | None = Field(default="php", description="Path to PHP binary")
@@ -286,9 +306,7 @@ class WPGenConfig(BaseModel):
     wordpress_api: WordPressAPIConfig = Field(default_factory=WordPressAPIConfig)
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
 
-    model_config = ConfigDict(
-        populate_by_name=True  # Allow field aliases
-    )
+    model_config = ConfigDict(populate_by_name=True)  # Allow field aliases
 
 
 def load_and_validate_config(config_path: str = "config.yaml") -> WPGenConfig:
@@ -364,8 +382,12 @@ def get_redacted_config_summary(config: WPGenConfig) -> dict[str, Any]:
         },
         "wordpress_api": {
             "enabled": config.wordpress_api.enabled,
-            "site_url": config.wordpress_api.site_url if config.wordpress_api.site_url else "not_set",
-            "credentials_set": bool(config.wordpress_api.username and config.wordpress_api.app_password),
+            "site_url": (
+                config.wordpress_api.site_url if config.wordpress_api.site_url else "not_set"
+            ),
+            "credentials_set": bool(
+                config.wordpress_api.username and config.wordpress_api.app_password
+            ),
         },
     }
 

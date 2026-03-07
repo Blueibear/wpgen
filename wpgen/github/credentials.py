@@ -50,7 +50,7 @@ class SecureCredentialHelper:
             if is_windows:
                 # Windows: Create a batch script
                 script_path = temp_path / "git-askpass.bat"
-                script_content = f'@echo off\necho {self.token}\n'
+                script_content = f"@echo off\necho {self.token}\n"
                 script_path.write_text(script_content, encoding="utf-8")
             else:
                 # POSIX (Linux/macOS): Create a shell script
@@ -59,19 +59,21 @@ class SecureCredentialHelper:
                 script_path.write_text(script_content, encoding="utf-8")
 
                 # Make script executable (chmod +x)
-                script_path.chmod(script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                script_path.chmod(
+                    script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+                )
 
             self._askpass_script = script_path
             logger.debug(f"Created askpass script at: {script_path}")
 
             # Build environment variables
             env = os.environ.copy()
-            env['GIT_ASKPASS'] = str(script_path)
-            env['GIT_TERMINAL_PROMPT'] = '0'  # Disable interactive prompts
+            env["GIT_ASKPASS"] = str(script_path)
+            env["GIT_TERMINAL_PROMPT"] = "0"  # Disable interactive prompts
 
             # On Windows, also set these for better compatibility
             if is_windows:
-                env['GCM_INTERACTIVE'] = 'never'
+                env["GCM_INTERACTIVE"] = "never"
 
             logger.debug("Built secure askpass environment")
             return env
@@ -141,9 +143,9 @@ def validate_token_format(token: str) -> bool:
     # GitHub PAT formats:
     # - Classic: ghp_... (36+ chars)
     # - Fine-grained: github_pat_... (82+ chars)
-    if token.startswith('ghp_') and len(token) >= 40:
+    if token.startswith("ghp_") and len(token) >= 40:
         return True
-    if token.startswith('github_pat_') and len(token) >= 82:
+    if token.startswith("github_pat_") and len(token) >= 82:
         return True
 
     # Warn about potentially insecure token

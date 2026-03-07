@@ -31,14 +31,18 @@ def app():
 
     # Hardened, non-overlapping resources configuration
     # This prevents CVE-2024-6839 by ensuring no regex overlap
-    CORS(app, resources={
-        # Admin routes - restrictive origin
-        r"/api/admin/*": {"origins": ["https://safe.example.com"]},
-        # Public API routes - permissive (but still controlled)
-        r"/api/public/*": {"origins": ["*"]},
-        # Health check - public access
-        r"/health": {"origins": ["*"]},
-    }, supports_credentials=False)
+    CORS(
+        app,
+        resources={
+            # Admin routes - restrictive origin
+            r"/api/admin/*": {"origins": ["https://safe.example.com"]},
+            # Public API routes - permissive (but still controlled)
+            r"/api/public/*": {"origins": ["*"]},
+            # Health check - public access
+            r"/health": {"origins": ["*"]},
+        },
+        supports_credentials=False,
+    )
 
     return app
 
@@ -52,10 +56,7 @@ def client(app):
 def test_admin_allows_only_safe_origin(client):
     """Test that admin route only allows the whitelisted origin."""
     # Allowed origin on admin route
-    resp = client.get(
-        "/api/admin/secret",
-        headers={"Origin": "https://safe.example.com"}
-    )
+    resp = client.get("/api/admin/secret", headers={"Origin": "https://safe.example.com"})
     # CORS header should reflect the allowed origin
     assert resp.status_code == 200
     assert resp.headers.get("Access-Control-Allow-Origin") == "https://safe.example.com"
@@ -64,10 +65,7 @@ def test_admin_allows_only_safe_origin(client):
 def test_admin_blocks_other_origins(client):
     """Test that admin route blocks non-whitelisted origins."""
     # Disallowed origin on admin route
-    resp = client.get(
-        "/api/admin/secret",
-        headers={"Origin": "https://evil.example.com"}
-    )
+    resp = client.get("/api/admin/secret", headers={"Origin": "https://evil.example.com"})
     # No ACAO header means blocked
     assert resp.status_code == 200
     assert "Access-Control-Allow-Origin" not in resp.headers
@@ -76,10 +74,7 @@ def test_admin_blocks_other_origins(client):
 def test_admin_blocks_wildcard_origin(client):
     """Test that admin route blocks even if wildcard is in config elsewhere."""
     # Attempt with a different origin
-    resp = client.get(
-        "/api/admin/secret",
-        headers={"Origin": "https://attacker.com"}
-    )
+    resp = client.get("/api/admin/secret", headers={"Origin": "https://attacker.com"})
     # Should not allow this origin
     assert "Access-Control-Allow-Origin" not in resp.headers
 
@@ -87,10 +82,7 @@ def test_admin_blocks_wildcard_origin(client):
 def test_public_allows_any_origin(client):
     """Test that public route allows various origins."""
     # Public route should accept any origin due to "*" config
-    resp = client.get(
-        "/api/public/ping",
-        headers={"Origin": "https://any.example"}
-    )
+    resp = client.get("/api/public/ping", headers={"Origin": "https://any.example"})
     assert resp.status_code == 200
     # With "*" and no credentials, flask-cors returns the requesting origin
     assert resp.headers.get("Access-Control-Allow-Origin") == "https://any.example"
@@ -98,10 +90,7 @@ def test_public_allows_any_origin(client):
 
 def test_health_allows_any_origin(client):
     """Test that health endpoint allows any origin."""
-    resp = client.get(
-        "/health",
-        headers={"Origin": "https://monitoring.example"}
-    )
+    resp = client.get("/health", headers={"Origin": "https://monitoring.example"})
     assert resp.status_code == 200
     assert resp.headers.get("Access-Control-Allow-Origin") == "https://monitoring.example"
 
@@ -126,7 +115,7 @@ def test_preflight_admin_route(client):
         headers={
             "Origin": "https://safe.example.com",
             "Access-Control-Request-Method": "GET",
-        }
+        },
     )
     # Preflight should be allowed for the whitelisted origin
     assert resp.status_code == 200
@@ -140,7 +129,7 @@ def test_preflight_admin_route_blocked(client):
         headers={
             "Origin": "https://evil.example.com",
             "Access-Control-Request-Method": "GET",
-        }
+        },
     )
     # Preflight should be blocked for non-whitelisted origin
     assert "Access-Control-Allow-Origin" not in resp.headers

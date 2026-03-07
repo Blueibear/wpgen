@@ -62,9 +62,7 @@ def generated_theme(tmp_path):
         "author": "Test",
         "license": "GPL-2.0-or-later",
     }
-    generator = WordPressGenerator(
-        llm_provider=mock_llm, output_dir=str(tmp_path), config=config
-    )
+    generator = WordPressGenerator(llm_provider=mock_llm, output_dir=str(tmp_path), config=config)
 
     theme_path = generator.generate(requirements)
     theme_dir = Path(theme_path)
@@ -105,9 +103,7 @@ def test_no_debug_and_no_bad_php(generated_theme):
                 start = content.rfind("\n", 0, match.start()) + 1
                 end = content.find("\n", match.end())
                 snippet = content[start : (len(content) if end == -1 else end)].strip()
-                violations.append(
-                    f"Invalid PHP in {relative_path}:{line_num}: {snippet[:80]}"
-                )
+                violations.append(f"Invalid PHP in {relative_path}:{line_num}: {snippet[:80]}")
 
     assert not violations, "Found safety violations:\n" + "\n".join(violations)
 
@@ -204,9 +200,7 @@ def test_php_syntax_validity(generated_theme):
 
             if result.returncode != 0:
                 relative_path = php_file.relative_to(generated_theme)
-                failures.append(
-                    f"{relative_path}:\n{result.stdout}\n{result.stderr}"
-                )
+                failures.append(f"{relative_path}:\n{result.stdout}\n{result.stderr}")
 
         except Exception as e:
             relative_path = php_file.relative_to(generated_theme)
@@ -248,10 +242,9 @@ def test_comprehensive_safety_scanner(generated_theme):
     # Collect all errors
     all_errors = results.get("all_errors", [])
 
-    assert results["valid"], (
-        f"Theme failed comprehensive safety scan:\n"
-        + "\n".join(all_errors[:10])  # Show first 10 errors
-    )
+    assert results["valid"], "Theme failed comprehensive safety scan:\n" + "\n".join(
+        all_errors[:10]
+    )  # Show first 10 errors
 
 
 if __name__ == "__main__":

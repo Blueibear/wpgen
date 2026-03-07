@@ -10,7 +10,7 @@ for WordPress themes. Every template generated is guaranteed to be:
 All templates follow strict contracts defined in template_contracts.py.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -34,15 +34,15 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
         Complete header.php template as string
     """
     # Extract configuration with safe defaults
-    primary_color = config.get('primary_color', '#2563eb')
-    show_search = config.get('show_search', True)
-    sticky_header = config.get('sticky_header', False)
+    config.get("primary_color", "#2563eb")
+    show_search = config.get("show_search", True)
+    sticky_header = config.get("sticky_header", False)
 
-    header_class = 'site-header'
+    header_class = "site-header"
     if sticky_header:
-        header_class += ' sticky-header'
+        header_class += " sticky-header"
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Header Template
  *
@@ -66,7 +66,9 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#primary"><?php esc_html_e( 'Skip to content', '{theme_slug}' ); ?></a>
+    <a class="skip-link screen-reader-text" href="#primary"><?php
+		esc_html_e( 'Skip to content', '{theme_slug}' );
+	?></a>
 
     <header id="masthead" class="{header_class}">
         <div class="site-branding">
@@ -93,9 +95,12 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
             ?>
         </div>
 
-        <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
+        <nav id="site-navigation" class="main-navigation"
+			aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
             <button class="menu-toggle" aria-controls="primary-menu" aria-expanded="false">
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{theme_slug}' ); ?></span>
+                <span class="screen-reader-text"><?php
+					esc_html_e( 'Menu', '{theme_slug}' );
+				?></span>
                 <span class="menu-icon" aria-hidden="true">
                     <span class="menu-bar"></span>
                     <span class="menu-bar"></span>
@@ -117,7 +122,7 @@ def build_header_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 
         {_build_search_form_block(show_search, theme_slug)}
     </header>
-'''
+"""
 
 
 def _build_search_form_block(show_search: bool, theme_slug: str) -> str:
@@ -131,12 +136,12 @@ def _build_search_form_block(show_search: bool, theme_slug: str) -> str:
         Search form HTML or empty string
     """
     if not show_search:
-        return ''
+        return ""
 
-    return f'''
+    return """
         <div class="header-search">
             <?php get_search_form(); ?>
-        </div>'''
+        </div>"""
 
 
 def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -158,10 +163,10 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
     Returns:
         Complete footer.php template as string
     """
-    footer_columns = config.get('footer_columns', 3)
-    copyright_text = config.get('copyright_text', f'&copy; {theme_name}')
+    footer_columns = config.get("footer_columns", 3)
+    config.get("copyright_text", f"&copy; {theme_name}")
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Footer Template
  *
@@ -174,7 +179,11 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 ?>
 
     <footer id="colophon" class="site-footer">
-        <?php if ( is_active_sidebar( 'footer-1' ) || is_active_sidebar( 'footer-2' ) || is_active_sidebar( 'footer-3' ) ) : ?>
+        <?php if (
+			is_active_sidebar( 'footer-1' )
+			|| is_active_sidebar( 'footer-2' )
+			|| is_active_sidebar( 'footer-3' )
+		) : ?>
             <div class="footer-widgets">
                 <div class="footer-widgets-inner">
                     {_build_footer_widget_areas(footer_columns)}
@@ -214,7 +223,7 @@ def build_footer_structure(theme_name: str, theme_slug: str, config: Dict[str, A
 
 </body>
 </html>
-'''
+"""
 
 
 def _build_footer_widget_areas(columns: int) -> str:
@@ -230,11 +239,11 @@ def _build_footer_widget_areas(columns: int) -> str:
 
     areas = []
     for i in range(1, columns + 1):
-        areas.append(f'''                    <div class="footer-widget-area footer-widget-{i}">
+        areas.append(f"""                    <div class="footer-widget-area footer-widget-{i}">
                         <?php dynamic_sidebar( 'footer-{i}' ); ?>
-                    </div>''')
+                    </div>""")
 
-    return '\n'.join(areas)
+    return "\n".join(areas)
 
 
 def build_index_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -257,10 +266,10 @@ def build_index_structure(theme_name: str, theme_slug: str, config: Dict[str, An
     Returns:
         Complete index.php template as string
     """
-    layout_class = config.get('layout_class', 'content-area')
-    show_sidebar = config.get('show_sidebar', False)
+    layout_class = config.get("layout_class", "content-area")
+    show_sidebar = config.get("show_sidebar", False)
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Main Index Template
  *
@@ -287,7 +296,9 @@ get_header();
                     <?php
                 else :
                     ?>
-                    <h1 class="page-title"><?php esc_html_e( 'Latest Posts', '{theme_slug}' ); ?></h1>
+                    <h1 class="page-title"><?php
+						esc_html_e( 'Latest Posts', '{theme_slug}' );
+					?></h1>
                     <?php
                 endif;
                 ?>
@@ -327,7 +338,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def _build_sidebar_block(show_sidebar: bool) -> str:
@@ -340,10 +351,10 @@ def _build_sidebar_block(show_sidebar: bool) -> str:
         Sidebar HTML or empty string
     """
     if not show_sidebar:
-        return ''
+        return ""
 
-    return '''
-<?php get_sidebar(); ?>'''
+    return """
+<?php get_sidebar(); ?>"""
 
 
 def build_functions_structure(theme_name: str, theme_slug: str, config: Dict[str, Any]) -> str:
@@ -367,11 +378,11 @@ def build_functions_structure(theme_name: str, theme_slug: str, config: Dict[str
     Returns:
         Complete functions.php template as string
     """
-    woocommerce_support = config.get('woocommerce_support', False)
-    custom_logo_support = config.get('custom_logo', True)
-    footer_columns = config.get('footer_columns', 3)
+    woocommerce_support = config.get("woocommerce_support", False)
+    custom_logo_support = config.get("custom_logo", True)
+    footer_columns = config.get("footer_columns", 3)
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Theme Functions
  *
@@ -464,7 +475,10 @@ function {theme_slug}_widgets_init() {{
         array(
             'name'          => esc_html__( 'Sidebar', '{theme_slug}' ),
             'id'            => 'sidebar-1',
-            'description'   => esc_html__( 'Add widgets here to appear in your sidebar.', '{theme_slug}' ),
+            'description'   => esc_html__(
+				'Add widgets here to appear in your sidebar.',
+				'{theme_slug}'
+			),
             'before_widget' => '<section id="%1$s" class="widget %2$s">',
             'after_widget'  => '</section>',
             'before_title'  => '<h2 class="widget-title">',
@@ -513,7 +527,7 @@ require get_template_directory() . '/inc/template-tags.php';
  * Customizer additions.
  */
 require get_template_directory() . '/inc/customizer.php';
-'''
+"""
 
 
 def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
@@ -527,9 +541,9 @@ def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
         Custom logo support code or empty string
     """
     if not enabled:
-        return ''
+        return ""
 
-    return f'''
+    return """
     // Add theme support for Custom Logo
     add_theme_support(
         'custom-logo',
@@ -539,7 +553,7 @@ def _build_custom_logo_support(enabled: bool, theme_slug: str) -> str:
             'flex-width'  => true,
             'flex-height' => true,
         )
-    );'''
+    );"""
 
 
 def _build_woocommerce_support(enabled: bool) -> str:
@@ -552,14 +566,14 @@ def _build_woocommerce_support(enabled: bool) -> str:
         WooCommerce support code or empty string
     """
     if not enabled:
-        return ''
+        return ""
 
-    return '''
+    return """
     // Add WooCommerce support
     add_theme_support( 'woocommerce' );
     add_theme_support( 'wc-product-gallery-zoom' );
     add_theme_support( 'wc-product-gallery-lightbox' );
-    add_theme_support( 'wc-product-gallery-slider' );'''
+    add_theme_support( 'wc-product-gallery-slider' );"""
 
 
 def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
@@ -576,24 +590,27 @@ def _build_footer_widget_registrations(columns: int, theme_slug: str) -> str:
 
     registrations = []
     for i in range(1, columns + 1):
-        registrations.append(f'''
+        registrations.append(f"""
     // Footer widget area {i}
     register_sidebar(
         array(
             'name'          => esc_html__( 'Footer {i}', '{theme_slug}' ),
             'id'            => 'footer-{i}',
-            'description'   => esc_html__( 'Add widgets here to appear in footer column {i}.', '{theme_slug}' ),
+            'description'   => esc_html__(
+				'Add widgets here to appear in footer column {i}.',
+				'{theme_slug}'
+			),
             'before_widget' => '<section id="%1$s" class="widget %2$s">',
             'after_widget'  => '</section>',
             'before_title'  => '<h2 class="widget-title">',
             'after_title'   => '</h2>',
         )
-    );''')
+    );""")
 
-    return ''.join(registrations)
+    return "".join(registrations)
 
 
-def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> str:
+def build_content_part_structure(theme_slug: str, post_type: str = "post") -> str:
     """Build template-parts/content.php structure.
 
     Args:
@@ -603,7 +620,7 @@ def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> st
     Returns:
         Complete content template part
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying post content
  *
@@ -618,14 +635,20 @@ def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> st
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+            the_title(
+				'<h2 class="entry-title"><a href="'
+				. esc_url( get_permalink() )
+				. '" rel="bookmark">',
+				'</a></h2>'
+			);
         endif;
         ?>
 
         <?php if ( '{post_type}' === 'post' ) : ?>
             <div class="entry-meta">
                 <span class="posted-on">
-                    <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                    <time class="entry-date published"
+						datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
                         <?php echo esc_html( get_the_date() ); ?>
                     </time>
                 </span>
@@ -665,7 +688,7 @@ def build_content_part_structure(theme_slug: str, post_type: str = 'post') -> st
         <?php endif; ?>
     </footer>
 </article>
-'''
+"""
 
 
 def build_content_none_structure(theme_slug: str) -> str:
@@ -677,7 +700,7 @@ def build_content_none_structure(theme_slug: str) -> str:
     Returns:
         Complete no-content template part
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying a message when no content is found
  *
@@ -699,7 +722,8 @@ def build_content_none_structure(theme_slug: str) -> str:
                 printf(
                     wp_kses(
                         /* translators: %s: Link to create a new post */
-                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.', '{theme_slug}' ),
+                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.',
+							'{theme_slug}' ),
                         array(
                             'a' => array(
                                 'href' => array(),
@@ -713,15 +737,25 @@ def build_content_none_structure(theme_slug: str) -> str:
 
         <?php elseif ( is_search() ) : ?>
 
-            <p><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with different keywords.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'Sorry, but nothing matched your search terms. Please try again with different keywords.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php else : ?>
 
-            <p><?php esc_html_e( 'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php endif; ?>
     </div>
 </section>
-'''
+"""

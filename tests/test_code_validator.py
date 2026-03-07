@@ -84,7 +84,7 @@ class TestCodeValidator:
         # First call is for __init__, second is for validate_php_syntax
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),
-            Mock(returncode=1, stderr="Parse error: syntax error")
+            Mock(returncode=1, stderr="Parse error: syntax error"),
         ]
 
         validator = CodeValidator()
@@ -124,7 +124,7 @@ class TestCodeValidator:
         # Mock the syntax check to succeed
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=0)  # validate_php_syntax
+            Mock(returncode=0),  # validate_php_syntax
         ]
 
         validator = CodeValidator()
@@ -145,7 +145,7 @@ class TestCodeValidator:
         # Mock the syntax check to fail
         mock_php_available.side_effect = [
             Mock(returncode=0, stdout="PHP 8.2.0\n"),  # __init__
-            Mock(returncode=1, stderr="Parse error: syntax error")  # validate_php_syntax
+            Mock(returncode=1, stderr="Parse error: syntax error"),  # validate_php_syntax
         ]
 
         validator = CodeValidator()

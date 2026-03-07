@@ -16,8 +16,7 @@ from wpgen.parsers import PromptParser
 @pytest.fixture
 def mock_llm():
     """Create a mock LLM provider with deterministic responses."""
-    responses = {
-        "blog": """
+    responses = {"blog": """
         {
             "theme_name": "test-blog-theme",
             "theme_display_name": "Test Blog Theme",
@@ -31,8 +30,7 @@ def mock_llm():
             "layout": "blog",
             "pages": ["home", "blog", "about"]
         }
-        """
-    }
+        """}
     return MockLLMProvider(responses=responses)
 
 

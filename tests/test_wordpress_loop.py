@@ -23,9 +23,11 @@ def test_index_has_fallback_content():
     assert "else" in index_content, "index.php should have else clause for empty sites"
     # Should have some visible fallback content
     content_lower = index_content.lower()
-    has_fallback = ("no" in content_lower and "content" in content_lower) or \
-                   "nothing" in content_lower or \
-                   "not found" in content_lower
+    has_fallback = (
+        ("no" in content_lower and "content" in content_lower)
+        or "nothing" in content_lower
+        or "not found" in content_lower
+    )
 
     assert has_fallback, "index.php should have fallback content for Customizer preview"
 
@@ -70,10 +72,12 @@ def test_templates_dont_use_invalid_functions():
 
     for name, content in templates:
         if content:  # Only test if template exists
-            assert "post_loop()" not in content, \
-                f"{name} should not use undefined post_loop() function"
+            assert (
+                "post_loop()" not in content
+            ), f"{name} should not use undefined post_loop() function"
 
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

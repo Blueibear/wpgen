@@ -27,7 +27,7 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete header.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Header Template
  *
@@ -47,7 +47,9 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
 <?php wp_body_open(); ?>
 
 <div id="page" class="site">
-    <a class="skip-link screen-reader-text" href="#primary"><?php esc_html_e( 'Skip to content', '{theme_slug}' ); ?></a>
+    <a class="skip-link screen-reader-text" href="#primary"><?php
+		esc_html_e( 'Skip to content', '{theme_slug}' );
+	?></a>
 
     <header id="masthead" class="site-header">
         <div class="site-branding">
@@ -74,9 +76,12 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
             ?>
         </div>
 
-        <nav id="site-navigation" class="main-navigation" aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
+        <nav id="site-navigation" class="main-navigation"
+			aria-label="<?php esc_attr_e( 'Primary Navigation', '{theme_slug}' ); ?>">
             <button class="menu-toggle" aria-controls="primary-menu" aria-expanded="false">
-                <span class="screen-reader-text"><?php esc_html_e( 'Menu', '{theme_slug}' ); ?></span>
+                <span class="screen-reader-text"><?php
+					esc_html_e( 'Menu', '{theme_slug}' );
+				?></span>
                 <span class="menu-icon" aria-hidden="true"></span>
             </button>
             <?php
@@ -92,7 +97,7 @@ def get_safe_header(theme_name: str, theme_slug: str) -> str:
             ?>
         </nav>
     </header>
-'''
+"""
 
 
 def get_safe_footer(theme_name: str, theme_slug: str) -> str:
@@ -105,7 +110,7 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete footer.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Footer Template
  *
@@ -114,7 +119,11 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
 ?>
 
     <footer id="colophon" class="site-footer">
-        <?php if ( is_active_sidebar( 'footer-1' ) || is_active_sidebar( 'footer-2' ) || is_active_sidebar( 'footer-3' ) ) : ?>
+        <?php if (
+			is_active_sidebar( 'footer-1' )
+			|| is_active_sidebar( 'footer-2' )
+			|| is_active_sidebar( 'footer-3' )
+		) : ?>
             <div class="footer-widgets">
                 <div class="footer-widgets-inner">
                     <?php if ( is_active_sidebar( 'footer-1' ) ) : ?>
@@ -167,7 +176,7 @@ def get_safe_footer(theme_name: str, theme_slug: str) -> str:
 
 </body>
 </html>
-'''
+"""
 
 
 def get_safe_index(theme_name: str, theme_slug: str) -> str:
@@ -180,7 +189,7 @@ def get_safe_index(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete index.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Main Index Template
  *
@@ -203,7 +212,9 @@ get_header();
                     <?php
                 else :
                     ?>
-                    <h1 class="page-title"><?php esc_html_e( 'Latest Posts', '{theme_slug}' ); ?></h1>
+                    <h1 class="page-title"><?php
+						esc_html_e( 'Latest Posts', '{theme_slug}' );
+					?></h1>
                     <?php
                 endif;
                 ?>
@@ -239,7 +250,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_single(theme_name: str, theme_slug: str) -> str:
@@ -252,7 +263,7 @@ def get_safe_single(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete single.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Single Post Template
  *
@@ -273,8 +284,12 @@ get_header();
 
             the_post_navigation(
                 array(
-                    'prev_text' => '<span class="nav-subtitle">' . esc_html__( 'Previous:', '{theme_slug}' ) . '</span> <span class="nav-title">%title</span>',
-                    'next_text' => '<span class="nav-subtitle">' . esc_html__( 'Next:', '{theme_slug}' ) . '</span> <span class="nav-title">%title</span>',
+                    'prev_text' => '<span class="nav-subtitle">'
+						. esc_html__( 'Previous:', '{theme_slug}' )
+						. '</span> <span class="nav-title">%title</span>',
+                    'next_text' => '<span class="nav-subtitle">'
+						. esc_html__( 'Next:', '{theme_slug}' )
+						. '</span> <span class="nav-title">%title</span>',
                 )
             );
 
@@ -290,7 +305,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_page(theme_name: str, theme_slug: str) -> str:
@@ -303,7 +318,7 @@ def get_safe_page(theme_name: str, theme_slug: str) -> str:
     Returns:
         Complete page.php content
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Page Template
  *
@@ -350,7 +365,7 @@ get_header();
 
 <?php
 get_footer();
-'''
+"""
 
 
 def get_safe_functions(theme_name: str, theme_slug: str, woocommerce: bool = False) -> str:
@@ -373,7 +388,7 @@ def get_safe_functions(theme_name: str, theme_slug: str, woocommerce: bool = Fal
     add_theme_support( 'wc-product-gallery-lightbox' );
     add_theme_support( 'wc-product-gallery-slider' );"""
 
-    return f'''<?php
+    return f"""<?php
 /**
  * Theme Functions
  *
@@ -513,7 +528,7 @@ function {theme_slug}_scripts() {{
     }}
 }}
 add_action( 'wp_enqueue_scripts', '{theme_slug}_scripts' );
-'''
+"""
 
 
 def get_safe_content_template(theme_slug: str) -> str:
@@ -525,7 +540,7 @@ def get_safe_content_template(theme_slug: str) -> str:
     Returns:
         Complete content.php template
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying posts
  *
@@ -539,13 +554,19 @@ def get_safe_content_template(theme_slug: str) -> str:
         if ( is_singular() ) :
             the_title( '<h1 class="entry-title">', '</h1>' );
         else :
-            the_title( '<h2 class="entry-title"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' );
+            the_title(
+				'<h2 class="entry-title"><a href="'
+				. esc_url( get_permalink() )
+				. '" rel="bookmark">',
+				'</a></h2>'
+			);
         endif;
         ?>
 
         <div class="entry-meta">
             <span class="posted-on">
-                <time class="entry-date published" datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
+                <time class="entry-date published"
+					datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
                     <?php echo esc_html( get_the_date() ); ?>
                 </time>
             </span>
@@ -583,7 +604,7 @@ def get_safe_content_template(theme_slug: str) -> str:
         </footer>
     <?php endif; ?>
 </article>
-'''
+"""
 
 
 def get_safe_content_none_template(theme_slug: str) -> str:
@@ -595,7 +616,7 @@ def get_safe_content_none_template(theme_slug: str) -> str:
     Returns:
         Complete content-none.php template
     """
-    return f'''<?php
+    return f"""<?php
 /**
  * Template part for displaying a message when no content is found
  *
@@ -615,7 +636,8 @@ def get_safe_content_none_template(theme_slug: str) -> str:
                 <?php
                 printf(
                     wp_kses(
-                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.', '{theme_slug}' ),
+                        __( 'Ready to publish your first post? <a href="%s">Get started here</a>.',
+							'{theme_slug}' ),
                         array(
                             'a' => array(
                                 'href' => array(),
@@ -629,18 +651,28 @@ def get_safe_content_none_template(theme_slug: str) -> str:
 
         <?php elseif ( is_search() ) : ?>
 
-            <p><?php esc_html_e( 'Sorry, but nothing matched your search terms. Please try again with different keywords.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'Sorry, but nothing matched your search terms. Please try again with different keywords.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php else : ?>
 
-            <p><?php esc_html_e( 'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.', '{theme_slug}' ); ?></p>
+            <p><?php
+esc_html_e(
+    'It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.',
+    '{theme_slug}'
+);
+?></p>
             <?php get_search_form(); ?>
 
         <?php endif; ?>
     </div>
 </section>
-'''
+"""
 
 
 def get_all_safe_templates(theme_name: str, theme_slug: str, woocommerce: bool = False) -> dict:
@@ -655,12 +687,12 @@ def get_all_safe_templates(theme_name: str, theme_slug: str, woocommerce: bool =
         Dictionary mapping filenames to template content
     """
     return {
-        'header.php': get_safe_header(theme_name, theme_slug),
-        'footer.php': get_safe_footer(theme_name, theme_slug),
-        'index.php': get_safe_index(theme_name, theme_slug),
-        'single.php': get_safe_single(theme_name, theme_slug),
-        'page.php': get_safe_page(theme_name, theme_slug),
-        'functions.php': get_safe_functions(theme_name, theme_slug, woocommerce),
-        'template-parts/content.php': get_safe_content_template(theme_slug),
-        'template-parts/content-none.php': get_safe_content_none_template(theme_slug),
+        "header.php": get_safe_header(theme_name, theme_slug),
+        "footer.php": get_safe_footer(theme_name, theme_slug),
+        "index.php": get_safe_index(theme_name, theme_slug),
+        "single.php": get_safe_single(theme_name, theme_slug),
+        "page.php": get_safe_page(theme_name, theme_slug),
+        "functions.php": get_safe_functions(theme_name, theme_slug, woocommerce),
+        "template-parts/content.php": get_safe_content_template(theme_slug),
+        "template-parts/content-none.php": get_safe_content_none_template(theme_slug),
     }

@@ -92,7 +92,7 @@ Expected outcomes
 
 ### WPGEN-GATE-001: Enforce Black in dev tooling and CI
 
-- Status: TODO
+- Status: DONE
 - Severity: High
 - Category: Quality gate
 
@@ -120,7 +120,7 @@ Expected outcomes
 
 ### WPGEN-VAL-002: Align validator rules with renderer rules for current classic-theme path
 
-- Status: TODO
+- Status: DONE
 - Severity: High
 - Category: Validation correctness
 
@@ -145,7 +145,7 @@ Expected outcomes
 
 ### WPGEN-VAL-003: Deduplicate theme validation logic
 
-- Status: TODO
+- Status: DONE
 - Severity: Medium
 - Category: Code hygiene and correctness
 

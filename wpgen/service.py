@@ -17,24 +17,24 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, Field, field_validator
 
-from .generators import WordPressGenerator, HybridWordPressGenerator
+from .design_profiles import get_design_profile
+from .generators import HybridWordPressGenerator, WordPressGenerator
 from .github import GitHubIntegration
+from .optimizer import PromptOptimizer
 from .parsers import PromptParser
 from .utils import get_llm_provider, get_logger
+from .utils.code_validator import CodeValidator
 from .utils.image_analysis import ImageAnalyzer
 from .utils.text_utils import TextProcessor
-from .utils.code_validator import CodeValidator
 from .utils.theme_validator import ThemeValidator
 from .wordpress import WordPressAPI
-from .design_profiles import get_design_profile, get_profile_names
-from .optimizer import PromptOptimizer
-from .blueprints import get_blueprint
 
 logger = get_logger(__name__)
 
 
 class LLMProvider(str, Enum):
     """Supported LLM providers."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     LOCAL_LMSTUDIO = "local-lmstudio"
@@ -43,6 +43,7 @@ class LLMProvider(str, Enum):
 
 class GeneratorType(str, Enum):
     """Generator type selection."""
+
     HYBRID = "hybrid"  # JSON → Jinja → PHP (recommended, default)
     LEGACY = "legacy"  # Direct LLM PHP generation (deprecated)
 
@@ -51,16 +52,23 @@ class GenerationRequest(BaseModel):
     """Request model for theme generation."""
 
     # Core input
-    prompt: str = Field(..., min_length=10, description="Natural language description of the WordPress site")
+    prompt: str = Field(
+        ..., min_length=10, description="Natural language description of the WordPress site"
+    )
 
     # File inputs
     image_files: list[str] | None = Field(default=None, description="Paths to design mockup images")
-    text_files: list[str] | None = Field(default=None, description="Paths to content documents (PDF, MD, TXT)")
+    text_files: list[str] | None = Field(
+        default=None, description="Paths to content documents (PDF, MD, TXT)"
+    )
 
     # Generator selection
     generator_type: GeneratorType = Field(
         default=GeneratorType.HYBRID,
-        description="Generator type: 'hybrid' (JSON→Jinja→PHP, recommended) or 'legacy' (direct PHP generation)"
+        description=(
+            "Generator type: 'hybrid' (JSON->Jinja->PHP, recommended)"
+            " or 'legacy' (direct PHP generation)"
+        ),
     )
 
     # LLM configuration
@@ -72,13 +80,24 @@ class GenerationRequest(BaseModel):
     llm_vision_base_url: str | None = Field(default=None, description="Vision model base URL")
 
     # Guided mode parameters
-    guided_mode: dict[str, Any] | None = Field(default=None, description="Structured theme configuration")
+    guided_mode: dict[str, Any] | None = Field(
+        default=None, description="Structured theme configuration"
+    )
 
     # Design profile
-    design_profile: str | None = Field(default=None, description="Design profile (streetwear_modern, minimalist, corporate, vibrant_bold, earthy_natural, bold_neon, dark_mode)")
+    design_profile: str | None = Field(
+        default=None,
+        description=(
+            "Design profile (streetwear_modern, minimalist, "
+            "corporate, vibrant_bold, earthy_natural, "
+            "bold_neon, dark_mode)"
+        ),
+    )
 
     # Optional features
-    optional_features: dict[str, Any] | None = Field(default=None, description="Optional theme features")
+    optional_features: dict[str, Any] | None = Field(
+        default=None, description="Optional theme features"
+    )
 
     # Output configuration
     output_dir: str | None = Field(default=None, description="Output directory for generated theme")
@@ -94,7 +113,7 @@ class GenerationRequest(BaseModel):
     # Validation options
     strict_validation: bool = Field(default=False, description="Fail on validation warnings")
 
-    @field_validator('prompt')
+    @field_validator("prompt")
     @classmethod
     def validate_prompt(cls, v: str) -> str:
         """Ensure prompt is not empty."""
@@ -117,7 +136,9 @@ class GenerationResult(BaseModel):
     github_url: str | None = Field(default=None, description="GitHub repository URL")
 
     # WordPress information
-    wordpress_deployed: bool = Field(default=False, description="Whether theme was deployed to WordPress")
+    wordpress_deployed: bool = Field(
+        default=False, description="Whether theme was deployed to WordPress"
+    )
     wordpress_activated: bool = Field(default=False, description="Whether theme was activated")
     wordpress_theme_id: str | None = Field(default=None, description="WordPress theme ID")
 
@@ -173,7 +194,9 @@ class ThemeGenerationService:
 
             self.logger.info(f"Detected domain: {optimization_result.detected_domain}")
             if optimization_result.woocommerce_detected:
-                self.logger.info("WooCommerce functionality detected - applying ecommerce blueprint")
+                self.logger.info(
+                    "WooCommerce functionality detected - applying ecommerce blueprint"
+                )
             if optimization_result.blueprint_name:
                 self.logger.info(f"Applying blueprint: {optimization_result.blueprint_name}")
 
@@ -183,10 +206,10 @@ class ThemeGenerationService:
             requirements = parser.parse(optimization_result.optimized_prompt)
 
             # Inject blueprint requirements into the requirements dict
-            requirements['_blueprint_name'] = optimization_result.blueprint_name
-            requirements['_blueprint_requirements'] = optimization_result.injected_requirements
-            requirements['_domain'] = optimization_result.detected_domain
-            requirements['_woocommerce_required'] = optimization_result.woocommerce_detected
+            requirements["_blueprint_name"] = optimization_result.blueprint_name
+            requirements["_blueprint_requirements"] = optimization_result.injected_requirements
+            requirements["_domain"] = optimization_result.detected_domain
+            requirements["_woocommerce_required"] = optimization_result.woocommerce_detected
 
             self.logger.info(f"Theme: {requirements['theme_display_name']}")
             self.logger.info(f"Features: {', '.join(requirements.get('features', []))}")
@@ -201,7 +224,9 @@ class ThemeGenerationService:
 
             # Apply optional features if provided
             if request.optional_features:
-                requirements = self._apply_optional_features(requirements, request.optional_features)
+                requirements = self._apply_optional_features(
+                    requirements, request.optional_features
+                )
 
             # Generate theme using selected generator
             self.logger.info("Generating WordPress theme files")
@@ -219,15 +244,15 @@ class ThemeGenerationService:
                 requirements["original_prompt"] = request.prompt
 
                 generator = HybridWordPressGenerator(
-                    llm_provider,
-                    output_dir,
-                    cfg.get("wordpress", {})
+                    llm_provider, output_dir, cfg.get("wordpress", {})
                 )
                 theme_dir = generator.generate(requirements, images)
             else:
                 # Legacy generator
                 self.logger.info("Using LEGACY generator (direct LLM PHP generation)")
-                self.logger.warning("Legacy generator is deprecated - consider using hybrid generator")
+                self.logger.warning(
+                    "Legacy generator is deprecated - consider using hybrid generator"
+                )
                 generator = WordPressGenerator(llm_provider, output_dir, cfg.get("wordpress", {}))
                 theme_dir = generator.generate(requirements)
 
@@ -249,10 +274,15 @@ class ThemeGenerationService:
             result.validation_warnings = validation_result.get("warnings", [])
 
             # Check if validation should fail the build
-            if request.strict_validation and (result.validation_errors or result.validation_warnings):
+            if request.strict_validation and (
+                result.validation_errors or result.validation_warnings
+            ):
                 result.success = False
                 result.error = "Theme validation failed in strict mode"
-                result.error_details = f"Errors: {len(result.validation_errors)}, Warnings: {len(result.validation_warnings)}"
+                result.error_details = (
+                    f"Errors: {len(result.validation_errors)}, "
+                    f"Warnings: {len(result.validation_warnings)}"
+                )
                 return result
 
             # Push to GitHub if requested
@@ -369,7 +399,9 @@ class ThemeGenerationService:
 
         return prompt
 
-    def _apply_design_profile(self, requirements: dict[str, Any], profile_name: str) -> Dict[str, Any]:
+    def _apply_design_profile(
+        self, requirements: dict[str, Any], profile_name: str
+    ) -> Dict[str, Any]:
         """Apply design profile to requirements.
 
         Args:
@@ -384,7 +416,9 @@ class ThemeGenerationService:
         requirements["design_profile"] = profile.to_dict()
         return requirements
 
-    def _apply_guided_mode(self, requirements: dict[str, Any], guided_mode: dict[str, Any]) -> Dict[str, Any]:
+    def _apply_guided_mode(
+        self, requirements: dict[str, Any], guided_mode: dict[str, Any]
+    ) -> Dict[str, Any]:
         """Apply guided mode parameters to requirements.
 
         Args:
@@ -399,7 +433,9 @@ class ThemeGenerationService:
         requirements["guided_mode"] = guided_mode
         return requirements
 
-    def _apply_optional_features(self, requirements: dict[str, Any], optional_features: dict[str, Any]) -> Dict[str, Any]:
+    def _apply_optional_features(
+        self, requirements: dict[str, Any], optional_features: dict[str, Any]
+    ) -> Dict[str, Any]:
         """Apply optional features to requirements.
 
         Args:
@@ -449,7 +485,13 @@ class ThemeGenerationService:
 
         return {"errors": errors, "warnings": warnings}
 
-    def _push_to_github(self, theme_dir: str, request: GenerationRequest, requirements: dict[str, Any], cfg: dict[str, Any]) -> Dict[str, Any]:
+    def _push_to_github(
+        self,
+        theme_dir: str,
+        request: GenerationRequest,
+        requirements: dict[str, Any],
+        cfg: dict[str, Any],
+    ) -> Dict[str, Any]:
         """Push theme to GitHub.
 
         Args:
@@ -482,7 +524,13 @@ class ThemeGenerationService:
             self.logger.error(f"GitHub push failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _deploy_to_wordpress(self, theme_dir: str, request: GenerationRequest, requirements: dict[str, Any], cfg: dict[str, Any]) -> Dict[str, Any]:
+    def _deploy_to_wordpress(
+        self,
+        theme_dir: str,
+        request: GenerationRequest,
+        requirements: dict[str, Any],
+        cfg: dict[str, Any],
+    ) -> Dict[str, Any]:
         """Deploy theme to WordPress site.
 
         Args:
@@ -512,6 +560,7 @@ class ThemeGenerationService:
 
             # Create theme ZIP
             from .utils.file_handler import FileHandler
+
             file_handler = FileHandler()
             zip_path = file_handler.create_zip(theme_dir)
 

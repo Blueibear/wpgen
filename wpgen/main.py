@@ -22,6 +22,7 @@ from wpgen.utils import get_llm_provider, setup_logger
 def _ensure_env_loaded():
     """Lazily load environment variables when needed."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
 
@@ -70,7 +71,9 @@ def cli():
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["openai", "anthropic", "local-lmstudio", "local-ollama"], case_sensitive=False),
+    type=click.Choice(
+        ["openai", "anthropic", "local-lmstudio", "local-ollama"], case_sensitive=False
+    ),
     default=None,
     help="LLM provider (overrides config file)",
 )
@@ -83,9 +86,12 @@ def cli():
 @click.option(
     "--design-profile",
     "-d",
-    type=click.Choice(["modern_streetwear", "minimalist", "corporate", "vibrant_bold", "earthy_natural"], case_sensitive=False),
+    type=click.Choice(
+        ["modern_streetwear", "minimalist", "corporate", "vibrant_bold", "earthy_natural"],
+        case_sensitive=False,
+    ),
     default=None,
-    help="Design profile for theme styling (modern_streetwear, minimalist, corporate, vibrant_bold, earthy_natural)",
+    help="Design profile for theme styling",
 )
 @click.option("--strict", is_flag=True, help="Enable strict validation mode (warnings = errors)")
 @click.option("--json-logs", is_flag=True, help="Output logs in JSON format to stdout")
@@ -145,6 +151,7 @@ def generate(
         # Check dependencies
         if not skip_dep_check:
             from wpgen.utils.dependency_checks import check_dependencies
+
             check_dependencies(strict=strict)
 
         # Get prompt
@@ -166,6 +173,7 @@ def generate(
 
         # Check model deprecation
         from wpgen.utils.model_deprecation import log_model_deprecation_warning
+
         model_name = cfg.get("llm", {}).get(provider_name, {}).get("model")
         if model_name:
             log_model_deprecation_warning(model_name, provider_name)
@@ -182,6 +190,7 @@ def generate(
         # Apply design profile if specified
         if design_profile:
             from wpgen.design_profiles import get_design_profile
+
             profile = get_design_profile(design_profile)
             requirements["design_profile"] = profile.to_dict()
             click.echo(f"   Design Profile: {design_profile}")
@@ -210,7 +219,7 @@ def generate(
         results = validator.validate_directory(theme_dir)
         print_validation_summary_table(results, strict=strict)
 
-        if strict and (results.get('errors') or results.get('warnings')):
+        if strict and (results.get("errors") or results.get("warnings")):
             click.echo("❌ Validation failed in strict mode", err=True)
             sys.exit(1)
 
@@ -367,7 +376,7 @@ def validate(theme_path: str):
         print_validation_report(results)
 
         # Exit with error code if validation failed
-        if results.get('invalid_files', 0) > 0 or results.get('errors'):
+        if results.get("invalid_files", 0) > 0 or results.get("errors"):
             sys.exit(1)
 
     except Exception as e:

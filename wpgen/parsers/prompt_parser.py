@@ -163,7 +163,9 @@ class PromptParser:
 
         if "theme_display_name" not in requirements:
             logger.warning("Missing theme_display_name, generating from theme_name")
-            requirements["theme_display_name"] = requirements["theme_name"].replace("-", " ").title()
+            requirements["theme_display_name"] = (
+                requirements["theme_name"].replace("-", " ").title()
+            )
 
         if "description" not in requirements:
             logger.warning("Missing description, using default")
@@ -188,13 +190,13 @@ class PromptParser:
             else:
                 # Ensure all items in the list are strings
                 requirements[field] = [
-                    str(item) if not isinstance(item, str) else item
-                    for item in requirements[field]
+                    str(item) if not isinstance(item, str) else item for item in requirements[field]
                 ]
 
         # Normalize page names to lowercase, kebab-case (WordPress template naming requirement)
         # This prevents issues like "Home.php", "About.php" which break WordPress hierarchy
         from ..utils.template_hierarchy_validator import normalize_page_name
+
         if "pages" in requirements and requirements["pages"]:
             normalized_pages = []
             for page in requirements["pages"]:
@@ -223,7 +225,9 @@ class PromptParser:
                         requirements[field] = str(values[0]) if values else "default"
                 else:
                     requirements[field] = str(requirements[field])
-                logger.warning(f"Converted {field} from {type(requirements[field]).__name__} to string")
+                logger.warning(
+                    f"Converted {field} from {type(requirements[field]).__name__} to string"
+                )
 
         # Set defaults for optional fields
         if "color_scheme" not in requirements:

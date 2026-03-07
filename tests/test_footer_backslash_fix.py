@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from wpgen.utils.php_validation import remove_stray_backslashes, validate_and_fix_php
 from wpgen.utils.code_validator import sanitize_footer_php
+from wpgen.utils.php_validation import remove_stray_backslashes, validate_and_fix_php
 
 
 class TestBackslashSanitization:
@@ -69,7 +69,7 @@ class TestBackslashSanitization:
         problematic_footer = """
         <footer class="site-footer">
             <div class="site-info">
-                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>. All rights reserved.</p>
+                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>.</p>
             </div>
         </footer>
         <?php wp_footer(); ?>
@@ -166,10 +166,7 @@ class TestFullValidationPipeline:
 
         # Run through validation pipeline with auto_fix=True
         fixed_code, is_valid, issues = validate_and_fix_php(
-            problematic_footer,
-            file_type='footer',
-            filename='footer.php',
-            auto_fix=True
+            problematic_footer, file_type="footer", filename="footer.php", auto_fix=True
         )
 
         # Should be valid after fixes
@@ -183,8 +180,8 @@ class TestFullValidationPipeline:
         assert "\\'" not in fixed_code
 
     @pytest.mark.skipif(
-        subprocess.run(['php', '--version'], capture_output=True).returncode != 0,
-        reason="PHP CLI not available"
+        subprocess.run(["php", "--version"], capture_output=True).returncode != 0,
+        reason="PHP CLI not available",
     )
     def test_php_cli_validates_cleaned_footer(self):
         """Test that PHP -l accepts the cleaned footer code."""
@@ -201,26 +198,20 @@ class TestFullValidationPipeline:
 
         # Clean it
         fixed_code, is_valid, issues = validate_and_fix_php(
-            problematic_footer,
-            file_type='footer',
-            filename='footer.php',
-            auto_fix=True
+            problematic_footer, file_type="footer", filename="footer.php", auto_fix=True
         )
 
         # Should be valid
         assert is_valid
 
         # Verify with actual PHP -l
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
             f.write(fixed_code)
             temp_path = f.name
 
         try:
             result = subprocess.run(
-                ['php', '-l', temp_path],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["php", "-l", temp_path], capture_output=True, text=True, timeout=5
             )
 
             # Should pass PHP validation
@@ -238,7 +229,7 @@ class TestRegressionPrevention:
         footer_code = """
         <footer class="site-footer">
             <div class="site-info">
-                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>. All rights reserved.</p>
+                <p>&copy; <?php echo date(\\'Y\\'); ?> <?php bloginfo(\\'name\\'); ?>.</p>
             </div>
         </footer>
         <?php wp_footer(); ?>
@@ -254,15 +245,12 @@ class TestRegressionPrevention:
 
         # If PHP is available, verify it validates
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".php", delete=False) as f:
                 f.write(cleaned_code)
                 temp_path = f.name
 
             result = subprocess.run(
-                ['php', '-l', temp_path],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["php", "-l", temp_path], capture_output=True, text=True, timeout=5
             )
 
             Path(temp_path).unlink()
@@ -282,15 +270,13 @@ class TestRegressionPrevention:
 
         # Validate with auto_fix
         fixed_code, is_valid, issues = validate_and_fix_php(
-            code_with_backslashes,
-            file_type='template',
-            filename='test.php',
-            auto_fix=True
+            code_with_backslashes, file_type="template", filename="test.php", auto_fix=True
         )
 
         # Should report backslash removal
-        assert any("backslash" in str(issue).lower() for issue in issues), \
-            f"Expected backslash removal to be reported in issues: {issues}"
+        assert any(
+            "backslash" in str(issue).lower() for issue in issues
+        ), f"Expected backslash removal to be reported in issues: {issues}"
 
         # Should be cleaned
         assert "\\'" not in fixed_code

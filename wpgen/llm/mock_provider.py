@@ -22,16 +22,11 @@ class MockLLMProvider(BaseLLMProvider):
         self.temperature = 0.7
 
         # Mock-specific attributes
-        self.responses = kwargs.get('responses', {})
+        self.responses = kwargs.get("responses", {})
         self.call_count = 0
         self.last_prompt = None
 
-    def generate(
-        self,
-        prompt: str,
-        system_prompt: str | None = None,
-        **kwargs
-    ) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
         """Generate a mocked response based on prompt keywords.
 
         Args:

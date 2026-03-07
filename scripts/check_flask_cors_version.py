@@ -9,14 +9,15 @@ import sys
 
 try:
     import flask_cors
+
     version = flask_cors.__version__
     print(f"Flask-CORS version: {version}")
 
     # Parse version and check if >= 6.0.1
-    version_parts = version.split('.')
+    version_parts = version.split(".")
     major = int(version_parts[0])
     minor = int(version_parts[1]) if len(version_parts) > 1 else 0
-    patch = int(version_parts[2].split('-')[0]) if len(version_parts) > 2 else 0
+    patch = int(version_parts[2].split("-")[0]) if len(version_parts) > 2 else 0
 
     if major > 6 or (major == 6 and minor > 0) or (major == 6 and minor == 0 and patch >= 1):
         print("✓ Flask-CORS version is safe (>= 6.0.1)")
